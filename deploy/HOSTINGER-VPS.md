@@ -17,9 +17,9 @@ No owner account or password was created on your behalf. The initial database is
 
 `hostinger-vps.compose.yaml` is the deployed manifest with an environment-variable placeholder for the private setup token. Do not print the expanded Compose configuration or commit its private environment. The initializer source is `hostinger_source_init.py`; its base64 form is embedded in the manifest to avoid a remote Docker build dependency. If changing the initializer, regenerate that command from the reviewed file.
 
-Application commit: `90cda5142b344a22a8ee7cc07db90f872c24ce16`.
+Application commit: `363df7d7695d7a6a2c5064b3eecf8964be0c9f60`.
 
-Source ZIP SHA-256: `6d38b072e43b53da739c5f6f6924ea61983b092934aaf45e7cfb2d94c02d8834`.
+Source ZIP SHA-256: `013d38cdf3fea692e1cb086ffa328c1c84c75cd345b32845dfb0f4f3c4c5c9c6`.
 
 The one-shot initializer validates the GitHub archive digest and archive paths before installing the source into `app_source`. A matching cached release avoids a download on later starts. The app mounts this source read-only and runs as UID/GID 10001. Its private SQLite/uploads/knowledge data is in `app_data`, under `/var/lib/teamwave/active`. Never remove these volumes during an update. The Python base image currently follows `python:3.13-slim`; source pinning does not pin that base image digest.
 
