@@ -77,7 +77,17 @@ class Handler(BaseHTTPRequestHandler):
                     with self.server.store.db() as db:db.execute('SELECT 1 FROM tenants LIMIT 1').fetchone()
                 except Exception:self.respond(503,{'status':'not_ready'});return
                 self.respond(200,{'status':'ready'});return
-            if path=='/api/bootstrap': self.respond(200,{'password_recovery_available':recovery_configuration()['ready'],'initialized':self.server.store.initialized(),'setup_token_required':self.server.deployment.production and not self.server.store.initialized(),'deployment': 'hosted' if self.server.deployment.production else 'local'});return
+            if path.startswith('/api/review/'):
+                if self.server.review is None:raise Problem('Review mode is unavailable.',404)
+                review=self.server.review;ctx=review.context
+                if path=='/api/review/state':self.respond(200,review.state());return
+                query=parse_qs(urlsplit(self.path).query)
+                if path=='/api/review/analytics':self.respond(200,review.store.message_analytics(ctx,query.get('from',[''])[0],query.get('to',[''])[0]));return
+                if path=='/api/review/chat-source':self.respond(200,review.store.source_messages(ctx,query.get('contact_id',[''])[0],query.get('ids',[''])[0].split(',')));return
+                if path=='/api/review/knowledge-source':self.respond(200,review.store.knowledge_passage(ctx,query.get('document_id',[''])[0],query.get('chunk_id',[''])[0]));return
+                if path=='/api/review/export':self.respond(200,review.store.export_contacts(ctx),'text/csv; charset=utf-8');return
+                raise Problem('Unknown review resource.',404)
+            if path=='/api/bootstrap': self.respond(200,{'review_available':self.server.review is not None,'password_recovery_available':recovery_configuration()['ready'],'initialized':self.server.store.initialized(),'setup_token_required':self.server.deployment.production and not self.server.store.initialized(),'deployment': 'hosted' if self.server.deployment.production else 'local'});return
             if path=='/api/account/mfa':self.respond(200,self.server.store.mfa_status(self.context()));return
             if path=='/api/state': self.respond(200,self.server.store.state(self.context()));return
             if path=='/api/analytics':
@@ -98,7 +108,7 @@ class Handler(BaseHTTPRequestHandler):
                 t=path.rsplit('/',1)[-1]; q=parse_qs(urlsplit(self.path).query); s=settings(t)
                 if s['VERIFY_TOKEN'] and q.get('hub.mode')==['subscribe'] and q.get('hub.verify_token')==[s['VERIFY_TOKEN']]: self.respond(200,q.get('hub.challenge',[''])[0],'text/plain');return
                 raise Problem('Verification failed.',403)
-            files={'/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
+            files={'/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
             if path not in files: raise Problem('Not found.',404)
             p=ROOT/'static'/files[path]
             if not p.exists(): raise Problem('UI is not installed.',404)
@@ -111,6 +121,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not self.host_ok(): raise Problem('Invalid host.',403)
             path=urlsplit(self.path).path
+            if path.startswith('/api/review/'):raise Problem('Public review is read-only. Owner setup is required to make changes.',403)
             expected_origin=self.server.deployment.public_origin if self.server.deployment.production else 'http://'+self.headers.get('Host','')
             if not path.startswith(('/webhook/','/shopify-webhook/','/agent-callback/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
             try: length=int(self.headers.get('Content-Length','0'))
@@ -192,6 +203,10 @@ def make_server(port=8787,path=None):
     if deployment.production and not store.initialized() and (not 32<=len(deployment.setup_token)<=256 or deployment.setup_token.startswith('REPLACE_')):raise ValueError('Fresh production setup requires a replaced TW_SETUP_TOKEN with 32–256 characters.')
     server=ThreadingHTTPServer((deployment.bind,port),Handler);server.daemon_threads=True
     server.deployment=deployment;server.store=store
+    server.review=None
+    if os.environ.get('TW_PUBLIC_REVIEW','false').lower()=='true':
+        from public_review import PublicReview
+        server.review=PublicReview()
     server.attempts={};server.attempts_lock=threading.Lock()
     return server
 

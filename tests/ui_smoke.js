@@ -209,3 +209,6 @@ assert.ok(fs.readFileSync(path.join(root,'index.html'),'utf8').includes('<title>
 assert.ok(fs.readFileSync(path.join(root,'index.html'),'utf8').includes('/vybe-theme.css'));
 
 vm.runInContext('HELP.draft="private feedback";HELP.rating=5;clearHelpWidget()',context);assert.equal(vm.runInContext('HELP.draft',context),'');assert.equal(vm.runInContext('HELP.rating',context),0);
+
+html=vm.runInContext('navigationToggleMarkup(false)',context);assert.match(html,/aria-label="Expand navigation"/);assert.match(html,/aria-expanded="false"/);
+html=vm.runInContext('navigationToggleMarkup(true)',context);assert.match(html,/aria-label="Collapse navigation"/);assert.match(html,/aria-expanded="true"/);

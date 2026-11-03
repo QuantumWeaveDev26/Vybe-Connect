@@ -26,5 +26,18 @@ if(section==='automations'){title='Automations';items=[['rules','Rules'],['flows
 if(section==='contacts'){title='Contacts';items=[['contacts','All Contacts'],['segments','Segments & Filters']]}
 if(section==='settings'){title='Settings';items=[['settings','WhatsApp Cloud API'],['team','Team & user management']]}
 if(!items.length)return '';return `<aside class="context-nav"><h2>${title}</h2>${section==='campaigns'?btn('+ Create New Campaign','new-campaign','','primary'):''}${section==='automations'?'<div class="navlabel">TRIGGERS & ACTIONS LIBRARY</div>':''}${items.map(([route,label])=>`<a href="#${route}" ${S.route===route?'aria-current="page"':''} class="context-link ${S.route===route?'selected':''}">${icon(route)}${label}</a>`).join('')}<div class="context-bottom"><p class="hint">Connected services show their actual state. Configure Meta and AI to activate provider-backed operations.</p></div></aside>`}
-function upgradeShell(){if(!S.data)return;const sidebar=$('.sidebar nav');if(!sidebar)return;const section=shellSection();sidebar.setAttribute("aria-label","Main navigation");sidebar.innerHTML=primaryNavigation();
+function upgradeShell(){if(!S.data)return;applyNavigationPreference();const sidebar=$('.sidebar nav');if(!sidebar)return;const section=shellSection();sidebar.setAttribute("aria-label","Main navigation");sidebar.innerHTML=primaryNavigation();
 const main=$('.main'),content=$('.content');main.querySelector('.context-nav')?.remove();const menu=contextMenu();main.classList.toggle('has-context',!!menu);if(menu)content.insertAdjacentHTML('beforebegin',menu);const aiButton=$('[data-do="ai-open"]');if(aiButton){aiButton.classList.add('header-assistant');aiButton.innerHTML=`<span>✧ VYBE Connect AI</span><span class="ai-context-label">${esc(S.route==='templates'?'Review templates and suggest improvements':S.route==='inbox'?'Find recent chats with buying intent':'Review campaign engagement and insights')}</span>`;$('.topbar').prepend(aiButton)} }
+
+function navigationToggleMarkup(expanded){
+ return btn('<b class="nav-toggle-mark" aria-hidden="true">&#9776;</b><span>Navigation</span>','nav-toggle',`aria-label="${expanded?'Collapse':'Expand'} navigation" title="${expanded?'Collapse':'Expand'} navigation" aria-expanded="${expanded}"`,'navlink ghost');
+}
+function applyNavigationPreference(){
+ const expanded=localStorage.getItem('vybe-nav-expanded')==='true';
+ document.querySelector('.shell')?.classList?.toggle('nav-expanded',expanded);
+ const bottom=document.querySelector('.sidebar-bottom');
+ if(bottom&&!bottom.querySelector('[data-do="nav-toggle"]'))bottom.insertAdjacentHTML('afterbegin',navigationToggleMarkup(expanded));
+ const button=document.querySelector('[data-do="nav-toggle"]');
+ if(button){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse':'Expand')+' navigation');button.setAttribute('title',(expanded?'Collapse':'Expand')+' navigation')}
+}
+function toggleNavigation(){localStorage.setItem('vybe-nav-expanded',String(localStorage.getItem('vybe-nav-expanded')!=='true'));applyNavigationPreference()}
