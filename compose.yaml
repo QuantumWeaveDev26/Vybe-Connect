@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - ${TW_ENV_FILE:-.env}
+    environment:
+      TW_DEPLOYMENT: production
+      TW_BIND: 0.0.0.0
+      TW_DATA_DIR: ${TW_DATA_DIR:-/var/lib/teamwave/active}
+    volumes:
+      - app_data:/var/lib/teamwave
+    expose:
+      - "8788"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      TW_PUBLIC_ORIGIN: ${TW_PUBLIC_ORIGIN:?Set the exact HTTPS public origin}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - proxy_data:/data
+      - proxy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+volumes:
+  app_data:
+  proxy_data:
+  proxy_config:

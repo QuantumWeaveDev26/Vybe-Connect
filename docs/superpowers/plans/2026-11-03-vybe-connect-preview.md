@@ -1,0 +1,7 @@
+# VYBE Connect local preview and repository delivery
+
+Preserve the existing backend, private data, TW_* configuration names and signing protocol. Rename visible product text to VYBE Connect. Align the shell with the currently observed WATI Astra reference: compact icon rail with readable hover/focus expansion, pale neutral background, white bordered panels, green actions, AI pill and card-based external agents. Keep automation routes and expose Astra explicitly. Do not copy account-specific agent names, avatars, phone numbers, payment banners or customer data into source.
+
+Add a bottom-right help launcher, contextual guided walkthrough, AI entry and workspace-persisted feedback/rating UI. Feedback is an internal authenticated feature, not a connection to WATI support. Validate tenant/member access, rating/category bounds, report frequency and admin-only status changes. Clear widget drafts on logout/workspace changes. Walkthroughs explain controls and never activate providers or send messages. Add keyboard dismissal and focus handling.
+
+Finish recovery verification and docs. Run focused tests and the full suite, renderer/privacy and syntax checks. Show a local preview before GitHub delivery. Clone the provided empty repository, copy sanitized source only, exclude secrets/data/captured WATI material, inspect staged content and check Git write access before push. Hostinger deployment remains deferred. Do not claim full parity or production clearance from local checks.

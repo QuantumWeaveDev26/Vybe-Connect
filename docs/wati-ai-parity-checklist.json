@@ -1,0 +1,200 @@
+{
+  "target": "Exact observed WATI AI screen and workflow parity",
+  "current_result": "Incomplete; exact parity is not established",
+  "evidence": [
+    "ev_0647823ac00c402a6e763d2c22cc2fb62631cb133816e5b25d66aac28752b3d2",
+    "ev_a8293f84de1b521d773350942e4e364dbbb296ba0893d28f37a6f42a394d11c0",
+    "ev_16cca39137ae08a283c48e983f7aafda55b4b340b27addb82538fbd07f865283",
+    "ev_70ef7b687272cc41f330378cb9370f14503a5eba9b42f0fd49d51843c45d1eaa",
+    "ev_d1e5861773380ecbfd3a87a005c9cbf43e21018a35c78cffc39dac4e94d0edf2",
+    "ev_4376299527698ac5aebbb60e39a14fa2db97e8587f851a196004339625725f28",
+    "ev_616e61023e409260130ac585bbd0265475a3cc12e480394bf8a14d67daaf2d25",
+    "ev_3b0813f81e3389d9964a1e747c97d8401b514d809bd0a81070e30214f6dd9b7b",
+    "ev_dcf638f146e0bf1ee6fc99ae8980986c9b54f2e35585f42bb24d1998368b2fd7",
+    "ev_8e5742546a00ab8a5fd9d59aad2787b8b6cde43fc70f62c6a2079fb8a8fdb265",
+    "ev_44ba5c8c4f335af4ad655aadb7077815267f41e8b4292fe2e99fd1d57cb4dd60"
+  ],
+  "observed_controls": [
+    "Wati AI toolbar",
+    "Ask tab",
+    "Agents tab",
+    "New Agent",
+    "Daily Digest",
+    "RECENT",
+    "Expand",
+    "Close",
+    "Collapse navigation",
+    "Pick a mode",
+    "Hire agent",
+    "See more"
+  ],
+  "implemented_controls": [
+    "AI toolbar",
+    "Ask and Agents",
+    "New Agent",
+    "Daily Digest",
+    "private chat history",
+    "Expand and restore",
+    "Close",
+    "collapse navigation",
+    "mode selector",
+    "preset creation",
+    "agent editing",
+    "schedule pause/resume",
+    "archive/restore",
+    "activity history",
+    "queued Ask jobs",
+    "Append message",
+    "Stop and retry-stop",
+    "Helpful and Not helpful",
+    "validated message sources",
+    "server-allowed model selector",
+    "8000-character prompt limit",
+    "natural-language agent proposals",
+    "follow-up proposal refinement",
+    "editable review before installation",
+    "idempotent paused agent installation",
+    "local document upload and indexing",
+    "lexical knowledge retrieval",
+    "validated document passage links",
+    "document disable/delete",
+    "ordered drip template runs",
+    "drip pause/resume/cancel",
+    "external-agent connection table",
+    "signed developer event outbox",
+    "external reply-draft callbacks",
+    "saved contact segments",
+    "dynamic campaign audience preview"
+  ],
+  "agent_catalog": [
+    "Inbox Triage",
+    "Re-engagement Scout",
+    "Urgency Watcher",
+    "Top Topics",
+    "Spam Watcher",
+    "Ready-to-Buy",
+    "Automation Health Check",
+    "Campaign Readiness Checker",
+    "Segment & Contact Checker",
+    "Campaign Idea Finder",
+    "Account Health Checker"
+  ],
+  "checks": [
+    {
+      "area": "Catalog and control names",
+      "status": "Observed in REA and implemented; current visuals unverified"
+    },
+    {
+      "area": "Ask, private history and selected-conversation context",
+      "status": "Durable private jobs, bounded append queue, truthful phases, provider-aware cancellation, feedback and validated citations implemented and locally checked. Live OpenAI/Meta verification pending."
+    },
+    {
+      "area": "Agent creation and hiring configuration",
+      "status": "Natural-language structured proposals, follow-up refinement, editable review and atomic idempotent paused installation implemented and locally tested. Existing manual editing and presets retained. Exact WATI hiring/authorization/lifecycle forms remain unverified."
+    },
+    {
+      "area": "Mode selector choices",
+      "status": "Create an agent and Get insights recovered from the loaded frontend through REA; menu implemented. Create an agent now opens the private natural-language builder. Exact WATI interaction and rendered visual comparison remain pending."
+    },
+    {
+      "area": "Findings and human review",
+      "status": "Implemented using observed review-first descriptions; WATI review screens and full action vocabulary unverified"
+    },
+    {
+      "area": "Background scheduling",
+      "status": "Independent durable hourly/daily/weekly scheduler implemented; WATI timing and lifecycle behavior unverified"
+    },
+    {
+      "area": "Agent data coverage",
+      "status": "Bounded real workspace context implemented; full WATI data/tool coverage remains incomplete"
+    },
+    {
+      "area": "Knowledge sources",
+      "status": "Manual text, TXT/MD/CSV/DOCX and explicit public-page website ingestion/refresh, bounded local lexical retrieval, source review/enable/delete and validated passage references implemented and locally tested. PDF, full-site crawling, scheduled website refresh, vector retrieval and exact WATI training controls remain incomplete."
+    },
+    {
+      "area": "Visual parity",
+      "status": "Not verified. Latest REA screenshot hit its 30-second response deadline. No screenshot equality claim"
+    },
+    {
+      "area": "Provider behavior",
+      "status": "OpenAI and Ollama adapters implemented and contract-tested; real provider verification pending credentials and approved test"
+    },
+    {
+      "area": "Broader WATI product",
+      "status": "Incomplete. Outbound attachments, read-only Shopify and persistent ordered drip runs are locally implemented. Calls, commerce mutations, additional connectors, advanced segments/rules/flows, public client onboarding and production operations remain pending."
+    },
+    {
+      "area": "External agents and developer webhooks",
+      "status": "REA-observed table columns implemented with independent HMAC event/callback contract, public-address transport, persistent delivery history and unsent reply drafts. Real receivers, autonomous actions and exact WATI protocol/form behavior remain unverified."
+    },
+    {
+      "area": "Contact segments",
+      "status": "Typed all/any filters, saved segments, previews and dynamic campaign targeting implemented and locally tested. Shared conversation filters, unread state and full operator/dialog parity remain incomplete."
+    },
+    {
+      "area": "Customer support AI",
+      "status": "One workspace assistant with approved knowledge, durable inbound jobs, daily generation limit, drafts, human handoff and separately gated live replies implemented and locally tested. Real provider acceptance, answer quality and exact WATI agent runtime remain unverified."
+    },
+    {
+      "area": "Customer order context",
+      "status": "Explicit administrator ownership links, default-denied assistant opt-in, bounded fresh synced order context and late-result suppression implemented. Automatic identity matching, live customer lookups, commerce mutations and equivalent WATI order-tool behavior remain incomplete."
+    },
+    {
+      "area": "AI human handoff routing",
+      "status": "Fixed or administrator-selected least-busy team pools, assignment preservation, removed-member filtering, transactional concurrent selection, internal tasks and persisted routing snapshots implemented and locally tested. Presence, business hours, capacity limits, SLAs and exact WATI routing remain pending."
+    },
+    {
+      "area": "Website knowledge transport",
+      "status": "Exact server-origin allowlist, public DNS and pinned TLS, bounded uncompressed response, no redirects/cookies/scripts/linked resources, atomic refresh and last-good retention implemented. Actual website compatibility and live grounding quality unverified."
+    },
+    {
+      "area": "Chatbot persistent waits",
+      "status": "Wait nodes with restart-safe timing, early-message protection, transactional continuation and STOP/takeover/edit/disable cancellation implemented. Continuations remain unsent drafts. Live graph sending and immutable published versions remain pending."
+    },
+    {
+      "area": "Rules and local action execution",
+      "status": "Keyword plus optional saved segment, priority, ordered local tags/assignment/status/attributes/drafts/tasks/handoff, dependency preflight and replay protection implemented and locally tested. Other triggers, external actions and exact WATI execution semantics remain incomplete."
+    },
+    {
+      "area": "Team invitation onboarding",
+      "status": "Hashed expiring one-time links, role/workspace controls, issuer checks, existing password verification and atomic acceptance implemented and locally checked. Email delivery, public client signup, billing, SSO and recovery remain pending."
+    },
+    {
+      "area": "Workspace member access",
+      "status": "Role changes, scoped access removal, last-admin concurrency guard, invitation revocation, assignment cleanup and forbidden-state UI clearing implemented and locally tested. SSO, granular roles, global deactivation and full production authorization remain pending."
+    },
+    {
+      "area": "Recorded traffic analytics",
+      "status": "Full-history scoped UTC date ranges, real-status aggregation, daily chart/table and CSV export implemented and locally checked. Historical response/resolution, calling, sales attribution, chatbot/CX reports and scheduled delivery remain incomplete."
+    },
+    {
+      "area": "Received media",
+      "status": "Signed inbound metadata, human-review interruption, explicit restricted Meta download, MIME/hash/size verification and private asset controls implemented and locally tested. Live provider retrieval, browser playback, larger/other formats, AI inspection and calls remain unverified or incomplete."
+    },
+    {
+      "area": "Contact and conversation rule events",
+      "status": "Independent contact-created/updated, typed attribute-added/changed and conversation-opened/resolved triggers, exact field filters, non-recursive dispatch and execution history implemented and locally tested. Call/social triggers and exact WATI semantics remain incomplete. Accepted-reply no-response timers and once-only local evaluations are implemented and locally checked."
+    },
+    {
+      "area": "Background agent action controls",
+      "status": "Administrator-selected proposal vocabulary, information-only mode, strict response checks, configuration-version fencing and current permission/archive review checks implemented. Actions remain human-reviewed. Exact WATI permission screens and autonomous tool execution remain unverified or incomplete."
+    },
+    {
+      "area": "Chatbot contact actions",
+      "status": "Custom attribute, remove-tag and teammate assignment nodes implemented in interpreter, visual editing and TeamWave JSON import. Current-member preflight, bounded values/capacity and atomic blocked continuations implemented. Full graph vocabulary/live sends/published versions and exact WATI semantics remain incomplete."
+    },
+    {
+      "area": "Live chatbot text outbox",
+      "status": "Separately gated durable text checkpoints, one-time claiming, question/wait acceptance sequencing, owner/window/version/inbound/control fences, bounded history and uncertain-outcome review implemented. Real Meta verification, exact WATI semantics, full remote resource/format/integration support and production reconciliation remain pending. Draft/publish separation, immutable configuration history, restore-to-draft and stale-editor guards are implemented locally; exact WATI publication semantics and browser/provider acceptance remain unverified."
+    },
+    {
+      "area": "Live chatbot attachments and templates",
+      "status": "Scoped media and supported approved-template nodes, caption substitutions, resource snapshots and revalidation, recipient phone fencing, current template consent and out-of-window template continuation implemented and locally checked. Full format/parameter support, remote media expiry, live acceptance and exact WATI runtime remain unverified or incomplete."
+    },
+    {
+      "area": "Account credential lifecycle",
+      "status": "Authenticated current-password changes, session revocation, old-login race fencing and offline server-operator recovery implemented and locally tested. Optional account-wide authenticator MFA with transactional replay protection, hashed single-use recovery codes and invitation enforcement is implemented and locally tested. Self-service email reset, device/deployed acceptance, organization MFA policy and complete production security review remain incomplete."
+    }
+  ]
+}

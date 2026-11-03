@@ -1,0 +1,48 @@
+'use strict';
+const teamOperationState=()=>S.data.team_operations||{teams:[],availability:[],workload:[],assignments:[]};
+function memberRoutingName(user){return user?S.data.members.find(m=>m.id===user)?.name||'Former teammate':'Unassigned'}
+function availabilityLabel(record){if(!record)return 'Not set';return record.status==='available'&&record.until>Date.now()/1000?'Available':record.status==='offline'?'Offline':'Away'}
+function teamOperationsPanel(){
+ const state=teamOperationState(),admin=S.data.context.role==='admin';
+ return `<section class="card"><div class="cardhead"><h2>Team operations</h2><div class="buttons">${btn('Set my availability','team-availability','','small')}${admin?btn('+ New team','team-new','','primary small'):''}</div></div><div class="cardbody"><p class="hint">Availability is your explicit routing preference, not browser online presence. Available status expires automatically. Teams organize routing; they do not restrict which conversations workspace members can see.</p><div class="tablewrap"><table><thead><tr><th>Teammate</th><th>Routing availability</th><th>Open / pending chats</th></tr></thead><tbody>${S.data.members.map(member=>{const available=state.availability.find(r=>r.user===member.id),label=availabilityLabel(available);return `<tr><td>${esc(member.name)}</td><td>${badge(label,label==='Available'?'':'gray')}${label==='Available'?`<div class="sub">Until ${esc(new Date(available.until*1000).toLocaleString())}</div>`:''}</td><td>${state.workload.find(r=>r.user===member.id)?.assigned||0}</td></tr>`}).join('')}</tbody></table></div><h3>Routing teams</h3>${state.teams.map(team=>`<div class="summaryrow"><div><strong>${esc(team.name)}</strong> ${badge(team.enabled?'Active':'Archived',team.enabled?'':'gray')}<div class="sub">${team.members.map(u=>esc(memberRoutingName(u))).join(', ')||'No members'}</div></div>${admin?btn('Edit team','team-edit',`data-id="${esc(team.id)}"`,'small'):''}</div>`).join('')||'<p class="hint">No teams yet. An administrator can organize current workspace members into routing teams.</p>'}</div></section>`;
+}
+function teamOperationsContact(contact){
+ const state=teamOperationState(),events=state.assignments.filter(e=>e.contact_id===contact.id).slice(0,10),teams=state.teams.filter(t=>t.enabled);
+ return `<div class="sectionlabel">TEAM ROUTING</div>${btn('Comment / mention teammate','team-comment',`data-id="${esc(contact.id)}"`,'small')}${!contact.assignee&&teams.length?btn('Route unassigned chat','team-route',`data-id="${esc(contact.id)}"`,'small'):contact.assignee?'<p class="hint">Clear the current assignment before team routing. Existing owners are preserved by automatic handoffs.</p>':'<p class="hint">An administrator can create an enabled routing team in Team management.</p>'}${!contact.assignee&&contact.last_team_routing?.strategy==='unassigned'?'<p class="hint">No teammate met the last routing policy. This chat remains unassigned; retry routing or assign it manually.</p>':''}<details><summary>Recent assignments</summary>${events.map(e=>`<p class="hint"><strong>${esc(memberRoutingName(e.from))} → ${esc(memberRoutingName(e.to))}</strong><br>${esc(new Date(e.created*1000).toLocaleString())} · ${esc(e.source.replaceAll('_',' '))}</p>`).join('')||'<p class="hint">No recent recorded assignment changes.</p>'}</details>`;
+}
+async function teamOperationAction(operation,el){
+ const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user;
+ const save=async(action,values)=>{if(!same())throw new Error('Workspace changed. Reopen this form.');const result=await act(action,values);if(!same())return;$('#modal').close();await refresh();return result};
+ if(operation==='team-mentions')return showModal('Your mention notifications',mentionNotificationsMarkup(),()=>$('#modal').close(),'Close');
+ if(operation==='team-mention-open'){
+  const result=await act('notification.read',{id:el.dataset.id});if(!same())return;$('#modal').close();S.chat=result.contact_id;S.route='inbox';location.hash='inbox';await refresh();return;
+ }
+ if(operation==='team-comment'){
+  const contact=S.data.contacts.find(c=>c.id===el.dataset.id);if(!contact)throw new Error('Conversation is unavailable.');
+  showModal('Private comment',`<p>Comment on <strong>${esc(contact.name)}</strong>. Only workspace teammates can read this note.</p>`+field('body','Comment','','textarea')+'<h3>Mention teammates</h3>'+S.data.members.filter(m=>m.id!==user).map(m=>`<label class="summaryrow"><span>${esc(m.name)}</span><input type="checkbox" data-comment-mention="${esc(m.id)}"></label>`).join('')+'<p class="hint">Selected teammates receive an in-app mention notification. This does not send a WhatsApp message, email or push notification.</p>',values=>save('message.send',{contact_id:contact.id,body:values.body,note:true,mentions:[...document.querySelectorAll('[data-comment-mention]:checked')].map(e=>e.dataset.commentMention)}),'Post private comment');$('#f-body').maxLength=4096;return;
+ }
+ if(operation==='team-new'||operation==='team-edit'){
+  if(S.data.context.role!=='admin')throw new Error('Administrator access required.');
+  const team=operation==='team-edit'?teamOperationState().teams.find(t=>t.id===el.dataset.id):{};if(!team)throw new Error('Team no longer available.');
+  showModal(team.id?'Edit routing team':'Create routing team',field('name','Team name',team.name||'')+field('enabled','Enable this team for routing',team.enabled??true,'checkbox')+'<h3>Team members</h3>'+S.data.members.map(member=>`<label class="summaryrow"><span>${esc(member.name)}</span><input type="checkbox" data-team-member="${esc(member.id)}" ${team.members?.includes(member.id)?'checked':''}></label>`).join('')+'<p class="hint">Archiving stops future team routing. It does not reassign existing conversations. Team edits affect future assignments; stale edits are rejected.</p>',values=>save('team.save',{...values,id:team.id,version:team.version,members:[...document.querySelectorAll('[data-team-member]:checked')].map(e=>e.dataset.teamMember)}),'Save team');$('#f-name').maxLength=100;return;
+ }
+ if(operation==='team-availability'){
+  const current=teamOperationState().availability.find(r=>r.user===user);
+  showModal('My routing availability',field('status','Availability',availabilityLabel(current)==='Available'?'available':current?.status==='offline'?'offline':'away','select',[['available','Available for new routed conversations'],['away','Away'],['offline','Offline']])+field('minutes','Available for minutes',240,'number')+'<p class="hint">Available status expires after 15–480 minutes. Away/offline lasts until you change it. Availability does not change existing assignments and is separate for each workspace.</p>',values=>save('availability.set',{status:values.status,minutes:Number(values.minutes)}),'Save my availability');$('#f-minutes').min=15;$('#f-minutes').max=480;return;
+ }
+ if(operation==='team-route'){
+  const contact=S.data.contacts.find(c=>c.id===el.dataset.id);if(!contact||contact.assignee)throw new Error('Choose an unassigned conversation.');
+  const teams=teamOperationState().teams.filter(t=>t.enabled);if(!teams.length)throw new Error('Create an enabled team first.');
+  showModal('Route unassigned conversation',`<p>${esc(contact.name)}</p>`+field('team_id','Routing team',teams[0].id,'select',teams.map(t=>[t.id,t.name]))+field('strategy','Distribution','least_busy','select',[['least_busy','Least-busy eligible teammate'],['round_robin','Round-robin eligible teammate']])+field('respect_availability','Require current Available status',true,'checkbox')+field('max_open','Maximum open/pending chats per teammate · 0 = no cap',0,'number')+'<p class="hint">This puts the conversation under human control. If nobody qualifies, it stays unassigned for triage. Routing does not send a message or automatically retry later.</p>',async values=>{const result=await save('chat.route',{...values,id:contact.id,max_open:Number(values.max_open)});if(result&&same())toast(result.assignee?'Conversation routed to '+memberRoutingName(result.assignee):'No eligible member. Chat remains unassigned for triage.');},'Route conversation');$('#f-max_open').min=0;$('#f-max_open').max=1000;
+ }
+}
+
+function commentAttribution(message){
+ if(message.direction!=='note')return '';const record=(S.data.internal_comments||[]).find(c=>c.message_id===message.id);if(!record)return '';
+ return `<div class="sub"><strong>${esc(memberRoutingName(record.author))}</strong>${record.mentions.length?' - '+record.mentions.map(u=>esc('@'+memberRoutingName(u))).join(', '):''}</div>`;
+}
+function mentionNotificationsMarkup(){
+ const notifications=S.data.mention_notifications||[];
+ return '<p class="hint">Your latest 50 mention notifications in this workspace. Open a conversation to mark its notification read. These are private in-app alerts.</p>'+notifications.map(n=>`<div class="summaryrow"><div><strong>${esc(memberRoutingName(n.author))}</strong> mentioned you in ${esc(S.data.contacts.find(c=>c.id===n.contact_id)?.name||'a conversation')}${n.read?'':badge('Unread','amber')}<div class="sub">${esc(new Date(n.created*1000).toLocaleString())}</div></div>${btn('Open conversation','team-mention-open',`data-id="${esc(n.id)}"`,'small')}</div>`).join('')+(notifications.length?'':'<p>No mention notifications yet.</p>');
+}
+function mentionNavigationButton(){const unread=(S.data.mention_notifications||[]).filter(n=>!n.read).length;return `<button class="navlink ghost" data-do="team-mentions" title="Your latest 50 mention notifications" aria-label="Mention notifications">${icon('replies')}<span>Mentions${unread?' ('+unread+')':''}</span></button>`}

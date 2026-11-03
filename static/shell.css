@@ -1,0 +1,21 @@
+.context-nav{position:absolute;top:73px;bottom:0;left:205px;width:230px;background:#fff;border-right:1px solid var(--border);padding:26px 18px;min-height:calc(100vh - 73px)}.context-nav h2{font-size:20px;font-weight:550;margin:0 0 28px 8px}.context-nav>.primary{width:100%;margin-bottom:26px;font-size:12px;padding:13px 9px}.context-link{display:flex;align-items:center;gap:11px;padding:13px 10px;margin:5px 0;color:#617367;font-size:12px;border-radius:6px}.context-link.selected{background:#eff2f0;color:#2f4336;font-weight:600}.context-bottom{margin-top:55px;padding:12px}.has-context>.content{margin-left:230px;padding:30px 26px}.main{position:relative}.main>.context-nav{left:0}.header-assistant{display:flex;align-items:center;gap:16px;border:1px solid #dfece4;border-radius:22px;font-size:12px;background:#f7fbf8;color:#38a471;font-weight:650;padding:9px 16px;max-width:530px}.ai-context-label{color:#a5b2a8;font-weight:400;border-left:1px solid #e0e9e2;padding-left:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar>.buttons .muted{display:none}.topbar>.buttons{margin-left:auto}.topbar{padding:0 24px;gap:12px}.topright{gap:9px}.sidebar nav button.navlink{width:100%;font-weight:400;text-align:left}.sidebar nav .navlink{padding:14px 13px}.sidebar-bottom{margin-top:auto}.notice{line-height:1.75}@media(max-width:1300px){.header-assistant{max-width:280px}.ai-context-label{display:none}.has-context>.content{margin-left:205px}.context-nav{width:205px;padding-left:13px;padding-right:13px}.topbar .workselect{max-width:150px}}@media(max-width:1100px){.main>.context-nav{left:0}.header-assistant{font-size:11px}.topbar .badge{display:none}.sidebar nav button.navlink span:not(.icon){display:none}.sidebar nav button.navlink{justify-content:center}.sidebar nav .navlink{padding:13px}}@media(max-width:900px){.main>.context-nav{position:relative;top:0;bottom:auto;width:100%;min-height:0;border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:8px;overflow:auto}.context-nav h2,.context-bottom,.context-nav>.navlabel{display:none}.context-link{white-space:nowrap;padding:9px;font-size:11px}.context-link .icon{display:none}.context-nav>.primary{width:auto;margin:0;font-size:10px;padding:10px}.has-context>.content{margin-left:0;padding:23px 17px}.workselect{max-width:150px}.topbar{padding:0 13px}.header-assistant{font-size:10px;padding:8px 10px}.topright .avatar{display:none}}@media(max-width:600px){.topbar .workselect{max-width:110px;font-size:11px}.topbar{gap:4px}.header-assistant{padding:8px}.topright button{padding:7px;font-size:10px}}
+
+/* Keep navigation identifiable and reachable at every viewport size. */
+.sidebar{padding-top:18px;padding-bottom:16px}
+.sidebar nav{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.sidebar nav .navlink{flex-shrink:0;padding:11px 12px;min-height:44px;line-height:1.35}
+.sidebar nav .nav-text{display:block;min-width:0;overflow-wrap:anywhere}
+.sidebar .navlink:focus-visible{outline:2px solid #17824e;outline-offset:-2px;background:#edf7f0;color:#145b39}
+.sidebar nav .navlink.active{box-shadow:inset 3px 0 #17824e}
+.sidebar-bottom{flex-shrink:0;padding-top:14px}
+@media(max-width:1100px){
+ .sidebar{padding-left:5px;padding-right:5px}
+ .sidebar nav .navlink,.sidebar nav button.navlink{flex-direction:column;gap:5px;padding:10px 3px;text-align:center;justify-content:center}
+ .sidebar nav .nav-text,.sidebar nav button.navlink span.nav-text{display:block;font-size:10px;font-weight:550;line-height:1.25;width:100%}
+ .sidebar nav .icon{flex-shrink:0}
+}
+
+@media(max-width:1100px){
+ .sidebar-bottom .navlink{flex-direction:column;gap:4px;padding:9px 2px;text-align:center;width:100%}
+ .sidebar-bottom .navlink span:not(.icon){display:block;font-size:10px;line-height:1.2}
+}

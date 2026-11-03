@@ -1,0 +1,121 @@
+# Current local verification — 2 November 2026
+
+This release is an independently implemented WATI-style platform. Exact WATI parity and 90% completion are not established. Browser-loaded WATI code was used only as inspection evidence under work/; it is excluded from the source deliverable.
+
+## Implemented in this increment
+
+Authenticated account password changes and offline operator recovery are now implemented, with transactional session revocation and protection against old-password login races. No actual owner password was changed. Optional authenticator MFA is implemented locally; self-service email reset and device/deployed acceptance remain pending. See [account security](docs/account-security.md).
+
+Deployment groundwork now includes explicit HTTPS origin/Host checks, Secure production cookies, protected fresh setup, coarse health/readiness endpoints, non-root container/proxy configuration and offline private-data backup/restore. Docker/TLS and full production readiness remain unverified. See [deployment gates](DEPLOYMENT.md) and [competitor adoption](docs/competitor-adoption.md).
+
+Chatbot media and template nodes now use the durable outbox, frozen resource/recipient snapshots, current consent and approval checks, attachment captions and correct template-versus-free-form window handling. See [rich chatbot delivery](docs/rich-chatbot-delivery.md). Live providers and exact WATI parity remain unverified.
+
+Live chatbot text delivery is now implemented behind separate server approval, with durable one-at-a-time checkpoints, accepted-prompt question handling, acceptance-based waits, cancellation fences and unknown-result human review. Drafts remain the default; live provider verification is pending. See [live chatbot delivery](docs/live-chatbot-delivery.md).
+
+2 November update: visual chatbots now set bounded custom attributes, remove tags and assign current workspace teammates, with execution-time access checks and atomic blocked-flow handling. See [chatbot contact actions](docs/chatbot-contact-actions.md). REA live browser access was unavailable; this update uses prior captures and local verification.
+
+
+
+Customer no-response rules now support persistent accepted-reply watches, configurable waits, cancellation on real reply or human control, and once-only local evaluations. Rule saves exclude historical messages. See [no-response rules](docs/no-response-rules.md).
+
+Background AI agents now have per-agent proposal permissions, information-only mode, generation-time validation, configuration-version fencing and permission/archive checks at approval. Pending proposals cannot bypass revoked actions. See [agent action permissions](docs/agent-action-permissions.md).
+
+AI customer handoffs now support administrator-selected team pools and transactional least-busy routing, preserve existing assignees and record the selected workload snapshot. Removed members are ignored; no surviving pool falls back to the assistant administrator. Reviewed AI assignment also cancels pending automation continuations. See [AI team routing](docs/ai-team-routing.md).
+
+Rules now also react to contact creation/updates, added or changed custom attributes and conversation open/solve transitions, with exact field filters and recent execution history. Duplicate/unchanged source events, recursive actions and human-held conversations are guarded. Customer no-response rules now use accepted-reply timers and once-only local evaluations. Exact WATI event semantics and call/social triggers remain pending.
+
+The inbox now records received attachments, retrieves them explicitly through a restricted verified Meta download adapter, stores private local files and reuses completed downloads. Non-text messages pause automation for human review. Supported formats/size and live verification boundaries are documented in [received media](docs/received-media.md).
+
+Analytics now queries recorded real traffic across the complete message database for inclusive UTC date ranges, with daily charts/tables and CSV export. Provider acceptance, recorded delivery/read and unknown outcomes remain distinct. Current workload is explicitly a present-time snapshot. See [message analytics](docs/message-analytics.md).
+
+Team access now supports transactional admin/agent role changes and workspace removal, last-administrator protection, pending-invitation revocation and open-assignment cleanup. The UI clears cached workspace data after access denial. Other workspace memberships and history remain. See [member access](docs/member-access.md).
+
+Team onboarding now has one-time expiring invitation links, hashed token storage, revocation, issuer-access checks and atomic acceptance. New recipients choose passwords; existing accounts must verify theirs. Links are shared manually and remain local until hosting is configured. See [team invitations](docs/team-invitations.md).
+
+Rules now support optional saved-segment conditions, priority and ordered local actions for tags, assignment, status, text attributes, unsent drafts, internal tasks and human handoff. Dependency and contact-capacity checks precede all writes; legacy keyword-draft behavior is retained. External actions and other event triggers remain pending. See [rule actions](docs/rule-actions.md).
+
+Chatbot graphs now support persistent wait nodes (1 second–7 days), restart-safe due times, transactional timer continuation, competing-worker protection and visible waiting state. STOP, takeover and saved flow settings cancel active sessions. Continuations create drafts; live graph sends and snapshot-preserving published versions remain pending. See [chatbot waits](docs/chatbot-waits.md).
+
+Website knowledge now supports explicit public HTTPS page ingestion, review before enablement, manual refresh, private-address blocking and atomic passage replacement. Failed refreshes retain the last successful snapshot. Sources use the same local lexical retrieval and customer-source approval controls. Full-site crawling, scheduled refresh and semantic search remain pending. See [website knowledge](docs/website-knowledge.md).
+
+AI handoffs now preserve valid assignments, route to a configured workspace teammate or administrator fallback, optionally create one internal follow-up task per job and record the handoff reason in the inbox. Resume resolves the handoff without replaying stopped work. Online presence, capacity limits and SLA routing remain pending; optional team-pool workload balancing is implemented.
+
+Customer AI can now use up to five explicitly verified linked Shopify order snapshots, with separate administrator opt-in, current-shop and 24-hour freshness checks, projected order facts and stale-result suppression. Commerce provides ownership link/unlink controls. These are synced snapshots, not live customer lookups; order mutations remain unimplemented.
+
+Customer support AI now handles unmatched real inbound messages with approved knowledge, durable jobs, daily request limits, unsent draft mode, human handoff and separately gated automatic WhatsApp replies. Stale context, STOP, staff takeover and uncertain outcomes are guarded. Settings are available before keys; live inference, delivery and model quality remain unverified. See [customer assistant](docs/customer-assistant.md).
+
+External agents now have the REA-observed table layout, configuration, signed message-event outbox, delivery history, explicit retries and scoped reply-draft callbacks. Dispatch requires a server gate, public HTTPS allowlist and secret; it remains disabled by default. The independent payload/callback contract is documented in docs/external-agents.md; WATI private protocol equivalence remains unverified.
+
+Contact segments now support saved typed all/any conditions, visual editing, local audience preview and dynamic campaign targeting. Consent remains required. Deleting a segment blocks launch rather than widening the audience. Conversation-filter sharing/unread controls and complete WATI operator/dialog parity remain pending.
+
+
+Document knowledge now supports local TXT/MD/CSV/DOCX extraction, up to 20 files, bounded lexical retrieval and validated OpenAI passage links. Sources can be disabled or deleted. PDF extraction, full-site crawling, semantic/vector retrieval and equivalent WATI training controls remain pending.
+
+Sequences now have up to eight ordered template steps, persistent relative waits, explicit reviewed launch, pause/resume/cancel, consent rechecks, stable launch identifiers and failure propagation. Drafting is available before credentials; real launch requires complete Meta configuration, live sending and approved templates. Existing runs retain snapshots when definitions are edited. Delivery/read remains provider-webhook evidence, separate from acceptance.
+
+- Private persisted AI jobs with per-chat ordering and an append queue of five. OpenAI background response IDs survive restarts. An uncertain create is never automatically resubmitted. Safe retrieval failures retain the Stop capability.
+- Before-submission cancellation, provider-confirmed cancellation and locally discarded results are distinct states. Ollama generation cannot be confirmed stopped. Unknown provider outcomes remain explicit.
+- Timed execution phases reflect actual local/provider events, rather than invented reasoning. Completed answers have Helpful/Not helpful feedback and message references validated against the supplied tenant context. Delayed source requests cannot reveal content after logout.
+- Mode menu labels Create an agent and Get insights were recovered through passive REA inspection of the currently loaded frontend. The prompt limit is 8,000 characters. The model picker accepts only a server-approved list. Natural-language agent building now generates structured proposals, supports follow-up edits and allows an administrator to review/edit/save one paused review-first agent per proposal. Scheduling is explicitly enabled afterward. OpenAI and local Ollama use real configured adapters; tests use transport doubles. Exact WATI creation and authorization behavior remains unverified.
+- Meta attachment upload, workspace-private file storage/download, recipient/caption review and one-attempt outbound sending. A valid real inbound 24-hour window and live configuration are required. Supported subset: JPEG, PNG, MP3, OGG Opus, MP4 and PDF, maximum 5 MiB. Inbound attachment retrieval, calls and media templates remain pending.
+- Shopify read-only products/orders, actual pagination, tenant-specific configuration, signed deduplicated webhook receipts. Receipts do not directly mutate catalog data; explicit authenticated read sync is required. Order creation, checkout, refunds, payments and automatic synchronization are not implemented.
+
+## Automated evidence
+
+The final full Python suite passed 404 tests in 164.484 seconds. Compilation and all JavaScript syntax checks passed. Node renderer checks cover CRM, AI agent entry, scheduling controls, private-chat races, source privacy the commerce page, document controls and the drip screen. HTTP tests verify authentication, cross-origin rejection, private media access, tenant isolation and actual integration asset serving and authenticated document upload/source retrieval. Twenty-two customer assistant domain/provider tests plus one HTTP workflow test cover grounded context, approved sources, daily limits, handoff, cancellation, stale results, expired windows, duplicate events and uncertain outcomes. The ten drip tests cover timing after delayed submission, pause/resume/cancel, consent, nonce replay, template/configuration gates and interrupted/uncertain sends.
+
+Provider transports use local test doubles. These results establish local behavior and request/response contracts, not real account permissions, message delivery or model quality. No paid AI calls, Meta sends/uploads, Shopify reads, payments, WATI messages or deployments occurred during verification.
+
+## Connection and production gaps
+
+Owner setup is complete in the current local database. New installations still require their own owner setup. Enter credentials only in the server's local .env file after setup; never in chat. Restart after editing settings. Keep AI enabled/paid flags and Meta LIVE false until usage is approved.
+
+OpenAI background requests use store:false and background:true. OpenAI temporarily retains background response data for polling (approximately ten minutes); store:false is not a zero-retention guarantee. See the [official background guide](https://developers.openai.com/api/docs/guides/background).
+
+The current release has no completed live OpenAI/Meta/Shopify acceptance, current visual/device acceptance, public hosting, billing, self-service client onboarding, external identity recovery, production backup operations or independent final review of the latest service wiring. The workspace credit limit prevented further independent agent review; no credits were purchased or retries attempted.
+
+Do not sell this build as production-ready or a complete WATI clone. The acceptance ledger lists the remaining parity boundaries.
+
+## Local release probe
+
+The updated server is running on port 8788 after the customer assistant increment. /api/bootstrap, / and /customer-assistant.js returned HTTP 200. Bootstrap, the app shell, assistant script and integration script returned HTTP 200. The latest bootstrap reports initialized:true, confirming owner setup is now complete. The configuration-only check reports OpenAI configured:false, enabled:false and paid_allowed:false; no secrets were displayed. This HTTP probe is not visual browser acceptance. The existing .env and database were preserved.
+
+API keys and live verification remain deferred by the user. Document indexing is local and free of provider calls. Lexical retrieval is not semantic search, and OpenAI source links validate supplied passage identifiers rather than independently proving every claim in an answer. Ollama answers can cite titles in text; structured clickable document citations currently use the OpenAI chat contract. Drip delays start after the preceding accepted submission; acceptance does not establish delivery.
+
+Latest release probe: bootstrap, knowledge-documents.js, drip-sequences.js and assistant.js returned HTTP 200 after restart. Source packaging excludes .env, databases, uploaded data, caches and WATI capture artifacts. Keys remain deferred at the user's request.
+
+REA refresh: the logged-in Astra screen was passively inspected (`ev_70ef7b687272cc41f330378cb9370f14503a5eba9b42f0fd49d51843c45d1eaa`). Scenario navigation returned execution_failure and left the selected page unchanged. Existing captures supplied filter references; no repeated repair, WATI mutations or customer-data export were performed. The external-agent and segment implementation is independent; full rendered/form/protocol parity remains unverified. Twelve external-agent tests and a signed local HTTP callback check establish local behavior, not live service delivery.
+
+No-response verification adds eleven timing, restart, watermark, competing-worker, handoff, inbound-source and delivery-upgrade tests. Existing mocked text/template/media/customer-AI acceptance tests verify anchor recording. UI renderer checks include the new trigger summary and evaluation panel. These checks do not establish real delivery or browser visual parity.
+
+AI routing increment: eight focused pool tests cover workload counts, tie ordering, workspace boundaries, removed members, fixed-mode compatibility and concurrent handoffs. The customer-worker path and reviewed-assignment continuation cancellation have dedicated regressions.
+
+Agent action increment: nine focused tests cover filtered model contracts, disabled-action rejection, information-only mode, configuration validation/preservation, pending-proposal revocation, archive checks, late-result fencing and legacy defaults. UI renderer checks cover pool controls, routing-history escaping and permission selection.
+
+Latest AI release: all 328 Python tests passed in 142.135 seconds. Compilation, JavaScript syntax and Node renderer checks passed. The updated server restarted on 8788; bootstrap, root, assistant and customer-assistant assets returned HTTP 200. Existing owner setup remains initialized. Browser visual comparison and live providers remain unverified.
+
+2 November verification: 336 Python tests passed in 155.354 seconds. Eight new graph tests cover ordered local changes, validation, foreign/removed members, timer cancellation, contact limits and expanded values. Node renderer checks and JavaScript syntax/Python compilation passed. Server started on 8788 and root/bootstrap/graph assets returned HTTP 200. Current local AI enabled and Meta live gates are false across workspaces. No provider call was made. REA live access remained unavailable; static saved-artifact analysis returned partial Evidence documented in chatbot-contact-actions.md.
+
+Live chatbot release: all 352 Python tests passed in 136.564 seconds. Sixteen new outbox tests cover accepted text ordering, question prompts, wait anchoring, simulation isolation, runtime and window/owner gates, edits/takeover/new inbound cancellation, competing workers, interrupted jobs/late results and missing provider identifiers. Node renderer, JavaScript syntax and Python compilation passed. Server restarted on 8788; root/bootstrap/graph assets returned HTTP 200. Owner remains initialized; AI, Meta live and chatbot send gates remain false. All provider calls used test doubles; live WATI/Meta behavior is unverified.
+
+Rich chatbot release: final full suite passed 404 tests in 164.484 seconds. Thirteen focused resource/transport tests cover media dispatch, template waits beyond the free-form window, current consent/approval, missing/foreign resources, changed resource/recipient cancellation, simulations, caption bounds/audio constraints, template snapshots and unsupported format rejection. A timing-only long-wait test assumption was corrected to use persisted due time; the subsequent full run passed. Node renderer, JavaScript syntax and Python compilation passed. Server restarted; root/bootstrap/graph assets returned HTTP 200. Real Meta/AI/chatbot live gates remain false. Source package excludes private data and saved WATI artifacts.
+
+Competitor/deployment increment: 394 Python tests passed in 154.625 seconds. Node renderer, JavaScript syntax and Python compilation passed. New tests cover production Host/Origin/cookies/setup tokens and coarse health, offline backup/restore/checksums, thread-safe authentication budgets, pipeline configuration/deadlines/history/permissions, persisted concurrent round-robin handoffs and actual document-reference metrics. Local server restarted; root/bootstrap/health/readiness and updated assets returned HTTP 200. Docker CLI is unavailable: image build, Compose startup and external TLS remain unverified. No deployment, paid provider call, real send or real customer backup occurred. Full product scope remains incomplete.
+
+Account-security release: 404 Python tests passed in 164.484 seconds. Nine new domain tests plus an HTTP workflow cover correct/incorrect passwords, validation, all-session revocation, concurrent changes, operator recovery, other-account isolation and an old-login/reset race. Node renderer, all JavaScript syntax checks and Python compilation passed. Server restarted; root/bootstrap/health/readiness/account/app assets returned HTTP 200. Actual owner credentials and provider flags were preserved; tests used temporary accounts only. See PRODUCTION-AUDIT.md for requirements still incomplete or unverified.
+
+
+Account-MFA release, 2 November: full Python suite passed **418 tests in 197.249 seconds**. Thirteen new MFA domain tests and one HTTP lifecycle test cover RFC 6238 SHA-1 test vectors, enrollment proof/expiry, concurrent replay prevention, hashed single-use recovery codes, recovery rotation, session revocation, stale-session security changes, existing-account invitations and password-recovery MFA preservation. Node renderer/privacy checks now cover login/invitation code fields, delayed security responses after logout and secret-dialog clearing. All JavaScript syntax checks and Python compilation passed. The local server was restarted; root/health/readiness/account/app/invitation assets returned HTTP 200, and unauthenticated MFA status returned 401. Actual owner MFA was not enabled.
+
+REA browser access was restored and verified through target discovery and a passive accessibility/DOM inspection of the logged-in WATI history page. Evidence IDs: ev_cb547b3c21f75f1377175b38d8175debfd4e60584a282c921db73bcc7446fde4 and ev_0a59a11b287ff98042c97e37e5b0b3fbca7e601183bb8c040641f495878f7708. The capture confirms visible main-navigation labels and the Wati AI entry; it does not verify billing, calls, delivery, AI runtime or exact parity. Customer content was not exported into the source deliverable.
+
+
+Chatbot publication release, 2 November: latest full Python suite passed **428 tests in 194.332 seconds**. Nine new publication domain tests plus one HTTP workflow cover disabled first drafts, draft/active isolation, optimistic editor conflicts, immutable version history, legacy publication compatibility, restore-to-draft, tenant/role boundaries, stale administrator rejection, assignment revalidation and wait preservation/cancellation. All 55 flow-focused tests and all 21 HTTP tests passed. Node checks verify draft graph rendering, publish/restore controls and preservation of the editor base version while unsaved changes exist. All static JavaScript syntax checks and Python compilation passed. The local server was restarted with the additive version table; real owner credentials, MFA enrollment and active flow configurations were not changed. Browser/device and live provider acceptance remain pending.
+
+
+Team/collaboration release, 2 November: latest full Python suite passed **450 tests in 217.951 seconds**. Twelve team-operation tests, seven private-comment tests and three new HTTP workflows cover managed-team versions/isolation/cleanup, personal availability/expiry, capacity limits, concurrent routing, assignment history, stale-admin rejection, authored private notes, validated/deduplicated mentions, recipient-only read notifications, malformed actions and strict note/live flags. All 24 HTTP tests passed. Node renderer/privacy checks cover team role controls, escaped team names, availability/routing/history controls, comment attribution and notification rendering. All JavaScript syntax checks and Python compilation passed. Tests used temporary accounts and no paid providers. Real browser/device and live-provider acceptance remain pending.
+
+REA discovery and passive inspection of the open WATI dashboard succeeded. The current reference exposed Inbox Analytics, Operator Performance, Team Inbox and Ask Wati AI navigation. Evidence: ev_3f9ddaf1c27e863a3c87e9baa831ac4547a66eed070da65b59df74a11e27f9ad and ev_2084fec7aa7dd10569555b1550fff590d91c90cf6323452cac05317a3a113799. These observations do not establish underlying routing, billing, calling or production parity. No WATI messages, account changes or paid requests were made.
+
+
+VYBE Connect preview release, 3 November 2026: full Python suite passed **478 tests in 214.314 seconds**. This includes the completed email-recovery/TLS SMTP tests and the new authenticated feedback lifecycle and HTTP asset checks. Node renderer/privacy checks, JavaScript syntax checks, Python compilation and loopback root/theme/widget/health/readiness probes passed. The preview is running on port 8788 with existing local data preserved. The current REA Astra screenshot confirmed card-based agents, the neutral icon-rail layout, feedback prompt and launcher; the independent UI was revised accordingly. Work settings blocked local browser automation, so rendered local desktop/mobile acceptance and pixel equality are unverified. Real SMTP/Meta/OpenAI/Shopify usage, deployment and full WATI parity are not verified. No real account passwords or provider flags were changed.

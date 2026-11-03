@@ -1,0 +1,7 @@
+# Email password recovery
+
+Use a durable, explicitly gated SMTP recovery worker. Request and completion endpoints require exact Origin and bounded auth attempts. Public requests return the same generic result for unknown, throttled or unavailable accounts and apply a small response-time floor; SMTP never runs in that request. Persist at most three requests per account per fifteen minutes, at least one minute apart. Do not reveal or log reset tokens.
+
+Generate random request IDs and HMAC-SHA256 authenticators using a dedicated server secret and credential fingerprint. Store only token hashes; the worker derives the token when needed. Links use the configured HTTPS public origin, never the incoming Host. A password change, key rotation, expiry or successful consumption invalidates a link. Completion is transactional, revokes all sessions, retains MFA and grants no new memberships or automatic login. Never automatically retry uncertain SMTP submissions.
+
+Add focused recovery/mailer modules, additive storage, account-service methods, HTTP endpoints and worker, login recovery UI and fragment-based reset form. Use synthetic SMTP transports and temporary accounts only. Verify token leakage, generic responses, expiry, replay/concurrent completion, password-change fencing, MFA retention, TLS configuration, Origin/rate gates and UI privacy. Update examples/docs/audit/archive. Real mailbox delivery and deployed HTTPS acceptance remain separate.
