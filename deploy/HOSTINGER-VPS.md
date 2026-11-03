@@ -17,9 +17,9 @@ No owner account or password was created on your behalf. The initial database is
 
 `hostinger-vps.compose.yaml` is the deployed manifest with an environment-variable placeholder for the private setup token. Do not print the expanded Compose configuration or commit its private environment. The initializer source is `hostinger_source_init.py`; its base64 form is embedded in the manifest to avoid a remote Docker build dependency. If changing the initializer, regenerate that command from the reviewed file.
 
-Application commit: `363df7d7695d7a6a2c5064b3eecf8964be0c9f60`.
+Application commit: `7f55f87ab1ec94073466edf870240108cd5b2cb1`.
 
-Source ZIP SHA-256: `013d38cdf3fea692e1cb086ffa328c1c84c75cd345b32845dfb0f4f3c4c5c9c6`.
+Source ZIP SHA-256: `93af106abd0b69d1fe08c46d2f45bb9f7c456485fed18c254609ff4a3bb76600`.
 
 The one-shot initializer validates the GitHub archive digest and archive paths before installing the source into `app_source`. A matching cached release avoids a download on later starts. The app mounts this source read-only and runs as UID/GID 10001. Its private SQLite/uploads/knowledge data is in `app_data`, under `/var/lib/teamwave/active`. Never remove these volumes during an update. The Python base image currently follows `python:3.13-slim`; source pinning does not pin that base image digest.
 
@@ -40,3 +40,5 @@ This is deployment and HTTP evidence. Browser/device acceptance is pending becau
 The 3 November agent-directory update was deployed from the commit above after 483 Python tests, Node renderer/privacy and directory checks, and authenticated local demo browser checks. The local demo database and its example configurations are not part of the hosted installation.
 
 The token-free public review increment is enabled using `TW_PUBLIC_REVIEW=true`. The homepage opens an isolated, read-only sample workspace; owner setup/sign-in is at `/owner`. Review writes and provider execution are blocked. Set the flag false after interface acceptance. See `docs/public-live-review.md` for isolation and validation details.
+
+The owned-commerce release adds persisted local products, inventory and customer orders, with transactional state changes and audit records. It was validated with 494 Python tests and a disposable browser lifecycle. No payment, refund, shipping or external commerce write is enabled. Public review remains read-only with labelled samples.
