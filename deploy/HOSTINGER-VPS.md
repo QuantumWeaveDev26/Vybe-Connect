@@ -17,9 +17,9 @@ No owner account or password was created on your behalf. The initial database is
 
 `hostinger-vps.compose.yaml` is the deployed manifest with an environment-variable placeholder for the private setup token. Do not print the expanded Compose configuration or commit its private environment. The initializer source is `hostinger_source_init.py`; its base64 form is embedded in the manifest to avoid a remote Docker build dependency. If changing the initializer, regenerate that command from the reviewed file.
 
-Application commit: `d3e860d70e1cf2cc3b8a002a31964d7d1ce0e873`.
+Application commit: `77c7e166b6144898df10ed7f02e3863b12ba2e0c`.
 
-Source ZIP SHA-256: `ccdd7729af26a4e21f49338d4b264929156312d0acabac2f7305aa2c0215a12f`.
+Source ZIP SHA-256: `2600e178c8d469e9917f6eddc782c73d97250fce64374176ca0876a0a2cfa7ae`.
 
 The one-shot initializer validates the GitHub archive digest and archive paths before installing the source into `app_source`. A matching cached release avoids a download on later starts. The app mounts this source read-only and runs as UID/GID 10001. Its private SQLite/uploads/knowledge data is in `app_data`, under `/var/lib/teamwave/active`. Never remove these volumes during an update. The Python base image currently follows `python:3.13-slim`; source pinning does not pin that base image digest.
 
@@ -36,3 +36,5 @@ Git pushes do not auto-deploy this project. For an application update, first tes
 - AI, SMTP recovery and sandbox gates are disabled; no live provider transaction was performed.
 
 This is deployment and HTTP evidence. Browser/device acceptance is pending because browser use was disabled by the local Work setting. Full WATI parity, calling/commerce/onboarding/billing completion, deployed owner/MFA lifecycle, live Meta/OpenAI/webhook acceptance, backup/restore drills, load tests, monitoring and operational sign-off remain outstanding. Do not onboard production clients based solely on these health checks.
+
+The 3 November agent-directory update was deployed from the commit above after 483 Python tests, Node renderer/privacy and directory checks, and authenticated local demo browser checks. The local demo database and its example configurations are not part of the hosted installation.
