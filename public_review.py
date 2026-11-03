@@ -26,6 +26,8 @@ class PublicReview:
         self.store.action(self.context, 'knowledge.save', {'title': 'Example business policy', 'body': 'This is sample knowledge for reviewing the interface. Replace it with your approved business information after owner setup.', 'enabled': True})
         contact = self.store.action(self.context, 'contact.save', {'name': 'Example customer - review only', 'phone': '+1 202 555 0146', 'tags': ['Review sample'], 'optin': False})
         self.store.action(self.context, 'message.send', {'contact_id': contact['id'], 'body': 'Sample internal note for interface review. No message was sent to a customer.', 'note': True})
+        product = self.store.action(self.context, 'commerce.product.save', {'name': 'Example welcome kit', 'sku': 'REVIEW-KIT', 'price': '499.00', 'currency': 'INR', 'stock': 10, 'enabled': True})
+        self.store.action(self.context, 'commerce.order.save', {'contact_id': contact['id'], 'items': [{'product_id': product['id'], 'quantity': 1}], 'note': 'Example draft for read-only interface review. No sale or payment occurred.'})
         self.store.action(self.context, 'external-agent.save', {'name': 'Example custom agent - disconnected', 'url': 'https://example.com/review-webhook', 'events': ['message.received'], 'enabled': False})
 
     def state(self):

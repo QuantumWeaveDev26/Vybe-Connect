@@ -32,6 +32,7 @@ from media_service import MediaError,upload_for_workspace,read_asset,send_stored
 from received_media import record as record_received_media,state as received_media_state,download as download_received_media
 from whatsapp_media import media_status
 from commerce_service import CommerceError,sync_shopify,commerce_state,ingest_shopify_webhook
+import owned_commerce
 from customer_orders import order_action
 from website_knowledge import website_action
 from chat_jobs import ChatError, chat_action, public_job, process_chat_job_once as run_chat_job
@@ -275,6 +276,7 @@ class Store:
             data['media_sends']=self._list(db,tenant,'mediasend')
             data['media_status']=media_status(tenant)
             data['commerce']=commerce_state(self,db,tenant)
+            data['owned_commerce']=owned_commerce.state(self,db,tenant)
             data['queue']=[dict(x) for x in db.execute('SELECT id,campaign,contact,status,due,error,external_id FROM outbound WHERE tenant=? ORDER BY rowid DESC LIMIT 500',(tenant,))]
         return dict(data,context={k:v for k,v in ctx.items() if not k.startswith('_')},meta=meta_status(tenant),ai=ai_status(tenant),sandbox=os.environ.get('TW_SANDBOX','false').lower()=='true')
 
@@ -335,6 +337,9 @@ class Store:
             except MediaError as e:raise Problem(str(e),e.code)
         if action.startswith('shopify.order.'):
             try:return order_action(self,ctx,action,d)
+            except CommerceError as e:raise Problem(str(e),e.code)
+        if action.startswith('commerce.'):
+            try:return owned_commerce.action(self,ctx,action,d)
             except CommerceError as e:raise Problem(str(e),e.code)
         if action=='shopify.sync':
             try:return sync_shopify(self,ctx,d.get('kind'),d.get('cursor'))

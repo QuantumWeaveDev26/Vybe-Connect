@@ -5,7 +5,7 @@ const node={addEventListener(){},remove(){},innerHTML:'',open:false};
 const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Set,Array,Object,Promise,URL,URLSearchParams,
   document:{querySelector(){return node},querySelectorAll(){return []},addEventListener(){}},window:{addEventListener(){}},location:{hash:''},
   localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
-for(const name of ['received-media.js','analytics-report.js','team-operations.js','team-invitations.js','rule-actions.js','graph.js','knowledge-documents.js','assistant.js','shell.js','template-editor.js','business.js','integrations.js','drip-sequences.js','external-agents.js','contact-segments.js','customer-assistant.js','account-recovery.js','account.js','help-widget.js','agent-directory.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
+for(const name of ['received-media.js','analytics-report.js','team-operations.js','team-invitations.js','rule-actions.js','graph.js','knowledge-documents.js','assistant.js','shell.js','template-editor.js','business.js','owned-commerce.js','integrations.js','drip-sequences.js','external-agents.js','contact-segments.js','customer-assistant.js','account-recovery.js','account.js','help-widget.js','agent-directory.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
 context.actualRefresh=vm.runInContext('refresh',context);
 context.fixture={context:{tenant_id:'business-one',user:{id:'owner',name:'Owner'},workspace:{name:'Acme'},role:'admin',workspaces:[]},meta:{live:false},ai:{enabled:false,configured:false},sandbox:false,
   contacts:[{id:'contact',name:'<img src=x onerror=alert(1)>',phone:'919000000001',tags:[],attributes:{},source:'manual',status:'pending',assignee:'owner',automation_hold:true}],
@@ -91,7 +91,7 @@ async function securityLogoutCheck(){
 }
 chatRaceCheck().then(sourceLogoutCheck).then(agentBuilderCheck).then(documentLogoutCheck).then(websiteLogoutCheck).then(analyticsScopeCheck).then(forbiddenWorkspaceCheck).then(securityLogoutCheck).then(()=>console.log('UI renderer, agent builder, chat race and source privacy checks passed. Visual QA remains pending.')).catch(e=>{console.error(e);process.exitCode=1});
 
-vm.runInContext('S.route="commerce"',context);html=vm.runInContext('page()',context);assert.match(html,/No synced products/);assert.match(html,/Sync first page/);assert.doesNotMatch(html,/ENTER_LOCALLY.*value=/);
+vm.runInContext('S.route="commerce";S.commerceTab="shopify"',context);html=vm.runInContext('page()',context);assert.match(html,/No synced products/);assert.match(html,/Sync first page/);assert.doesNotMatch(html,/ENTER_LOCALLY.*value=/);
 context.orderFixture={orders:[{id:'order',name:'<script>order</script>',synced:1}],order_links:[{id:'link',order_id:'order',contact_id:'contact'}]};
 html=vm.runInContext('customerOrderLinks(orderFixture,true)',context);assert.match(html,/Unlink customer/);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>order/);
 html=vm.runInContext('customerOrderLinks(orderFixture,false)',context);assert.doesNotMatch(html,/integration-order-unlink/);
@@ -212,3 +212,7 @@ vm.runInContext('HELP.draft="private feedback";HELP.rating=5;clearHelpWidget()',
 
 html=vm.runInContext('navigationToggleMarkup(false)',context);assert.match(html,/aria-label="Expand navigation"/);assert.match(html,/aria-expanded="false"/);
 html=vm.runInContext('navigationToggleMarkup(true)',context);assert.match(html,/aria-label="Collapse navigation"/);assert.match(html,/aria-expanded="true"/);
+
+vm.runInContext('S.commerceTab="catalog";S.data.context.role="admin";S.data.owned_commerce={products:[{id:"p",name:"<script>Product</script>",sku:"SKU",unit_price_minor:1250,currency:"INR",stock:3,enabled:true}],orders:[],events:[]}',context);
+html=vm.runInContext('commercePage()',context);assert.match(html,/Edit product/);assert.match(html,/3 in stock/);assert.doesNotMatch(html,/<script>/);
+vm.runInContext('S.data.context.role="agent"',context);html=vm.runInContext('commercePage()',context);assert.doesNotMatch(html,/commerce-product-edit|commerce-product-new/);
