@@ -1,6 +1,6 @@
 # Deployment package and release gates
 
-This checkout now has an explicit HTTPS reverse-proxy boundary, Secure production cookies, protected first-owner setup, health/readiness routes, a non-root single-instance container definition, persistent private storage and offline backup/restore tools. **The complete product is not yet verified ready for production clients.** Docker is unavailable on the development computer, so the image, Compose startup and public TLS have not been exercised. The requested respond.io/SleekFlow/Interakt additions and full WATI parity remain tracked in docs/competitor-adoption.md.
+This checkout has an explicit HTTPS reverse-proxy boundary, Secure production cookies, protected first-owner setup, health/readiness routes, a non-root single-instance container definition, persistent private storage and offline backup/restore tools. **The complete product is not yet verified ready for production clients.** The current build was deployed on the existing Hostinger VPS on 3 November 2026; container startup, public trusted HTTPS and database readiness pass. See [the live deployment runbook](deploy/HOSTINGER-VPS.md). The requested respond.io/SleekFlow/Interakt additions and full WATI parity remain tracked in docs/competitor-adoption.md.
 
 ## Intended topology
 
@@ -51,4 +51,4 @@ docker compose --env-file /private/teamwave.env up -d app
 
 For restore, stop the app and restore into a new directory such as `/var/lib/teamwave/restored-2026-11-02`. Do not overwrite the active directory. Change `TW_DATA_DIR` in the private environment file to the restored directory and restart the app, then verify records and attachments before accepting traffic. Retain the old directory for recovery. Secret environment variables and Caddy certificate state require separate protected backups; the application-data tool does not back them up.
 
-No deployment or public release has been performed from this chat.
+The Hostinger installation uses the existing Traefik proxy rather than the generic Caddy topology above. Its source is pinned to the application commit listed in the deployment runbook; pushing newer commits does not automatically update that installation.

@@ -12,7 +12,7 @@
 | Chatbot publication | Draft/publish/history/restore and stale-editor tests, plus existing wait/outbox compatibility tests | Implemented locally with immutable configuration snapshots; real browser/Meta acceptance and full graph vocabulary remain pending. |
 | Team operations and collaboration | Temporary-account team/availability/routing/concurrency and comment/mention tests; scoped HTTP workflows and renderer checks | Teams, expiring availability, workload caps, explicit routing, assignment history and private note mentions implemented locally. Browser presence, business hours, collaborator visibility and automatic backlog redistribution remain incomplete. |
 | Tenant/client service platform | Workspace credentials, memberships, invitations, teams and scoped domain operations | Public client onboarding, billing, granular team visibility and complete multi-client operations remain incomplete. |
-| Deployable runtime | Dockerfile, compose.yaml, Caddyfile, deployment.py and DEPLOYMENT.md | Source package exists. Docker CLI is unavailable here; image build, non-root volume behavior, Compose and actual public TLS have not been verified. |
+| Deployable runtime | Dockerfile, compose.yaml, Caddyfile, deployment.py, deploy/HOSTINGER-VPS.md | Hostinger VPS installation verified 3 November: official Python container, UID 10001, read-only source, persistent data, successful source initialization, healthy app, trusted public TLS and database readiness. Generic local Dockerfile build remains unverified. |
 | Persistent data and recovery | Private-volume configuration and temporary-data backup/restore/checksum tests | Local backup/restore passes. Real deployment restore, offsite/encrypted backups and operational recovery ownership still require acceptance. |
 | Navigation clarity | All 13 main destinations have visible compact labels, distinct key icons, destination descriptions, accessible names, current-section markers, focus styling and a scrollable sidebar; Node renderer regression checks pass | Implemented locally. Real browser/device visual acceptance remains pending. |
 | Browser/device behavior | Node renderer tests, syntax checks and loopback HTTP probes | Actual browser/device, responsive layout, media playback and WATI visual comparison remain unverified. |
@@ -23,9 +23,9 @@
 
 The remaining source work can continue with live gates disabled: organization-wide MFA policy and self-service recovery flows, stronger client/team access policies, additional workflow/tool types, commerce/integration/calling contracts, fuller reporting and complete browser journeys. Live provider acceptance must be scheduled after credentials are entered on the deployed server. Do not place them in chat, client JavaScript, source archives or image layers.
 
-The current environment's missing Docker/public-host verification is a deployment evidence gap. It does not establish that every remaining blocker is only an environment variable, nor that the application can already provide every WATI service.
+Public-host verification now covers startup, TLS, health/readiness and unauthenticated access controls. Owner lifecycle, real browser/device, provider, restore and load acceptance remain deployment evidence gaps. Credentials alone do not complete the remaining WATI product features.
 
-Source delivery now excludes private .env variants, runtime backups and SQLite sidecars from the source ZIP; the Git ignore rules also protect those files while preserving the two configuration examples. A real Git push has not been performed.
+Source delivery excludes private .env variants, runtime backups and SQLite sidecars from the source ZIP; the Git ignore rules also protect those files while preserving the two configuration examples. Application commit d3e860d70e1cf2cc3b8a002a31964d7d1ce0e873 was pushed to QuantumWeaveDev26/Vybe-Connect and is the pinned live release.
 
 No real owner password, provider settings, messages or customer data were changed by the audit. Development checks use temporary accounts and controlled transports. Existing .env and application data remain outside the source ZIP.
 
