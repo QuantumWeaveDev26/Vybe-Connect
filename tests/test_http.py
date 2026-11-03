@@ -31,6 +31,19 @@ class HttpTests(unittest.TestCase):
         c.request(method,path,json.dumps(data).encode() if data is not None else None,h)
         r=c.getresponse(); body=r.read(); result=(r.status,dict(r.getheaders()),body);c.close();return result
 
+    def test_all_index_scripts_and_styles_are_served(self):
+        import re
+        status, _, body = self.request('GET', '/')
+        self.assertEqual(status, 200)
+        assets = re.findall(r'(?:src|href)="(/[^" ]+\.(?:js|css))"', body.decode())
+        self.assertIn('/agent-directory.js', assets)
+        for asset in assets:
+            with self.subTest(asset=asset):
+                code, headers, content = self.request('GET', asset)
+                self.assertEqual(code, 200)
+                self.assertTrue(content)
+                self.assertIn('javascript' if asset.endswith('.js') else 'text/css', headers['Content-Type'])
+
     def test_cross_origin_setup_rejected(self):
         status,_,_=self.request('POST','/api/setup',{}, {'Origin':'https://evil.example'})
         self.assertEqual(status,403)

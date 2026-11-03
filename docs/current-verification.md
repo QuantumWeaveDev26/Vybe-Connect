@@ -1,4 +1,8 @@
-# Current local verification — 2 November 2026
+# Current verification — 3 November 2026
+
+Latest increment: agent search/status filtering, safe reviewed duplication, scoped run history, hosted guidance fixes and a static-asset availability regression. All 483 Python tests passed in 223.101 seconds. Node renderer/privacy and agent-directory tests passed. Real browser checks in an isolated local demo verified account setup, creation and duplication of paused agents, directory filtering and agent-specific empty activity. Sample configurations are labelled; no model inference, external dispatch or customer messaging was simulated or activated. See [the comparison and remaining gaps](2026-11-03-wati-review.md).
+
+The existing Hostinger VPS installation passed public trusted HTTPS, health, database readiness and unauthenticated access checks. Authenticated public-owner setup remains pending. Local desktop browser evidence above does not establish mobile/device, provider, restore, load or complete WATI parity acceptance. See [the deployment runbook](../deploy/HOSTINGER-VPS.md) for its exact running release.
 
 This release is an independently implemented WATI-style platform. Exact WATI parity and 90% completion are not established. Browser-loaded WATI code was used only as inspection evidence under work/; it is excluded from the source deliverable.
 
@@ -6,7 +10,7 @@ This release is an independently implemented WATI-style platform. Exact WATI par
 
 Authenticated account password changes and offline operator recovery are now implemented, with transactional session revocation and protection against old-password login races. No actual owner password was changed. Optional authenticator MFA is implemented locally; self-service email reset and device/deployed acceptance remain pending. See [account security](docs/account-security.md).
 
-Deployment groundwork now includes explicit HTTPS origin/Host checks, Secure production cookies, protected fresh setup, coarse health/readiness endpoints, non-root container/proxy configuration and offline private-data backup/restore. Docker/TLS and full production readiness remain unverified. See [deployment gates](DEPLOYMENT.md) and [competitor adoption](docs/competitor-adoption.md).
+Deployment groundwork includes explicit HTTPS origin/Host checks, Secure production cookies, protected fresh setup, coarse health/readiness endpoints, non-root container/proxy configuration and offline private-data backup/restore. VPS container startup and trusted public TLS now pass; full production readiness remains unverified. See [deployment gates](../DEPLOYMENT.md) and [competitor adoption](competitor-adoption.md).
 
 Chatbot media and template nodes now use the durable outbox, frozen resource/recipient snapshots, current consent and approval checks, attachment captions and correct template-versus-free-form window handling. See [rich chatbot delivery](docs/rich-chatbot-delivery.md). Live providers and exact WATI parity remain unverified.
 
