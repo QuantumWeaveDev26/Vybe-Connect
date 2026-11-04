@@ -22,4 +22,4 @@ Provider metadata checks require `TW_PROVIDER_READS=true`. OpenAI checks retriev
 
 Before production service: owner account setup and MFA; real approved test-key payment/subscription and signed webhook lifecycle; shipping account confirmation and approved booking/cancellation; Meta number eligibility and signed incoming call plus two-device audio; AI response testing; backup restore and operational monitoring. No chargeable provider actions were run during implementation. Exact WATI visual/functional parity is not established by these integrations. Keep public review read-only; it contains sample data and cannot submit provider actions.
 
-The opening screen adapts the supplied video's dotted animated mark using VYBE branding, reduced-motion support, first-render dismissal and an eight-second fallback. It is not a placeholder destination or a provider progress indicator.
+The opening screen adapts the supplied video's dotted animated mark using VYBE branding, reduced-motion support, a cursor-reactive world map, explicit entry/replay and a twelve-second ceiling. It is not a placeholder destination or a provider progress indicator.

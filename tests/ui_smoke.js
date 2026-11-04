@@ -5,7 +5,7 @@ const node={addEventListener(){},remove(){},innerHTML:'',open:false};
 const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Set,Array,Object,Promise,URL,URLSearchParams,
   document:{querySelector(){return node},querySelectorAll(){return []},addEventListener(){}},window:{addEventListener(){}},location:{hash:''},
   localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
-for(const name of ['received-media.js','analytics-report.js','team-operations.js','team-invitations.js','rule-actions.js','graph.js','knowledge-documents.js','assistant.js','shell.js','template-editor.js','business.js','services.js','owned-commerce.js','integrations.js','drip-sequences.js','external-agents.js','contact-segments.js','customer-assistant.js','account-recovery.js','account.js','help-widget.js','agent-directory.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
+for(const name of ['received-media.js','analytics-report.js','team-operations.js','team-invitations.js','rule-actions.js','graph.js','knowledge-documents.js','assistant.js','visuals.js','shell.js','template-editor.js','business.js','services.js','owned-commerce.js','integrations.js','drip-sequences.js','external-agents.js','contact-segments.js','customer-assistant.js','account-recovery.js','account.js','help-widget.js','agent-directory.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
 context.actualRefresh=vm.runInContext('refresh',context);
 context.fixture={context:{tenant_id:'business-one',user:{id:'owner',name:'Owner'},workspace:{name:'Acme'},role:'admin',workspaces:[]},meta:{live:false},ai:{enabled:false,configured:false},sandbox:false,
   contacts:[{id:'contact',name:'<img src=x onerror=alert(1)>',phone:'919000000001',tags:[],attributes:{},source:'manual',status:'pending',assignee:'owner',automation_hold:true}],
@@ -162,7 +162,7 @@ assert.equal((html.match(/class="navlink/g)||[]).length,13);
 assert.equal((html.match(/aria-current="page"/g)||[]).length,1);
 assert.match(html,/<a[^>]*href="#rules"[^>]*aria-current="page"/);
 assert.match(html,/<button(?=[^>]*data-do="ai-agents-open")(?=[^>]*aria-label="AI Agents)[^>]*>/);
-assert.match(html,/title="Commerce &amp; Integrations/);
+assert.match(html,/data-nav-label="Commerce &amp; Integrations/);
 assert.match(html,/data-icon="pipeline"/);
 assert.match(html,/data-icon="developers"/);
 for(const label of ['Team Inbox','AI Agents','Sales Pipeline','Settings'])assert.ok(html.includes(`class="nav-text">${label}</span>`));
@@ -216,3 +216,10 @@ html=vm.runInContext('navigationToggleMarkup(true)',context);assert.match(html,/
 vm.runInContext('S.commerceTab="catalog";S.data.context.role="admin";S.data.owned_commerce={products:[{id:"p",name:"<script>Product</script>",sku:"SKU",unit_price_minor:1250,currency:"INR",stock:3,enabled:true}],orders:[],events:[]}',context);
 html=vm.runInContext('commercePage()',context);assert.match(html,/Edit product/);assert.match(html,/3 in stock/);assert.doesNotMatch(html,/<script>/);
 vm.runInContext('S.data.context.role="agent"',context);html=vm.runInContext('commercePage()',context);assert.doesNotMatch(html,/commerce-product-edit|commerce-product-new/);
+
+// Regression: filtering must not submit an invisible, previously selected template.
+vm.runInContext("TEMPLATE_PICK.category='Healthcare & Clinics';TEMPLATE_PICK.query='';TEMPLATE_PICK.id='admissions'",context);
+html=vm.runInContext('templateCards()',context);assert.match(html,/Appointment booking/);assert.equal(vm.runInContext('TEMPLATE_PICK.id',context),'appointments');
+vm.runInContext("TEMPLATE_PICK.query='does-not-exist'",context);html=vm.runInContext('templateCards()',context);assert.match(html,/No templates match/);assert.equal(vm.runInContext('TEMPLATE_PICK.id',context),null);
+assert.doesNotMatch(vm.runInContext("characterAvatar('<img src=x onerror=alert(1)>')",context),/<img/);
+console.log('Template filter selection and avatar input safety passed.');
