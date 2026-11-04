@@ -33,6 +33,12 @@ from received_media import record as record_received_media,state as received_med
 from whatsapp_media import media_status
 from commerce_service import CommerceError,sync_shopify,commerce_state,ingest_shopify_webhook
 import owned_commerce
+import client_services
+import whatsapp_calls
+import provider_checks
+import payment_services
+import shipping_services
+from service_jobs import ServiceError
 from customer_orders import order_action
 from website_knowledge import website_action
 from chat_jobs import ChatError, chat_action, public_job, process_chat_job_once as run_chat_job
@@ -277,6 +283,9 @@ class Store:
             data['media_status']=media_status(tenant)
             data['commerce']=commerce_state(self,db,tenant)
             data['owned_commerce']=owned_commerce.state(self,db,tenant)
+            data['services']=client_services.state(self,db,ctx)
+            data['provider_checks']=provider_checks.state(self,db,tenant)
+            data['calling']=dict(whatsapp_calls.status(tenant),calls=[whatsapp_calls.public(c) for c in self._list(db,tenant,'voicecall')[-100:]])
             data['queue']=[dict(x) for x in db.execute('SELECT id,campaign,contact,status,due,error,external_id FROM outbound WHERE tenant=? ORDER BY rowid DESC LIMIT 500',(tenant,))]
         return dict(data,context={k:v for k,v in ctx.items() if not k.startswith('_')},meta=meta_status(tenant),ai=ai_status(tenant),sandbox=os.environ.get('TW_SANDBOX','false').lower()=='true')
 
@@ -294,6 +303,28 @@ class Store:
     def action(self,ctx,action,d):
         if not isinstance(action,str) or not 1<=len(action)<=100 or not isinstance(d,dict):raise Problem('Use a named action and an object payload.')
         t=ctx['tenant_id']; user=ctx['user']['id']
+        try:client_services.enforce(self,ctx,action)
+        except ServiceError as e:raise Problem(str(e),e.code)
+        if action=='services.release-failed':
+            from service_jobs import release_failed
+            try:return release_failed(self,ctx,d.get('id'))
+            except ServiceError as e:raise Problem(str(e),e.code)
+        if action=='providers.check':
+            try:return provider_checks.check(self,ctx,d.get('provider'))
+            except ServiceError as e:raise Problem(str(e),e.code)
+        if action.startswith('calls.'):
+            try:return whatsapp_calls.action(self,ctx,action,d)
+            except ServiceError as e:raise Problem(str(e),e.code)
+        if action.startswith(('payments.','billing.','shipping.','clients.')):
+            try:
+                if action.startswith(('payments.','billing.')):return payment_services.action(self,ctx,action,d)
+                if action.startswith('shipping.'):return shipping_services.action(self,ctx,action,d)
+                return client_services.action(self,ctx,action,d)
+            except ServiceError as e:raise Problem(str(e),e.code)
+            except Exception as e:
+                from provider_transport import RemoteError
+                if isinstance(e,RemoteError):raise Problem(str(e),502) from None
+                raise
         if action=='message.send' and any(flag in d and type(d[flag]) is not bool for flag in ['note','live']):raise Problem('Message note/live flags must be true or false.')
         if action in ['demo.seed','message.simulate','campaign.run'] or action=='message.send' and not d.get('live') and not d.get('note'):
             if os.environ.get('TW_SANDBOX','false').lower()!='true':raise Problem('Simulation is disabled. Configure Meta for real messaging, or explicitly enable a separate sandbox.')

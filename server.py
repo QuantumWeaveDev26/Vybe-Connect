@@ -108,7 +108,7 @@ class Handler(BaseHTTPRequestHandler):
                 t=path.rsplit('/',1)[-1]; q=parse_qs(urlsplit(self.path).query); s=settings(t)
                 if s['VERIFY_TOKEN'] and q.get('hub.mode')==['subscribe'] and q.get('hub.verify_token')==[s['VERIFY_TOKEN']]: self.respond(200,q.get('hub.challenge',[''])[0],'text/plain');return
                 raise Problem('Verification failed.',403)
-            files={'/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
+            files={'/launch.js':'launch.js','/services.js':'services.js','/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
             if path not in files: raise Problem('Not found.',404)
             p=ROOT/'static'/files[path]
             if not p.exists(): raise Problem('UI is not installed.',404)
@@ -123,12 +123,20 @@ class Handler(BaseHTTPRequestHandler):
             path=urlsplit(self.path).path
             if path.startswith('/api/review/'):raise Problem('Public review is read-only. Owner setup is required to make changes.',403)
             expected_origin=self.server.deployment.public_origin if self.server.deployment.production else 'http://'+self.headers.get('Host','')
-            if not path.startswith(('/webhook/','/shopify-webhook/','/agent-callback/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
+            if not path.startswith(('/webhook/','/shopify-webhook/','/agent-callback/','/razorpay-webhook/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
             try: length=int(self.headers.get('Content-Length','0'))
             except ValueError: raise Problem('Invalid body length.')
             limit=5*1024*1024 if path=='/api/media-upload' else 2*1024*1024 if path.startswith('/shopify-webhook/') else 1500000
             if not 0<length<=limit: raise Problem('Request body exceeds this endpoint’s size limit.',413)
             raw=self.rfile.read(length)
+            if path.startswith('/razorpay-webhook/'):
+                from payment_services import webhook
+                from service_jobs import ServiceError
+                parts=path.strip('/').split('/')
+                if len(parts)!=3 or parts[1] not in ('payments','billing'):raise Problem('Invalid payment webhook route.',404)
+                try:result=webhook(self.server.store,parts[2],parts[1],raw,dict(self.headers))
+                except ServiceError as e:raise Problem(str(e),e.code) from None
+                self.respond(200,result);return
             if path.startswith('/agent-callback/'):
                 parts=path.strip('/').split('/')
                 if len(parts)!=3:raise Problem('Invalid agent callback path.',404)
@@ -150,6 +158,11 @@ class Handler(BaseHTTPRequestHandler):
                         value=change.get('value',{})
                         expected=settings(tenant)['PHONE_ID']
                         if not expected or value.get('metadata',{}).get('phone_number_id')!=expected: raise Problem('Webhook phone number does not match workspace.',403)
+                        if value.get('calls'):
+                            from whatsapp_calls import ingest
+                            from service_jobs import ServiceError
+                            try:ingest(self.server.store,tenant,value['calls'])
+                            except ServiceError as e:raise Problem(str(e),e.code) from None
                         for message in value.get('messages',[]): self.server.store.inbound(tenant,message)
                         for event in value.get('statuses',[]): self.server.store.delivery(tenant,event.get('id'),event.get('status'))
                 self.respond(200,{'received':True});return
@@ -191,7 +204,10 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/api/action':
                 payload=data.get('data',{})
                 if not isinstance(payload,dict): raise Problem('Action data must be an object.')
-                self.respond(200,self.server.store.action(self.context(),data.get('action'),payload));return
+                ctx=self.context();operation=data.get('action')
+                if isinstance(operation,str) and operation.startswith(('payments.','billing.','shipping.','clients.','providers.','services.','calls.')) and operation not in ('calls.end','calls.reject','calls.release'):
+                    if not auth_attempt(self.server.service_attempts,self.server.service_attempts_lock,self.client_address[0],ctx['user']['id']+':'+operation,time.time()):raise Problem('Too many service requests. Wait a minute.',429)
+                self.respond(200,self.server.store.action(ctx,operation,payload));return
             raise Problem('Not found.',404)
         except Problem as e: self.respond(e.code,{'error':str(e)})
         except (ValueError,TypeError,KeyError): self.respond(400,{'error':'Invalid request data.'})
@@ -208,6 +224,7 @@ def make_server(port=8787,path=None):
         from public_review import PublicReview
         server.review=PublicReview()
     server.attempts={};server.attempts_lock=threading.Lock()
+    server.service_attempts={};server.service_attempts_lock=threading.Lock()
     return server
 
 

@@ -40,3 +40,10 @@ input,select,textarea{border-color:#d8dbe4;color:#303744;border-radius:8px}input
  .astra-agent-meta{gap:12px}
  .help-survey{max-height:55vh;overflow:auto}
 }
+
+/* Immediate first-paint brand screen; removed when the workspace is rendered. */
+#vybe-launch{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;overflow:hidden;background:#fbfbff;color:#24332e;opacity:1;transition:opacity .3s ease;pointer-events:none}
+#vybe-launch.launch-finished{opacity:0}.launch-halo{position:absolute;inset:-25%;background:radial-gradient(ellipse at 50% 48%,#fff 20%,#f0ebfc 65%,#eaeef9 100%)}
+.launch-content{position:relative;text-align:center;padding:24px}.launch-mark{width:130px;height:130px;color:#253c33;display:block;margin:0 auto 24px}.launch-sweep{animation:vybe-sweep 1.7s ease-in-out infinite}.launch-content strong{font-size:25px;letter-spacing:2px;font-weight:700}.launch-content strong span{letter-spacing:-.5px;font-weight:450}.launch-content p{color:#727b87;font-size:13px;margin:12px 0 24px}.launch-progress{height:3px;width:100px;overflow:hidden;background:#e6e4f0;border-radius:4px;margin:auto}.launch-progress i{display:block;width:45%;height:100%;background:#1aa65b;border-radius:4px;animation:vybe-progress 1.1s ease-in-out infinite}
+@keyframes vybe-sweep{from{translate:-20px 0}to{translate:360px 0}}@keyframes vybe-progress{from{transform:translateX(-110%)}to{transform:translateX(330%)}}
+@media(prefers-reduced-motion:reduce){#vybe-launch{transition:none}.launch-sweep,.launch-progress i{animation:none}}

@@ -98,6 +98,14 @@ def action(store, ctx, operation, data):
             version(old, data)
             allowed = {'draft': {'confirmed', 'cancelled'}, 'confirmed': {'fulfilled', 'cancelled'}}
             if target not in allowed.get(old['status'], set()): raise CommerceError('This order cannot make that transition.', 409)
+            if target == 'cancelled':
+                jobs=store._list(db,tenant,'servicejob')
+                for payment in [j for j in jobs if j['kind']=='payments.link' and j['reference']==old['id']]:
+                    refunded=any(j['kind']=='payments.refund' and j['reference']==payment['id'] and j.get('result',{}).get('provider_status')=='processed' for j in jobs)
+                    if payment['status'] not in ('failed',) and payment.get('result',{}).get('provider_status') not in ('cancelled','expired') and not refunded:
+                        raise CommerceError('Cancel/reconcile the payment link or complete its refund before cancelling this order.',409)
+                if any(j['kind']=='shipping.order' and j['reference']==old['id'] and j['status']!='failed' and j.get('result',{}).get('provider_status')!='cancelled' for j in jobs):
+                    raise CommerceError('A shipment is booked or uncertain. Resolve it with the courier before cancelling local stock.',409)
             if target == 'confirmed':
                 store._get(db, tenant, 'contact', old['contact_id'])
                 for line in old['items']:

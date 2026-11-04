@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const modal={dataset:{clientScope:'old:owner'},innerHTML:'private-one-time-link',open:true,close(){this.open=false}};
+const c=vm.createContext({document:{addEventListener(){}},$:()=>modal,S:{workspace:'new',data:{context:{user:{id:'owner'}}}},formSubmit:()=>{}});
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../static/services.js'),'utf8'),c);
+vm.runInContext('clearClientInvitationIfScopeChanged()',c);
+assert.equal(modal.innerHTML,'');assert.equal(modal.dataset.clientScope,undefined);assert.equal(modal.open,false);assert.equal(c.formSubmit,null);
+let stops=0,closes=0,removes=0;
+c.fixture={stream:{getTracks:()=>[{stop:()=>stops++}]},pc:{close:()=>closes++},audio:{remove:()=>removes++},scope:'old:owner',id:'call'};
+vm.runInContext('Object.assign(VOICE,fixture);checkVoiceScope()',c);
+assert.equal(stops,1);assert.equal(closes,1);assert.equal(removes,1);assert.equal(vm.runInContext('VOICE.id',c),null);
+console.log('Client invitation scope cleanup and microphone/peer teardown passed.');
