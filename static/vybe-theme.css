@@ -267,3 +267,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #238653;outline-offset:3p
 .main.has-context .content>.tabs{display:none}
 @media(max-width:900px){.context-nav[data-section="campaigns"]+.content>.tabs{display:flex}}
 .commerce-policy{margin:20px 0;color:#60786a}.commerce-policy>summary{cursor:pointer;font-size:14px}
+
+.provider-check-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #edf2ef}.provider-check-row>div{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0}.provider-check-row button{flex-shrink:0}@media(max-width:480px){.provider-check-row{align-items:flex-start}.provider-check-row>div{align-items:flex-start;flex-direction:column}}

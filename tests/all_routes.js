@@ -35,3 +35,10 @@ context.invalid={APP_SECRET:'Copy the App Secret from Meta App settings > Basic.
 const settings=vm.runInContext('S.data.meta.invalid=invalid;S.route="settings";page()',context);
 assert.match(settings,/Invalid format/);assert.match(settings,/Correct these settings/);
 console.log(`All ${routes.length} main routes rendered from an isolated Store state; invalid configuration is actionable.`);
+// Provider results remain visible and never treat stale checks as current proof.
+vm.runInContext('S.servicesTab="connections";S.data.provider_checks=[{provider:"openai",outcome:"passed",current:true},{provider:"meta",outcome:"failed_or_unconfirmed",current:true}]',context);
+let diagnostic=vm.runInContext('servicesPage()',context);
+assert.match(diagnostic,/Metadata verified/);assert.match(diagnostic,/Access not verified/);
+vm.runInContext('S.data.provider_checks.forEach(check=>check.current=false)',context);diagnostic=vm.runInContext('servicesPage()',context);
+assert.match(diagnostic,/Recheck needed/);assert.doesNotMatch(diagnostic,/Metadata verified/);
+console.log('Provider diagnostics persist results and reject stale verification states.');
