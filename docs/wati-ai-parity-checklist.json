@@ -194,7 +194,7 @@
     },
     {
       "area": "Account credential lifecycle",
-      "status": "Authenticated current-password changes, session revocation, old-login race fencing and offline server-operator recovery implemented and locally tested. Optional account-wide authenticator MFA with transactional replay protection, hashed single-use recovery codes and invitation enforcement is implemented and locally tested. Self-service email reset, device/deployed acceptance, organization MFA policy and complete production security review remain incomplete."
+      "status": "Real owner signup and public-preview shutdown are completed on the deployment. Authenticated profile-name changes, current-password changes, session revocation, offline operator recovery, optional authenticator MFA, hashed recovery codes and SMTP reset adapter are implemented and locally tested. SMTP delivery, organization MFA policy, further device acceptance and complete production security review remain pending."
     }
   ]
 }
