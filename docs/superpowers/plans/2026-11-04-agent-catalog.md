@@ -4,7 +4,8 @@ The supplied screenshot exposes long model instructions as marketing description
 
 No new agent capability is invented. AI/provider gates, grounded findings, administrator review and scheduling rules stay unchanged. No paid inference or production sample agent is authorized. Test each real preset through isolated persistence/run contracts using a mocked model; keep that evidence separate from live OpenAI verification.
 
-- [ ] Add presentation/filter/role tests and full-preset backend contract coverage.
-- [ ] Implement concise illustrated catalog, installed cards and simple setup controls.
-- [ ] Test scheduler, permissions, builder, handoff and AI contracts; review and browser-check desktop/mobile.
-- [ ] Publish, pin and deploy preserving private environment, public signup, real data and provider gates. Verify live catalog controls and assets.
+- [x] Add presentation/filter/role tests and full-preset backend contract coverage.
+- [x] Implement concise illustrated catalog, installed cards and simple setup controls.
+- [x] Test scheduler, permissions, builder, handoff and AI contracts; independent source review found no actionable issue.
+- [x] Publish, pin and deploy preserving private environment, public signup, real data and provider gates. Verify live assets and HTTP boundaries.
+- [ ] Browser-check the deployed catalog controls and desktop/mobile appearance once Work settings permit browser control. Live model acceptance remains separately unverified and disabled.

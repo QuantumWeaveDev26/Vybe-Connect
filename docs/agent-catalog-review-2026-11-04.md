@@ -13,3 +13,9 @@ JavaScript catalog, directory, renderer/privacy and all-21-route checks passed. 
 The deployment was inspected with TW_AI_ENABLED=false and the owner's paid-call flag false. No paid inference, production agents, messages or automatic schedules were created. Browser control currently reports Local browser use is disabled in Work settings, so the new catalog's actual appearance and responsive layout remain visually unverified in this pass. CSS includes two-column cards, a single-column narrow layout, wrapping titles and reduced-motion handling.
 
 This is a usability repair, not full WATI parity or production-service clearance. Outbound calling and other previously documented gaps remain; real OpenAI agent quality and provider transactions require separate approved acceptance checks.
+
+## Deployment
+
+Release `e4023274f5a59e9a251fd7c5172817b50b11c151` deployed through Hostinger action `123645856`, reported successful. Archive SHA-256: `53f9247a9797a03637100fb32fc6a96d0bc6a4c364f2e7ec0c1ef6f74ba0c770`. The latest private Compose/environment was read before deployment, its service/volume structure validated, and the private long-token override preserved. No provider activation or public signup flag changed.
+
+Live health/readiness returned 200. The deployed assistant JavaScript and theme CSS exactly match the tested source after Git line-ending normalization. Bootstrap still reports initialized=true, signup_available=true and review_available=false. Unauthenticated state returns 401 and `.env` returns 404. Browser visual review remains blocked; deployment success and asset equality do not substitute for it.
