@@ -22,6 +22,19 @@ class DeploymentTests(unittest.TestCase):
         connection=http.client.HTTPConnection('127.0.0.1',self.server.server_address[1]);values={'Host':'chat.example.test','Origin':'https://chat.example.test','Content-Type':'application/json'};values.update(headers)
         connection.request(method,path,body=json.dumps(data).encode() if data is not None else None,headers=values);r=connection.getresponse();body=r.read();result=(r.status,dict(r.getheaders()),body);connection.close();return result
     def setup_data(self):return {'name':'Owner','email':'owner@example.test','business':'Acme','password':'long-enough-password','setup_token':'test-only-setup-token-32-characters'}
+    def test_all_entrypoint_assets_are_served_with_expected_content_types(self):
+        import re
+        self.start()
+        status,_,html=self.request('/')
+        self.assertEqual(status,200)
+        urls=re.findall(rb'(?:src|href)="(/[^"?#]+\.(?:js|css))"',html)
+        self.assertIn(b'/interactions.js',urls)
+        for url in urls:
+            status,headers,body=self.request(url.decode())
+            self.assertEqual(status,200,url)
+            self.assertTrue(body,url)
+            self.assertNotIn(b'<html',body[:100].lower(),url)
+            self.assertIn('javascript' if url.endswith(b'.js') else 'text/css',headers['Content-Type'],url)
     def test_production_https_origin_sets_secure_cookie_and_headers(self):
         self.start();status,headers,_=self.request('/api/setup','POST',self.setup_data());self.assertEqual(status,200);self.assertIn('; Secure',headers['Set-Cookie']);self.assertIn('Strict-Transport-Security',headers)
     def test_first_owner_email_is_bound_without_disclosing_it_in_bootstrap(self):

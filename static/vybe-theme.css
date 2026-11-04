@@ -250,3 +250,20 @@ body:has(#workspace-ai) .help-launcher{display:none}
 
 /* Portrait splash: give the map its own space between the mark and copy. */
 @media(max-width:600px) and (min-height:600px){.launch-mark{width:92px;height:92px;margin-bottom:clamp(125px,23vh,195px)}.launch-content{width:100%;padding:20px}.launch-content strong{font-size:25px}.launch-content .launch-caption{margin:18px auto 12px;max-width:280px}}
+
+/* Readable workspace type and quiet, one-time entry feedback. */
+.content{font-size:14px}.content .hint,.content .sub,.pagehead p,.cardbody p,.tablewrap td{font-size:14px;line-height:1.6}.tablewrap th{font-size:13px}.content button.small,.content .badge{font-size:13px}.content input,.content select,.content textarea{font-size:14px}
+#workspace-ai .hint,#workspace-ai .ai-history,#workspace-ai .ai-nav-content>.ghost,#workspace-ai .agent-card-summary,#workspace-ai .agent-preset-card>p,#workspace-ai .agent-runtime-note,#workspace-ai .agent-manage>summary,#workspace-ai .agent-manage .knowledge-content{font-size:14px;line-height:1.6}
+#workspace-ai .agent-categories button,#workspace-ai .agent-category-tag,#workspace-ai .agent-preset-setup,#workspace-ai .saved-agent-status,#workspace-ai .agent-manage .agent-meta,#workspace-ai .agent-page-links,#workspace-ai .agent-catalog-heading>span{font-size:13px}
+#workspace-ai .agent-preset-card{min-height:250px}#workspace-ai .agent-preset-card h3{font-size:18px}#workspace-ai .agent-preset-card .agent-card-summary{min-height:0}.agent-directory-toolbar{gap:12px}
+@keyframes vybe-enter{from{opacity:.55;translate:0 12px}to{opacity:1;translate:0 0}}
+.vybe-enter{animation:vybe-enter .32s ease-out both}
+@media(hover:hover) and (pointer:fine){.content button:not(:disabled):not(.navlink),#workspace-ai button:not(:disabled){transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}.content button:not(:disabled):hover,#workspace-ai button:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 4px 12px #1c694515}.content .stat:hover,.content .owned-product:hover,.content .deal-card:hover,.content .finding-card:hover,.content .card:hover{border-color:#c1dacb;box-shadow:0 6px 20px #214e3210}}
+button:focus-visible,a:focus-visible{outline:2px solid #238653;outline-offset:3px}
+@media(max-width:650px){#workspace-ai .agent-directory-toolbar{display:grid;grid-template-columns:minmax(0,1fr)}#workspace-ai .agent-directory-toolbar label{min-width:0!important}#workspace-ai .agent-directory-toolbar [role=status]{font-size:13px}.content .buttons{gap:8px}.content button.small{min-height:38px}.ai-page-title{flex-wrap:wrap}.agent-runtime-note{gap:8px}}
+@media(prefers-reduced-motion:reduce){.vybe-enter{animation:none!important}.content button,#workspace-ai button,.content .card{transition:none!important}.content button:hover,#workspace-ai button:hover{transform:none!important}}
+
+/* Context navigation already exposes these destinations; avoid a second row. */
+.main.has-context .content>.tabs{display:none}
+@media(max-width:900px){.context-nav[data-section="campaigns"]+.content>.tabs{display:flex}}
+.commerce-policy{margin:20px 0;color:#60786a}.commerce-policy>summary{cursor:pointer;font-size:14px}

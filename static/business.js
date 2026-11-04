@@ -77,11 +77,11 @@ document.addEventListener('change',async e=>{if(!e.target.dataset.dealStage)retu
 
 function aiConnectionCard(){
   const a=S.data.ai||{},prefix='TW_AI_'+S.data.context.tenant_id.toUpperCase()+'_';
-  return `<section class="card"><div class="cardhead"><h2>AI provider connection</h2>${badge(aiRuntimeLabel(),a.enabled&&a.configured?'':'gray')}</div><div class="cardbody"><p><strong>Provider:</strong> ${esc(a.provider||'Not selected')} · <strong>Model:</strong> ${esc(a.model||'Not configured')}</p><p class="hint">Keys are entered only in the server’s local .env file. This screen never accepts or displays API secrets. Configuration flags do not establish successful provider verification.</p><div class="code">TW_AI_PROVIDER=openai
+  return `<section class="card"><div class="cardhead"><h2>AI provider connection</h2>${badge(aiRuntimeLabel(),a.enabled&&a.configured?'':'gray')}</div><div class="cardbody"><p><strong>Provider:</strong> ${esc(a.provider||'Not selected')} · <strong>Model:</strong> ${esc(a.model||'Not configured')}</p><p class="hint">Manage credentials in the private server environment. Keys never appear here.</p><details><summary>Connection configuration</summary><div class="code">TW_AI_PROVIDER=openai
 TW_AI_MODEL=gpt-6-luna
 TW_AI_ENABLED=false
-TW_OPENAI_API_KEY=ENTER_LOCALLY
-${esc(prefix)}ALLOW_PAID=false</div><p class="hint">After approving paid usage, enable TW_AI_ENABLED and this workspace's ALLOW_PAID flag in the local file, then restart the server. Keep both disabled while preparing configuration. For local inference, choose ollama and an installed model instead. No fake responses are generated.</p></div></section>`;
+${esc(prefix)}OPENAI_API_KEY=ENTER_ON_SERVER
+${esc(prefix)}ALLOW_PAID=false</div><p class="hint">OpenAI needs explicit paid-call approval. Keep activation off until approved. Local inference requires a separately installed Ollama model.</p></details></div></section>`;
 }
 
 function pipelineSettingsForm(){

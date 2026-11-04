@@ -9,7 +9,7 @@ function commercePage(){
  if(selected==='activity')body=`<section class="card"><div class="cardhead"><h2>Commerce activity</h2></div><div class="tablewrap"><table><thead><tr><th>Action</th><th>Record</th><th>By</th><th>When</th></tr></thead><tbody>${[...c.events].reverse().map(e=>`<tr><td>${esc(e.operation.replace('commerce.',''))}${e.status?' · '+esc(e.status):''}</td><td>${esc(e.record_id.slice(0,8))} · v${e.version}</td><td>${esc(e.actor)}</td><td>${esc(new Date(e.created*1000).toLocaleString())}</td></tr>`).join('')||'<tr><td colspan="4">No recorded commerce changes.</td></tr>'}</tbody></table></div></section>`;
  if(selected==='fulfilment')body=fulfillmentPage();
  if(selected==='shopify')body=shopifyCommercePage();
- return pagehead('Commerce & Integrations','Manage your catalogue, inventory and customer orders.')+tabs+body+'<p class="hint">Confirming an order reserves stock. Use Payments & shipping for connected payment and fulfilment actions. Cancellation restores stock only after payment and shipment obligations are resolved. Fulfilment status is recorded by your team.</p>';
+ return pagehead('Commerce & Integrations','Manage your catalogue, inventory and customer orders.')+tabs+body+'<details class="commerce-policy"><summary>Order & fulfilment policy</summary><p class="hint">Confirming an order reserves stock. Use Payments & shipping for connected payment and fulfilment actions. Cancellation restores stock only after payment and shipment obligations are resolved. Fulfilment status is recorded by your team.</p></details>';
 }
 function ownedProductForm(product={}){
  const tenant=S.workspace,user=S.data.context.user.id;
