@@ -245,3 +245,5 @@ body:has(#workspace-ai) .help-launcher{display:none}
 @media(hover:hover) and (pointer:fine){.agent-preset-card:hover{transform:translateY(-3px);border-color:#9ccdad;box-shadow:0 10px 25px #214d2d12}}
 @media(max-width:480px){.agent-preset-grid,.saved-agent-grid{grid-template-columns:minmax(0,1fr)}.agent-preset-card{min-height:210px;padding:18px}.agent-preset-top{margin-bottom:12px}.agent-preset-card>p{min-height:0}.agent-categories{gap:6px}.agent-categories button{font-size:11px;padding:6px 11px}.agent-catalog-heading{margin-top:24px}.agent-runtime-note{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.agent-preset-card{transition:none}.agent-preset-card:hover{transform:none}}
+
+.fulfillment-connections{display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px;padding:14px 16px;margin-bottom:18px;border:1px solid #dbe9e1;border-radius:12px;background:#f5faf7}.fulfillment-connections>div{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.fulfillment-connections>a{margin-left:auto;font-weight:600}@media(max-width:480px){.fulfillment-connections>a{margin-left:0;width:100%}}

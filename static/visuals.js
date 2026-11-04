@@ -1,9 +1,28 @@
 'use strict';
 // Original vector characters; no external image requests or copied character assets.
+// Presets have intentional identities; custom names use a stable full-string hash.
+const CHARACTER_NAMES=['Daily Digest','Inbox Triage','Re-engagement Scout','Urgency Watcher','Top Topics','Spam Watcher','Ready-to-Buy','Automation Health Check','Campaign Readiness Checker','Segment & Contact Checker','Campaign Idea Finder','Account Health Checker','Admissions inquiry & Counseling','Course discovery','Student support & FAQ','Appointment booking & reschedules','Customer concierge','Property inquiries','Shopping assistant','Order support'];
 function characterAvatar(seed='Agent'){
- const hash=[...String(seed)].reduce((n,c)=>n+c.charCodeAt(0),0),variant=hash%4;
- const skin=['#edbd98','#d39b75','#a96d4f','#f0c4a4'][variant],hair=['#78492e','#322d2d','#462a21','#54342a'][variant],shirt=['#a6d7c2','#b4d9c4','#90b6ce','#b8d2c5'][variant];
- return `<span class="character-avatar" aria-hidden="true"><svg viewBox="0 0 64 72"><path d="M5 74c1-18 12-23 27-23s26 5 27 23" fill="${shirt}"/><path d="M25 46h14v12c-4 6-10 6-14 0" fill="${skin}"/><path d="M13 29C9 7 23 2 34 5c17-2 24 15 16 34l-5 15H18Z" fill="${hair}"/><ellipse cx="32" cy="31" rx="18" ry="23" fill="${skin}"/><path d="M14 25C8 8 26 0 36 6 56 2 56 24 47 28l-3-12C29 25 21 14 14 25" fill="${hair}"/><path d="M19 29q5-4 10 0M36 29q5-4 10 0" stroke="${hair}" stroke-width="2" fill="none"/><ellipse cx="24" cy="34" rx="2" ry="2.4" fill="#302a29"/><ellipse cx="40" cy="34" rx="2" ry="2.4" fill="#302a29"/><path d="M31 35l-2 7h5" fill="none" stroke="#aa7054" stroke-width="1.3"/><path d="M25 46q7 8 14 0" fill="#fff" stroke="#9c5c48" stroke-width="1.1"/>${variant%2===0?'<g fill="none" stroke="#34343a" stroke-width="1.7"><rect x="16" y="28" width="15" height="12" rx="5"/><rect x="34" y="28" width="15" height="12" rx="5"/><path d="M31 32h3"/></g>':''}${variant===1?'<path d="M15 35v19l8 2-5-27M49 31l-3 24 7-3V32" fill="'+hair+'"/>':''}<path d="M21 60l7 12h8l7-12" fill="#fff" opacity=".7"/></svg></span>`;
+ const name=String(seed),known=CHARACTER_NAMES.indexOf(name);
+ let hash=2166136261;for(const c of name)hash=Math.imul(hash^c.codePointAt(0),16777619)>>>0;
+ const identity=known<0?hash:known;
+ const skin=['#f0c4a4','#b77b55','#d99f78','#8f5b42','#e5b28b'][identity%5];
+ const hair=['#493127','#242d34','#a96037','#302823','#68534b'][Math.floor(identity/2)%5];
+ const shirt=['#23775d','#347e9b','#a75c43','#625d92','#b58126','#41766d'][identity%6];
+ const bg=['#e5f4ed','#e7f2fa','#fff0e5','#eeebf8','#fff5d9','#e8f3f1'][identity%6];
+ const style=identity%6;
+ const hairBack=style===1?'<path d="M12 27C8 3 53 1 53 29v29H12Z" fill="'+hair+'"/>':style===3?'<circle cx="33" cy="10" r="10" fill="'+hair+'"/>':'';
+ const hairFront=[
+  'M13 27C8 6 25 0 39 7c14-2 17 16 10 22l-4-14C34 25 23 14 13 27',
+  'M13 28C9 8 23 3 34 5c20-2 22 18 15 24l-7-17c-5 12-22 4-29 16',
+  'M12 28C6 16 13 4 24 7c4-10 17-6 19 0 13-2 17 17 6 22l-5-12c-12 6-20-3-26 7Z',
+  'M13 26C9 7 25 2 35 5c17 0 22 13 14 24l-4-12c-7 4-22 4-29 2Z',
+  'M13 25C8 9 24 1 36 6c17-4 20 18 13 23l-5-14-10 2-9-5-7 15Z',
+  'M13 27C9 8 22 1 35 5c17-1 23 18 14 24l-5-11c-12 12-19-5-31 9'
+ ][style];
+ const glasses=identity%4===1?'<g fill="none" stroke="#263e48" stroke-width="2"><rect x="15" y="28" width="16" height="12" rx="5"/><rect x="34" y="28" width="16" height="12" rx="5"/><path d="M31 32h3"/></g>':'';
+ const accessory=identity%4===2?'<g fill="none" stroke="#234f49" stroke-width="2.5"><path d="M11 30c-3-28 45-28 43 0M51 42l-8 5"/><rect x="9" y="29" width="5" height="13" rx="2"/><rect x="50" y="29" width="5" height="13" rx="2"/></g>':identity%4===3?'<path d="M21 42q11 22 22 0l-4 11H26Z" fill="'+hair+'" opacity=".8"/>':'';
+ return `<span class="character-avatar" aria-hidden="true" style="background:${bg}"><svg viewBox="0 0 64 72">${hairBack}<path d="M4 74c1-18 13-23 28-23s27 5 28 23" fill="${shirt}"/><path d="M25 46h14v12c-4 6-10 6-14 0" fill="${skin}"/><ellipse cx="32" cy="31" rx="18" ry="23" fill="${skin}"/><path d="${hairFront}" fill="${hair}"/><path d="M19 28q5-4 10 0M36 28q5-4 10 0" stroke="${hair}" stroke-width="2" fill="none"/><ellipse cx="24" cy="34" rx="2" ry="2.4" fill="#302a29"/><ellipse cx="40" cy="34" rx="2" ry="2.4" fill="#302a29"/><path d="M31 35l-2 7h5" fill="none" stroke="#965e47" stroke-width="1.3"/>${accessory}<path d="M25 46q7 8 14 0" fill="#fff" stroke="#9c5c48" stroke-width="1.1"/>${glasses}<path d="M21 59l11 9 11-9" fill="#fff" opacity=".85"/></svg></span>`;
 }
 const CUSTOMER_TEMPLATES=[
  ['admissions','Admissions inquiry & Counseling','Education & EdTech','Lead qualification','lead','Capture prospective student questions, explain admissions using approved knowledge, and prepare a counseling handoff.'],

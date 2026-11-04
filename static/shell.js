@@ -7,7 +7,7 @@ const primaryDestinations=[
  ['external-agents','Astra / Custom AI','astra','Connect external agents and review their drafts'],
  ['rules','Automations','rules','Build rules, chatbots, sequences and customer AI replies'],
  ['pipeline','Sales Pipeline','pipeline','Track deals, stages and follow-up tasks'],
- ['findings','AI Findings','check','Review agent findings and proposed actions'],
+ ['findings','AI Findings','findings','Review agent findings and proposed actions'],
  ['commerce','Commerce & Integrations','commerce','Manage connected services, products and orders'],
  ['analytics','Analytics','analytics','Review team activity and messaging reports'],
  ['developers','Connectors','developers','Open API, integrations and webhook delivery'],
