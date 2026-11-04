@@ -15,3 +15,11 @@ Final regression: 535 Python tests passed in 273.233 seconds. The prior run had 
 Live UI checks preceding this release confirmed the compact mobile navigation, full-width AI panel with no horizontal control overflow, a correctly contained Add Contact dialog, and working Show/Hide in the account-password form. No account password was entered or changed and no sample production records were created. Additional changes remove the duplicate mobile campaign context bar, suppress a help launcher that overlapped the AI composer, and prevent nested opening-screen scrollbars.
 
 Provider transactions and full WATI parity remain separately unverified. Public signup and successful automated tests are not a paying-client production clearance.
+
+## Live deployment evidence
+
+Release `75505489f6af23373e6e01559fa3f47dca894487` deployed via Hostinger action `123642984`, archive SHA-256 `9ae699d7931540c02d1e662ee5090429cca9002c7fcce7b42157bb45828e2638`. TW_PUBLIC_SIGNUP=true is enabled in the private environment. Existing owner data volumes, scoped credentials and provider gates were preserved. The temporary SMTP-check service is absent from the current container list.
+
+Health and readiness returned 200. Bootstrap reports initialized=true, signup_available=true and review_available=false. Invalid same-origin signup input returns 400 without creating an account; a cross-origin signup probe returns 403. Unauthenticated state remains 401 and `.env` remains 404. All 37 live assets match the release after normalizing Git line endings. The app container is healthy.
+
+The real public Create account and Sign in views were inspected in-browser. The registration page shows business/name/email/password and a checked 30-day option, with no deployment token. Desktop and 390-pixel registration checks found no overflowing form controls. Show/Hide works in sign-in and the account-password form without entering/changing a real password. The refreshed owner workspace has no recorded browser-console errors. At mobile width the AI panel has no overflowing controls and the help launcher is hidden while it is open. Browser sizing was restored afterward. No production sample account or customer record was created during verification.
