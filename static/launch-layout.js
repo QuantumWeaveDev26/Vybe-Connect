@@ -9,6 +9,10 @@
   const mapWidth=Math.min(1600,(width-2*padding)/(maxX-minX),(height-2*padding)*2/(maxY-minY));
   return {x:width/2-(minX+maxX)*mapWidth/2,y:height/2-(minY+maxY)*mapWidth/4,width:mapWidth,height:mapWidth/2};
  }
- if(typeof module!=='undefined'&&module.exports)module.exports={worldLayout};
- else root.VybeLaunchLayout={worldLayout};
+ function splashWorldLayout(width,height,points){
+  if(width<=600&&height>=600){const map=worldLayout(width,height*.28,points);map.y+=height*.29;return map}
+  return worldLayout(width,height,points);
+ }
+ if(typeof module!=='undefined'&&module.exports)module.exports={worldLayout,splashWorldLayout};
+ else root.VybeLaunchLayout={worldLayout,splashWorldLayout};
 })(globalThis);

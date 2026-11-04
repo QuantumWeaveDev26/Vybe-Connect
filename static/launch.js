@@ -15,7 +15,7 @@
   function make(x,y,logo,seed){return {x,y,ox:0,oy:0,vx:0,vy:0,logo,seed}}
   function resize(){
    if(finished||!ctx)return;width=splash.clientWidth;height=splash.clientHeight;const dpr=Math.min(devicePixelRatio||1,1.75);canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
-   const bounds=mark.getBoundingClientRect();map=VybeLaunchLayout.worldLayout(width,height,land);
+   const bounds=mark.getBoundingClientRect();map=VybeLaunchLayout.splashWorldLayout(width,height,land);
    particles=[];for(let i=0;i<land.length;i+=2)particles.push(make(map.x+land[i]*map.width,map.y+land[i+1]*map.height,false,i));
    const mask=document.createElement('canvas');mask.width=140;mask.height=140;const mc=mask.getContext('2d');mc.fillStyle='#000';mc.fill(new Path2D('M18 24h29l23 66 23-66h29L83 118H57Z'));const pixels=mc.getImageData(0,0,140,140).data;
    for(let y=0;y<140;y+=3)for(let x=0;x<140;x+=3)if(pixels[(y*140+x)*4+3]>128)particles.push(make(bounds.x+x*bounds.width/140,bounds.y+y*bounds.height/140,true,x+y));

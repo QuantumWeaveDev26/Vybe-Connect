@@ -17,3 +17,13 @@ for(const points of [[],[0,0,1,1]]){
  assert.ok(Object.values(layout).every(Number.isFinite));
 }
 console.log('World map geometry: centered and contained at six viewport sizes.');
+
+const {splashWorldLayout}=require('../static/launch-layout.js');
+for(const [width,height] of [[390,844],[505,687],[320,640]]){
+ const layout=splashWorldLayout(width,height,points),ys=[];
+ for(let i=1;i<points.length;i+=2)ys.push(layout.y+points[i]*layout.height);
+ assert.ok(Math.min(...ys)>=height*.29);
+ assert.ok(Math.max(...ys)<=height*.57);
+ assert.ok(Math.abs((Math.min(...ys)+Math.max(...ys))/2-height*.43)<.01);
+}
+console.log('Portrait splash map stays in its own centered band, clear of the title.');

@@ -247,3 +247,6 @@ body:has(#workspace-ai) .help-launcher{display:none}
 @media(prefers-reduced-motion:reduce){.agent-preset-card{transition:none}.agent-preset-card:hover{transform:none}}
 
 .fulfillment-connections{display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px;padding:14px 16px;margin-bottom:18px;border:1px solid #dbe9e1;border-radius:12px;background:#f5faf7}.fulfillment-connections>div{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.fulfillment-connections>a{margin-left:auto;font-weight:600}@media(max-width:480px){.fulfillment-connections>a{margin-left:0;width:100%}}
+
+/* Portrait splash: give the map its own space between the mark and copy. */
+@media(max-width:600px) and (min-height:600px){.launch-mark{width:92px;height:92px;margin-bottom:clamp(125px,23vh,195px)}.launch-content{width:100%;padding:20px}.launch-content strong{font-size:25px}.launch-content .launch-caption{margin:18px auto 12px;max-width:280px}}
