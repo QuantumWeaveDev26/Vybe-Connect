@@ -17,7 +17,7 @@ const AGENT_PRESETS=[
 function ensureAIScope(){
   if(!S.data)return;
   const scope=S.data.context.tenant_id+':'+S.data.context.user.id;
-  if(A.scope!==scope)Object.assign(A,{scope,tab:'ask',chat:null,agent:null,purpose:'chat',busy:false,draft:'',mode:'ask',contextEnabled:true,expanded:false,collapsed:false,showArchived:false,run:null,chatRevision:0,modeMenu:false,model:'',activityAgent:null});
+  if(A.scope!==scope)Object.assign(A,{scope,tab:'ask',chat:null,agent:null,purpose:'chat',busy:false,draft:'',mode:'ask',contextEnabled:true,expanded:false,collapsed:false,showArchived:false,agentCategory:'All',catalogExpanded:false,run:null,chatRevision:0,modeMenu:false,model:'',activityAgent:null});
 }
 function showAI(tab){
   ensureAIScope();if(tab)A.tab=tab;
@@ -25,14 +25,36 @@ function showAI(tab){
 }
 function aiRuntimeLabel(){const a=S.data.ai||{};return a.enabled&&a.configured?(a.provider||'AI')+' configured':a.provider_id==='openai'&&!a.paid_allowed?'OpenAI calls disabled':'AI not connected'}
 function agentStamp(stamp){return stamp?new Date(stamp*1000).toLocaleString():'—'}
+const AGENT_CATALOG_INFO={
+ 'Daily Digest':['Overview','A clear snapshot of your inbox and campaigns.'],
+ 'Inbox Triage':['Support','Find unanswered chats and what needs a reply.'],
+ 'Re-engagement Scout':['Sales','Spot conversations worth following up.'],
+ 'Urgency Watcher':['Support','Surface urgent questions and time-sensitive issues.'],
+ 'Top Topics':['Overview','See the questions your customers ask most.'],
+ 'Spam Watcher':['Support','Flag conversations that may be spam.'],
+ 'Ready-to-Buy':['Sales','Find customers showing purchase intent.'],
+ 'Automation Health Check':['Operations','Review gaps in your automation setup.'],
+ 'Campaign Readiness Checker':['Marketing','Check templates and audiences before launch.'],
+ 'Segment & Contact Checker':['Operations','Find gaps in contact details and tags.'],
+ 'Campaign Idea Finder':['Marketing','Get campaign ideas from customer questions.'],
+ 'Account Health Checker':['Operations','Review connection settings and queue issues.']
+};
 function aiAgentCard(agent){
-  const admin=S.data.context.role==='admin',status=S.data.ai||{},ready=status.enabled&&status.configured;
-  return `<article class="ai-agent" data-agent-directory="ai" data-agent-name="${esc(agent.name)}" data-agent-status="${agent.archived?'archived':agent.schedule_enabled?'scheduled':'manual'}"><header><strong>${esc(agent.name)}</strong>${badge(agent.archived?'Archived':agent.schedule_enabled?'Scheduled':'On demand',agent.archived?'gray':agent.schedule_enabled?'':'gray')}</header><p class="hint">${esc(agent.instructions)}</p><div class="agent-meta"><span>Proposals: ${esc(agentActionSummary(agent))}</span><span>Next run: ${esc(agentStamp(agent.next_run))}</span><span>Last outcome: ${esc(agent.last_status||'Not run')}</span>${agent.last_error?`<span class="error">${esc(agent.last_error)}</span>`:''}</div><div class="buttons">${btn('View activity','ai-agent-activity',`data-id="${agent.id}"`,'small')}${agent.archived?(admin?btn('Restore','ai-restore-agent',`data-id="${agent.id}"`,'small'):''):btn('Ask','ai-use-agent',`data-id="${agent.id}"`,'small')+btn('Run now','ai-run-agent',`data-id="${agent.id}" ${!ready||A.busy?'disabled':''}`,'primary small')+(admin?btn('Edit','ai-edit-agent',`data-id="${agent.id}"`,'small')+btn('Duplicate','ai-copy-agent',`data-id="${agent.id}"`,'small')+btn(agent.schedule_enabled?'Pause schedule':'Schedule','ai-schedule-agent',`data-id="${agent.id}"`,'small')+btn('Archive','ai-archive-agent',`data-id="${agent.id}"`,'small'):'')}</div></article>`;
+ const admin=S.data.context.role==='admin',status=S.data.ai||{},ready=status.enabled&&status.configured;
+ const info=AGENT_CATALOG_INFO[agent.name],summary=info?.[1]||'Your custom workspace assistant.';
+ const state=agent.archived?'Archived':agent.schedule_enabled?'Scheduled':'On demand';
+ const more=admin?(agent.archived?btn('Restore','ai-restore-agent',`data-id="${agent.id}"`,'small'):btn('Edit','ai-edit-agent',`data-id="${agent.id}"`,'small')+btn('Duplicate','ai-copy-agent',`data-id="${agent.id}"`,'small')+btn(agent.schedule_enabled?'Pause schedule':'Schedule','ai-schedule-agent',`data-id="${agent.id}"`,'small')+btn('Archive','ai-archive-agent',`data-id="${agent.id}"`,'small')):'';
+ return `<article class="ai-agent saved-agent-card" data-agent-directory="ai" data-agent-name="${esc(agent.name)}" data-agent-status="${agent.archived?'archived':agent.schedule_enabled?'scheduled':'manual'}"><header><div class="saved-agent-identity">${characterAvatar(agent.name)}<div><strong>${esc(agent.name)}</strong><span class="saved-agent-status">${state}</span></div></div></header><p class="agent-card-summary">${summary}</p><div class="buttons agent-card-actions">${agent.archived?'':btn('Ask','ai-use-agent',`data-id="${agent.id}"`,'small')+btn('Run now','ai-run-agent',`data-id="${agent.id}" ${!ready||A.busy?'disabled':''}`,'primary small')}${btn('Activity','ai-agent-activity',`data-id="${agent.id}"`,'small')}</div><details class="agent-manage"><summary>${admin?'Manage':'Details'}</summary><p class="knowledge-content">${esc(agent.instructions)}</p><div class="agent-meta"><span>Proposals: ${esc(agentActionSummary(agent))}</span><span>Next run: ${esc(agentStamp(agent.next_run))}</span><span>Last outcome: ${esc(agent.last_status||'Not run')}</span>${agent.last_error?`<span class="error">${esc(agent.last_error)}</span>`:''}</div>${more?`<div class="buttons">${more}</div>`:''}</details></article>`;
 }
 function aiAgentsPage(){
-  const admin=S.data.context.role==='admin';const agents=S.data.aiagents||[];
-  return `<div class="ai-page-title"><div><h2>Your agents</h2><p class="hint">Agents inspect workspace facts and propose findings for review.</p></div>${admin?btn('+ New Agent','ai-new-agent','','primary small'):''}</div><div class="buttons">${btn('Findings & review','review-open','','small')}</div>${agentDirectoryToolbar('ai','AI agents',[['scheduled','Scheduled'],['manual','On demand'],['archived','Archived']])}${agents.map(aiAgentCard).join('')||'<p class="hint">No saved agents. Hire a preset or create your own.</p>'}<p class="hint" data-agent-empty="ai" hidden>No agents match your search and status filter.</p><p><a href="#customer-assistant">Configure customer support AI replies</a></p><h3>Suggested agents</h3><div class="agent-presets">${AGENT_PRESETS.map(([name,instructions],i)=>`<article class="ai-agent"><strong>${esc(name)}</strong><p class="hint">${esc(instructions)}</p>${admin?btn('Hire '+esc(name),'ai-preset',`data-preset="${i}"`,'small'):''}</article>`).join('')}</div><p class="hint">Background runs require a configured AI provider and a running server. They create findings only; customer actions require review.</p>`;
+ const admin=S.data.context.role==='admin',agents=S.data.aiagents||[],status=S.data.ai||{},ready=status.enabled&&status.configured;
+ const categories=['All','Overview','Sales','Support','Marketing','Operations'],category=categories.includes(A.agentCategory)?A.agentCategory:'All';
+ const matches=AGENT_PRESETS.map(([name,instructions],index)=>({name,index,info:AGENT_CATALOG_INFO[name]})).filter(p=>category==='All'||p.info[0]===category);
+ const visible=A.catalogExpanded?matches:matches.slice(0,6);
+ const myAgents=agents.length?`${agentDirectoryToolbar('ai','AI agents',[['scheduled','Scheduled'],['manual','On demand'],['archived','Archived']])}<div class="saved-agent-grid">${agents.map(aiAgentCard).join('')}</div><p class="hint" data-agent-empty="ai" hidden>No agents match your search.</p>`:'<div class="agent-start"><span>Choose a ready-made agent below, or create your own.</span></div>';
+ return `<div class="ai-page-title"><div><h2>Your agents</h2><p class="hint">A little help for your busiest work.</p></div>${admin?btn('+ Create agent','ai-new-agent','','primary small'):''}</div>${ready?'':`<div class="agent-runtime-note"><span>${status.provider_id==='openai'&&!status.paid_allowed?'AI calls are off.':'Connect AI to run your agents.'}</span><a href="#settings" data-do="ai-open-settings">Connection settings →</a></div>`}${myAgents}<div class="agent-catalog-heading"><h3>Find your next assistant</h3><span>${AGENT_PRESETS.length} agents</span></div><div class="agent-categories" aria-label="Agent categories">${categories.map(name=>btn(name,'ai-agent-category',`data-category="${name}" aria-pressed="${category===name}"`,'small')).join('')}</div><div class="agent-preset-grid">${visible.map(({name,index,info})=>`<article class="agent-preset-card"><div class="agent-preset-top">${characterAvatar(name)}<span class="agent-category-tag ${info[0].toLowerCase()}">${info[0]}</span></div><h3>${esc(name)}</h3><p>${info[1]}</p>${admin?btn('Set up agent','ai-preset',`data-preset="${index}" aria-label="Set up ${esc(name)}"`,'small agent-preset-setup'):''}</article>`).join('')}</div>${matches.length>6?`<div class="agent-catalog-more">${btn(A.catalogExpanded?'Show fewer agents':'Show all '+matches.length+' agents','ai-catalog-toggle',`aria-expanded="${!!A.catalogExpanded}"`,'small ghost')}</div>`:''}<div class="agent-page-links">${btn('Review findings','review-open','','ghost small')}<a href="#customer-assistant" data-do="ai-open-customer">Customer reply settings →</a></div>`;
 }
+
 function aiKnowledgePage(){
   const admin=S.data.context.role==='admin';
   return `<h2>Business knowledge</h2><p class="hint">Workspace FAQs, products and policies. Up to eight text sources, 4,000 characters each. Upload documents or index a public website page below. Full-site crawling remains pending.</p>${admin?btn('+ Add source','ai-knowledge-add','','primary small'):''}${(S.data.knowledges||[]).map(k=>`<article class="ai-agent"><strong>${esc(k.title)}</strong> ${badge(k.enabled?'Included':'Disabled',k.enabled?'':'gray')}<p class="knowledge-content">${esc(k.body)}</p>${admin?btn('Edit','ai-knowledge-edit',`data-id="${k.id}"`,'small')+btn('Delete','ai-knowledge-delete',`data-id="${k.id}"`,'small'):''}</article>`).join('')||'<p class="hint">No business sources yet.</p>'}${knowledgeDocumentsPanel()}${knowledgeUsagePanel()}`;
@@ -109,7 +131,7 @@ function renderAI(){
 function editAIAgent(agent={}){
   if(S.data.context.role!=='admin')throw new Error('Administrator access required to configure agents.');
   const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user;
-  showModal(agent.id?'Edit agent':'New agent',field('name','Agent name',agent.name||'')+field('instructions','Instructions',agent.instructions||'','textarea')+agentActionFields(agent)+'<p class="hint">The model analyzes workspace facts and proposes findings. It cannot send messages or apply actions itself. All actions require administrator review. Editing interrupts results generated with an older configuration.</p>',async d=>{if(!same())throw new Error('Workspace changed. Reopen agent setup.');if(agent.id)d.id=agent.id;d.allowed_actions=[...document.querySelectorAll('[data-agent-action]:checked')].map(e=>e.dataset.agentAction);await act('aiagent.save',d);if(!same())return;$('#modal').close();A.tab='agents';await refresh();if(same())renderAI()},agent.id?'Save agent':'Create agent');
+  showModal(agent.id?'Edit agent':'New agent',field('name','Agent name',agent.name||'')+`<details class="agent-setup-options" ${agent.instructions?'':'open'}><summary>Instructions & permissions</summary>${field('instructions','Instructions',agent.instructions||'','textarea')}${agentActionFields(agent)}</details><p class="hint">Runs create findings for your review. Nothing is sent automatically.</p>`,async d=>{if(!same())throw new Error('Workspace changed. Reopen agent setup.');if(agent.id)d.id=agent.id;d.allowed_actions=[...document.querySelectorAll('[data-agent-action]:checked')].map(e=>e.dataset.agentAction);await act('aiagent.save',d);if(!same())return;$('#modal').close();A.tab='agents';await refresh();if(same())renderAI()},agent.id?'Save agent':'Create agent');
   $('#f-name').maxLength=100;$('#f-instructions').maxLength=6000;
 }
 const agentActionLabels={tag:'Add a contact tag',assign:'Assign a teammate and pause automation',note:'Add an internal note',draft_reply:'Create an unsent reply draft',task:'Create an internal follow-up task'};
@@ -121,6 +143,9 @@ function agentActionSummary(agent){const allowed=agent.allowed_actions??Object.k
 async function aiAction(action,el){
   ensureAIScope();const id=el.dataset.id;if(['ai-stop','ai-feedback','ai-open-source','ai-source-conversation'].includes(action))return aiExecutionAction(action,el);
   if(action==='ai-open')return showAI();
+  if(action==='ai-agent-category'){const choices=['All','Overview','Sales','Support','Marketing','Operations'];if(!choices.includes(el.dataset.category))return;A.agentCategory=el.dataset.category;A.catalogExpanded=false;return renderAI()}
+  if(action==='ai-catalog-toggle'){A.catalogExpanded=!A.catalogExpanded;return renderAI()}
+  if(action==='ai-open-settings'||action==='ai-open-customer'){$('#workspace-ai')?.remove();location.hash=action==='ai-open-settings'?'settings':'customer-assistant';return}
   if(action.startsWith('ai-document-'))return documentKnowledgeAction(action,el);
   if(action==='ai-mode-menu'){A.modeMenu=!A.modeMenu;return renderAI()}
   if(action==='ai-mode-agent'||action==='ai-new-agent')return startAgentBuilder();

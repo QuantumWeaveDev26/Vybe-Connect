@@ -20,7 +20,7 @@ html=vm.runInContext('page()',context);assert.match(html,/&lt;script&gt;/);asser
 vm.runInContext('S.data.context.role="agent"',context);html=vm.runInContext('page()',context);assert.doesNotMatch(html,/data-decision="approve"/);
 html=vm.runInContext('S.route="inbox";page()',context);assert.match(html,/Human handling/);assert.match(html,/handoff-resume/);assert.match(html,/crm-contact-task/);
 vm.runInContext('S.data.context.role="admin";ensureAIScope();A.tab="agents"',context);
-html=vm.runInContext('aiAgentsPage()',context);assert.match(html,/Hire Inbox Triage/);assert.match(html,/Hire Account Health Checker/);assert.match(html,/Your agents/);
+html=vm.runInContext('aiAgentsPage()',context);assert.match(html,/Set up Inbox Triage/);assert.match(html,/Show all 12 agents/);assert.match(html,/Your agents/);
 vm.runInContext('const originalRenderAI=renderAI;renderAI=()=>{};A.scope=null;showAI("agents");renderAI=originalRenderAI',context);
 assert.equal(vm.runInContext('A.tab',context),'agents');
 context.fixture.aiagents=[{id:'agent',name:'Scheduled Triage',instructions:'<script>bad()</script>',schedule_enabled:true,next_run:2000000000,last_status:'completed'}];
