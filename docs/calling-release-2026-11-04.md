@@ -20,3 +20,10 @@ Source review found a late-answer reconciliation race; fixed with a dedicated te
 Calling is not enabled in production. Configure an eligible Meta number and webhook subscription first; correct the failed Meta metadata check. Set TW_CALLING_EAA91C5FE6F20007_ENABLED and, separately, TW_CALLING_EAA91C5FE6F20007_OUTBOUND_ENABLED only after provider authorization. Configure TURN_URLS and TURN_SECRET for reliable WebRTC connectivity. Permission-request messages also require the Meta LIVE gate and an open service window. No calling gate or messaging gate was enabled by this release.
 
 Recording and transfer, complete self-service client Meta onboarding, payment/shipping/billing credentials and live acceptance remain outstanding. This release is not full WATI parity or all-service production clearance.
+
+## Deployment readback
+Application commit 7bea0e2e375e3df97671c833340bebab96f679f8 deployed successfully by Hostinger action 123665690. Live services.js and app.js match source; healthz and readyz return 200; unauthenticated api/state 401; .env 404. Private environment, approved OpenAI flags and persistent data were preserved.
+
+Authenticated browser confirmed Run now enabled for the on-demand Daily Digest without invoking it. The deployed WhatsApp calls tab shows inbound/outbound controls, Calling disabled and no call events. No contacts were seeded to make the controls look active. No real call, permission message, microphone prompt or AI inference was executed for verification.
+
+Current blockers remain Meta Access not verified, missing calling eligibility/TURN/activation, missing Razorpay/Shiprocket/billing setup, and other unfinished production features. Live calling and full WATI replacement are not claimed.
