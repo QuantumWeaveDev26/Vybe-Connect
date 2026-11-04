@@ -7,3 +7,5 @@ TW_PUBLIC_REVIEW=false closes public sample access. Existing application data, o
 Verification: production setup rejects a different owner email without creating an account, does not disclose the configured email in bootstrap and accepts the correct email only with the existing token. Further owner creation and provider acceptance are separately tracked; a prepared form is not a completed account.
 
 Full regression: 518 Python tests passed in 267.512 seconds, plus JavaScript renderer/navigation/privacy checks. This verifies the code changes, not provider acceptance or completion of the owner form.
+
+Deployed application 5a48994ab74059fec2723203cd4f584e0a60e9ea via Hostinger action 123606802. HTTPS healthz/readyz returned 200; bootstrap reported review_available=false and setup_token_required=true; the former preview state route returned 404 and unauthenticated real state returned 401. Owner setup was prepared in the browser without entering a password or submitting it. Account creation remains user-controlled and pending confirmation. No provider credentials or activation flags were added.
