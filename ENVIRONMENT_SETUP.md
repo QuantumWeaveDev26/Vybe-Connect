@@ -100,4 +100,3 @@ Set TW_PUBLIC_REVIEW=false only when you are ready to stop public preview. Prese
 After initial owner setup, set `TW_PUBLIC_SIGNUP=true` to allow customers to create their own isolated business accounts at `/#signup`. It defaults to false. This does not expose the owner setup token or join new users to the operator's workspace. Initial owner creation remains protected separately.
 
 Sign-in and signup offer Keep me signed in for 30 days. Sessions use secure server-backed cookies; passwords are not stored in browser storage. Logout and password/security changes revoke sessions. Public signup does not verify ownership of the email address or activate provider integrations automatically.
-
