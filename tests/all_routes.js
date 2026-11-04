@@ -1,0 +1,37 @@
+// Render every main destination using a real, isolated Store state. No browser or providers.
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+const {execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..');
+const fixture=JSON.parse(execFileSync('python',['-c',[
+ 'import json,tempfile',
+ 'from pathlib import Path',
+ 'from store import Store',
+ 'with tempfile.TemporaryDirectory() as folder:',
+ ' s=Store(Path(folder)/"routes.db")',
+ ' token=s.setup("Route Owner","route-owner@example.test","isolated-test-password","Route Test Business")["token"]',
+ ' ctx=s.auth(token)',
+ ' s.action(ctx,"contact.save",{"name":"A long customer name for renderer checks","phone":"919000000001"})',
+ ' print(json.dumps(s.state(ctx)))'
+].join('\n')],{cwd:root,encoding:'utf8',env:{...process.env,TW_SANDBOX:'false'}}));
+const node={addEventListener(){},remove(){},innerHTML:'',open:false};
+const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Set,Array,Object,Promise,URL,URLSearchParams,
+ document:{querySelector(){return node},querySelectorAll(){return []},addEventListener(){}},window:{addEventListener(){}},location:{hash:''},
+ localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
+const index=fs.readFileSync(path.join(root,'static/index.html'),'utf8');
+for(const [,url] of index.matchAll(/<script src="\/([^"/]+)" defer><\/script>/g)){
+ if(url.startsWith('launch'))continue;
+ vm.runInContext(fs.readFileSync(path.join(root,'static',url),'utf8'),context,{filename:url});
+}
+context.fixture=fixture;
+vm.runInContext('S.data=fixture;S.workspace=fixture.context.tenant_id',context);
+const routes=vm.runInContext('Object.keys(names)',context);
+for(const route of routes){
+ context.route=route;
+ const html=vm.runInContext('S.route=route;page()',context);
+ assert.equal(typeof html,'string',route);assert.ok(html.length>30,route);
+ assert.doesNotMatch(html,/>undefined</,`undefined label on ${route}`);
+}
+context.invalid={APP_SECRET:'Copy the App Secret from Meta App settings > Basic.'};
+const settings=vm.runInContext('S.data.meta.invalid=invalid;S.route="settings";page()',context);
+assert.match(settings,/Invalid format/);assert.match(settings,/Correct these settings/);
+console.log(`All ${routes.length} main routes rendered from an isolated Store state; invalid configuration is actionable.`);

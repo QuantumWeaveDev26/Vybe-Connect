@@ -87,3 +87,50 @@ label.summaryrow:has(>input:checked){background:#f2faf5}label.summaryrow:has(>in
 .card:focus-within,.stat:focus-within,.astra-agent:focus-within{border-color:#8ec5a1}.topright [data-do="refresh"]{display:inline-flex;align-items:center;justify-content:center}.topright [data-do="refresh"][aria-busy="true"]{opacity:.55;cursor:wait}
 @media(max-width:700px){.topright .profile-trigger{display:grid!important;width:30px;height:30px;font-size:10px}.topright [data-do="refresh"]{display:inline-flex!important;font-size:0;width:29px;height:30px;padding:0}.topright [data-do="refresh"]:before{content:"↻";font-size:21px;line-height:1}.topbar .workselect{max-width:110px}.header-assistant{font-size:10px;padding:7px 8px}.topbar{gap:5px}.topright{gap:4px}.profile-summary strong{font-size:16px}label.summaryrow:has(>input[type="checkbox"]){padding:10px;gap:12px}}
 @media(prefers-reduced-motion:reduce){.card,.stat,.owned-product,.ai-agent,.deal-card,.finding-card,.astra-agent,.agent-template-card,.sidebar .navlink,.sidebar nav .icon,.profile-trigger{transition:none}.stat:hover,.owned-product:hover,.ai-agent:hover,.deal-card:hover,.finding-card:hover,.astra-agent:hover,.agent-template-card:hover,.profile-trigger:hover,.sidebar nav .navlink:hover .icon{transform:none}}
+
+/* Let real workspace names and action labels wrap without widening the page. */
+button{max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.pagehead button,.modalfoot button,.cardhead button{white-space:normal;height:auto}
+.pagehead>.buttons,.cardhead>.buttons,.modalfoot,.field,.formgrid>*,.grid2>*,.split>*,.stats>*,.connection-item{min-width:0}
+.pagehead>div,.cardhead h2,.ai-page-title>*,.ai-agent header>*{min-width:0;overflow-wrap:anywhere}
+.pagehead h1,.cardbody h3,.deal-card h3,.astra-agent h3,.ai-agent h3,.profile-summary strong{overflow-wrap:anywhere}
+.buttons>button{flex-shrink:1}.buttons>button .icon{flex-shrink:0}
+input,select,textarea{max-width:100%;min-width:0}
+.formgrid,.connection{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.split{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.connection-item{gap:12px;align-items:flex-start}.connection-item>span{min-width:0;overflow-wrap:anywhere}
+.connection-item .badge{flex-shrink:0}.notice>span{min-width:0;overflow-wrap:anywhere}
+.stat strong{overflow-wrap:anywhere}.tabs a{flex-shrink:0}
+.modalhead h2{min-width:0;overflow-wrap:anywhere}.modalhead>button{flex-shrink:0}
+.modalfoot{flex-wrap:wrap}.profile-summary>div{min-width:0}
+.header-assistant{min-width:0;line-height:1.4}.topbar>.buttons{min-width:0}.topright{flex-shrink:0}
+.ai-mode-menu{max-width:calc(100vw - 92px)}
+#vybe-launch{overflow-y:auto;overscroll-behavior:contain}
+.launch-content{width:min(100%,520px);max-width:100%;padding:24px 20px}
+.launch-content strong{overflow-wrap:anywhere}.launch-content p{max-width:100%}
+.launch-enter{min-height:44px;max-width:100%;white-space:normal}
+@media(max-width:750px){
+ .grid2,.split,.formgrid,.connection{grid-template-columns:minmax(0,1fr)}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pagehead>.buttons{max-width:100%}.pagehead>.buttons button{flex:0 1 auto}
+ .modalhead{padding:18px}.modalbody{padding:18px}
+}
+@media(max-width:700px){
+ .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 8px;height:auto;min-height:92px;padding:10px 12px}
+ .topbar>.buttons{grid-column:1;grid-row:1;margin:0;width:100%}
+ .topbar .workselect{width:100%;max-width:100%}
+ .topbar>.header-assistant{grid-column:1;grid-row:2;justify-self:start;max-width:100%;white-space:normal;font-size:11px;margin:0}
+ .topright{grid-column:2;grid-row:1 / 3;align-self:center;margin:0}
+ .main>.content{min-height:calc(100dvh - 92px)}
+ .astra-agent-meta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .astra-agent-meta>div{min-width:0;overflow-wrap:anywhere}
+ .template-categories button{min-height:36px}
+}
+@media(max-height:540px){
+ #vybe-launch{place-items:start center}
+ .launch-content{padding:18px;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+ .launch-mark{width:76px;height:76px;margin-bottom:12px}
+ .launch-content p{margin:8px 0}.launch-content .launch-caption{margin:10px 0}
+ .launch-interact{margin-top:9px}
+}

@@ -266,7 +266,7 @@ class Store:
         tenant=ctx['tenant_id']
         with self.db() as db:
             db.execute('BEGIN')
-            data={k+'s':self._list(db,tenant,k) for k in ['contact','template','campaign','rule','flow','sequence','reply','aichat','aiagent','knowledge','deal','task','airun','finding','aijob','segment']}
+            data={('replies' if k=='reply' else k+'s'):self._list(db,tenant,k) for k in ['contact','template','campaign','rule','flow','sequence','reply','aichat','aiagent','knowledge','deal','task','airun','finding','aijob','segment']}
             for flow in data['flows']:
                 if ctx['role']=='admin':flow['published_versions']=flow_publishing.history(db,tenant,flow['id'])
                 else:flow.pop('draft',None)

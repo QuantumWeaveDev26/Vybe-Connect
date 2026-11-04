@@ -21,7 +21,14 @@ def settings(tenant):
 def status(tenant):
     s = settings(tenant)
     required = ['TOKEN','PHONE_ID','WABA_ID','APP_SECRET','VERIFY_TOKEN','VERSION']
-    return {'live': s['LIVE'].lower() == 'true', 'configured': all(s[k] for k in required), 'present': {k:bool(s[k]) for k in required}, 'prefix':'TW_META_'+tenant.upper()+'_'}
+    formats = {
+        'PHONE_ID': (r'\d+', 'Use the numeric Phone Number ID, not the telephone number.'),
+        'WABA_ID': (r'\d+', 'Use the numeric WhatsApp Business Account ID.'),
+        'APP_SECRET': (r'[a-fA-F0-9]{32}', 'Copy the App Secret from Meta App settings > Basic.'),
+        'VERSION': (r'v\d+\.\d+', 'Use only the Graph API version, for example v25.0, without a URL.')
+    }
+    invalid = {k:message for k,(pattern,message) in formats.items() if s[k] and not re.fullmatch(pattern,s[k])}
+    return {'live': s['LIVE'].lower() == 'true', 'configured': all(s[k] for k in required) and not invalid, 'present': {k:bool(s[k]) for k in required}, 'invalid':invalid, 'prefix':'TW_META_'+tenant.upper()+'_'}
 
 
 def send_text(tenant, phone, body):

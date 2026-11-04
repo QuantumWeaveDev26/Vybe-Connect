@@ -31,6 +31,15 @@ class WorkspaceTests(unittest.TestCase):
     def contact(self, **kw):
         return self.act('contact.save', name='Asha', phone='+91 90000 00001', **kw)
 
+    def test_saved_replies_use_the_renderer_contract_and_remain_workspace_scoped(self):
+        self.assertEqual(self.s.state(self.ctx)['replies'],[])
+        reply=self.act('reply.save',name='Business hours',body='We open at nine.')
+        state=Store(self.path).state(self.ctx)
+        self.assertEqual(state['replies'][0]['id'],reply['id'])
+        self.assertEqual(state['replies'][0]['body'],'We open at nine.')
+        other=self.act('workspace.create',name='Other business')
+        self.assertEqual(self.s.state(self.s.auth(self.token,other['id']))['replies'],[])
+
     def test_password_authentication_and_session_revocation(self):
         with self.assertRaises(Problem): self.s.login('owner@example.test', 'wrong-password')
         token = self.s.login('owner@example.test', 'a-long-test-password')['token']
