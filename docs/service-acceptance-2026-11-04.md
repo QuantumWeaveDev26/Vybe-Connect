@@ -35,3 +35,16 @@ Outbound WhatsApp calling, transfer/recording and self-service Meta Embedded Sig
 - Source review found the missing interaction-script route; fixed and covered by an entrypoint-asset serving test.
 - Removed duplicate contextual tab navigation, corrected production simulation instructions, and shortened connection setup copy. Scoped OpenAI environment name now matches the actual workspace key.
 - No production records deleted or seeded, and no provider calls that consume credits were made.
+
+## Final release verification
+- Fresh full backend suite: 541 tests passed in 1406.256 seconds. All 14 JavaScript check files passed; subsequent persistent-provider UI checks passed in all_routes.js and services_security.js.
+- Application release ed163347f6be14234bf8586d3421daf3810d993c deployed by successful Hostinger action 123663294.
+- Live OpenAI metadata read passed. This used model metadata only, with no inference or credit consumption. Paid inference remains disabled.
+- Live Meta metadata check returned failed_or_unconfirmed, displayed as Access not verified. This is not delivery acceptance. No message sent. Exact provider-side correction still needs diagnosis; do not assume configured fields are valid solely because they are present.
+- Razorpay payments and platform billing, plus Shiprocket credentials are absent. No metadata or transaction acceptance is claimed for those services.
+- Authenticated browser reviewed custom-agent empty state, automation navigation, settings, services and AI agents. Original saved Daily Digest preserved. At 390px and 1366px, document width stayed within viewport. Agent descriptions computed at 14px. Browser console error/warning log was empty. Temporary viewport override reset.
+- HTTP health and readiness passed. New interaction script served as JavaScript. Deployed changed UI assets matched source; unauthenticated state 401 and .env 404.
+- TW_PROVIDER_READS=true permits free metadata diagnostics. All paid AI, live messaging and transaction activation gates remain off. Private environment and long-token Compose override preserved.
+
+## Launch decision
+Not cleared for all paid services. Remaining blockers: successful Meta account verification, configured payment/shipping/billing accounts, live acceptance tests where authorized, recovery email acceptance, and the unfinished calling/onboarding capabilities listed above. No sample responses or fabricated provider success replace these requirements.
