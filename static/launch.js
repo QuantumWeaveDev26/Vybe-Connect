@@ -15,7 +15,7 @@
   function make(x,y,logo,seed){return {x,y,ox:0,oy:0,vx:0,vy:0,logo,seed}}
   function resize(){
    if(finished||!ctx)return;width=innerWidth;height=innerHeight;const dpr=Math.min(devicePixelRatio||1,1.75);canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
-   const bounds=mark.getBoundingClientRect(),mapW=Math.min(1500,width*.98),mapH=mapW/2,mapX=(width-mapW)/2,mapY=height*.39-mapH/2;
+   const bounds=mark.getBoundingClientRect(),mapW=Math.min(1500,width*.98),mapH=mapW/2,mapX=(width-mapW)/2,mapY=height*.5-mapH/2;
    particles=[];for(let i=0;i<land.length;i+=2)particles.push(make(mapX+land[i]*mapW,mapY+land[i+1]*mapH,false,i));
    const mask=document.createElement('canvas');mask.width=140;mask.height=140;const mc=mask.getContext('2d');mc.fillStyle='#000';mc.fill(new Path2D('M18 24h29l23 66 23-66h29L83 118H57Z'));const pixels=mc.getImageData(0,0,140,140).data;
    for(let y=0;y<140;y+=3)for(let x=0;x<140;x+=3)if(pixels[(y*140+x)*4+3]>128)particles.push(make(bounds.x+x*bounds.width/140,bounds.y+y*bounds.height/140,true,x+y));
@@ -32,7 +32,7 @@
     const intro=p.logo||reduce.matches?0:(1-reveal)*8*Math.sin(p.seed);ctx.beginPath();ctx.arc(p.x+p.ox,p.y+p.oy+intro,p.logo?1.25:1.1+force*1.3,0,Math.PI*2);ctx.fill();
    }
    const mapW=Math.min(1500,width*.98),mapH=mapW/2;ctx.globalAlpha=reveal*.85;ctx.font='10px "Segoe UI",sans-serif';ctx.fillStyle='#36805a';
-   for(const [lon,lat] of cities){const x=(width-mapW)/2+(lon+180)/360*mapW,y=height*.39-mapH/2+(90-lat)/180*mapH;ctx.fillText('+ '+Math.abs(lat).toFixed(2)+'° '+(lat>0?'N':'S')+'  '+Math.abs(lon).toFixed(2)+'° '+(lon>0?'E':'W'),x+8,y);ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill()}
+   for(const [lon,lat] of cities){const x=(width-mapW)/2+(lon+180)/360*mapW,y=height*.5-mapH/2+(90-lat)/180*mapH;ctx.fillText('+ '+Math.abs(lat).toFixed(2)+'° '+(lat>0?'N':'S')+'  '+Math.abs(lon).toFixed(2)+'° '+(lon>0?'E':'W'),x+8,y);ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill()}
    ctx.globalAlpha=1;if(!reduce.matches)frame=requestAnimationFrame(draw);
   }
   function move(event){if(reduce.matches)return;pointer.x=event.clientX;pointer.y=event.clientY;lastPointer=performance.now()}

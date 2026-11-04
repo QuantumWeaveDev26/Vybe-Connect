@@ -182,6 +182,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not auth_attempt(self.server.attempts,self.server.attempts_lock,self.client_address[0],'mfa:'+ctx['user']['id'],time.time()):raise Problem('Too many security attempts. Wait a minute.',429)
                 result=self.server.store.account_mfa(ctx,path.rsplit('/',1)[-1],data)
                 self.respond(200,result,cookie=self.server.deployment.cookie(logout=True) if result.get('sessions_revoked') else None);return
+            if path=='/api/account/profile':
+                ctx=self.context()
+                if not auth_attempt(self.server.attempts,self.server.attempts_lock,self.client_address[0],'profile:'+ctx['user']['id'],time.time()):raise Problem('Too many profile updates. Wait a minute.',429)
+                self.respond(200,self.server.store.update_profile(ctx,data));return
             if path=='/api/account/password':
                 ctx=self.context()
                 if not auth_attempt(self.server.attempts,self.server.attempts_lock,self.client_address[0],'password:'+ctx['user']['id'],time.time()):raise Problem('Too many password attempts. Wait a minute.',429)

@@ -49,3 +49,20 @@ function accountPasswordForm(){
   },'Change password and sign out');
   for(const name of ['current_password','new_password','confirm_password']){$('#f-'+name).minLength=12;$('#f-'+name).maxLength=256;$('#f-'+name).autocomplete=name==='current_password'?'current-password':'new-password'}
 }
+
+async function refreshWorkspace(button){
+ if(button?.disabled)return;const scope=S.data?.context.user.id;
+ if(button){button.disabled=true;button.setAttribute('aria-busy','true')}
+ try{const success=await refresh();if(success&&scope===S.data?.context.user.id)toast('Workspace is up to date.')}finally{if(button?.isConnected){button.disabled=false;button.removeAttribute('aria-busy')}}
+}
+function accountProfileForm(){
+ const ctx=S.data?.context;if(!ctx)throw new Error('Sign in to view your profile.');
+ const user=ctx.user.id,tenant=ctx.tenant_id,same=()=>S.data?.context.user.id===user&&S.data?.context.tenant_id===tenant;
+ const info=`<div class="profile-summary"><span class="avatar">${initials(ctx.user.name)}</span><div><strong>${esc(ctx.user.name)}</strong><p>${esc(ctx.user.email||'Read-only preview visitor')}</p></div></div><div class="profile-meta"><span>Workspace</span><strong>${esc(ctx.workspace.name)}</strong><span>Role</span><strong>${esc(ctx.role)}</strong></div>`;
+ showModal('Your profile',info+field('name','Display name',ctx.user.name)+`<p class="hint">${S.review?'This preview is read-only. Sign in to your owner account to manage your profile.':'Your display name applies across all your workspaces. Email and account permissions cannot be changed here.'}</p>`+(!S.review?`<div class="buttons">${btn('Account security','account-security','','small')}${btn('Change password','account-password','','small')}</div>`:''),async values=>{
+  if(S.review){$('#modal').close();return}
+  if(!same())throw new Error('Account or workspace changed. Reopen your profile.');
+  await api('/api/account/profile',{method:'POST',body:JSON.stringify({name:values.name})});
+  if(!same())return;$('#modal').close();await refresh();toast('Profile updated.');
+ },S.review?'Close':'Save profile');$('#f-name').maxLength=100;$('#f-name').disabled=S.review;
+}

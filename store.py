@@ -175,6 +175,19 @@ class Store:
     def mfa_status(self,ctx):
         with self.db() as db:return account_mfa.status(db,ctx['user']['id'])
 
+    def update_profile(self,ctx,data):
+        if not isinstance(data,dict) or set(data)!={'name'}:raise Problem('Only the display name can be updated here.')
+        name=required(data.get('name'),'Display name',100)
+        if any(ord(c)<32 or ord(c)==127 for c in name):raise Problem('Display name cannot contain control characters.')
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            user=db.execute('SELECT id,name,email FROM users WHERE id=?',(ctx['user']['id'],)).fetchone()
+            if not user:raise Problem('Account is no longer available.',401)
+            db.execute('UPDATE users SET name=? WHERE id=?',(name,user['id']))
+            for row in db.execute('SELECT tenant FROM members WHERE user=?',(user['id'],)):
+                db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(row['tenant'],user['name'],'account.profile.updated',now()))
+            return {'id':user['id'],'name':name,'email':user['email']}
+
     def account_mfa(self,ctx,operation,data):
         try:return account_mfa.action(self,ctx,operation,data)
         except account_mfa.MFAError as e:raise Problem(str(e),e.code)
