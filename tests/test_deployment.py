@@ -33,6 +33,13 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual(self.request('/api/setup','POST',self.setup_data())[0],200)
     def test_unconfigured_host_and_wrong_origin_are_rejected(self):
         self.start();self.assertEqual(self.request('/',Host='evil.example')[0],403);self.assertEqual(self.request('/api/setup','POST',self.setup_data(),Origin='http://chat.example.test')[0],403)
+    def test_platform_owner_email_uses_the_same_identity_comparison_as_login(self):
+        self.start(TW_PLATFORM_OWNER_EMAIL='boss@example.test')
+        payload=dict(self.setup_data(),email='bo\u00df@example.test')
+        self.assertEqual(self.request('/api/setup','POST',payload)[0],403)
+        self.assertFalse(self.server.store.initialized())
+        payload['email']='BOSS@EXAMPLE.TEST'
+        self.assertEqual(self.request('/api/setup','POST',payload)[0],200)
     def test_forwarded_headers_cannot_override_configured_origin(self):
         self.start();self.assertEqual(self.request('/api/setup','POST',self.setup_data(),Origin='https://evil.example',**{'X-Forwarded-Host':'chat.example.test','X-Forwarded-Proto':'https'})[0],403)
     def test_production_setup_requires_constant_server_token(self):

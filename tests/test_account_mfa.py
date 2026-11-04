@@ -21,6 +21,13 @@ class MFATests(unittest.TestCase):
         self.secret=enrollment['secret']
         result=self.s.account_mfa(self.ctx,'confirm',{'current_password':self.password,'code':totp(self.secret,1800000000)})
         self.codes=result['recovery_codes'];return result
+    def test_remember_me_does_not_bypass_mfa_and_logout_revokes_the_session(self):
+        self.enroll()
+        with self.assertRaises(Problem):self.s.login(self.email,self.password,remember=True)
+        result=self.s.login(self.email,self.password,self.codes[0],remember=True)
+        self.assertEqual(result['max_age'],2592000)
+        self.s.auth(result['token']);self.s.logout(result['token'])
+        with self.assertRaises(Problem):self.s.auth(result['token'])
     def test_rfc_6238_sha1_vectors(self):
         secret=base64.b32encode(b'12345678901234567890').decode()
         for stamp,expected in [(59,'94287082'),(1111111109,'07081804'),(1111111111,'14050471'),(1234567890,'89005924'),(2000000000,'69279037'),(20000000000,'65353130')]:

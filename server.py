@@ -87,7 +87,7 @@ class Handler(BaseHTTPRequestHandler):
                 if path=='/api/review/knowledge-source':self.respond(200,review.store.knowledge_passage(ctx,query.get('document_id',[''])[0],query.get('chunk_id',[''])[0]));return
                 if path=='/api/review/export':self.respond(200,review.store.export_contacts(ctx),'text/csv; charset=utf-8');return
                 raise Problem('Unknown review resource.',404)
-            if path=='/api/bootstrap': self.respond(200,{'review_available':self.server.review is not None,'password_recovery_available':recovery_configuration()['ready'],'initialized':self.server.store.initialized(),'setup_token_required':self.server.deployment.production and not self.server.store.initialized(),'deployment': 'hosted' if self.server.deployment.production else 'local'});return
+            if path=='/api/bootstrap': self.respond(200,{'review_available':self.server.review is not None,'password_recovery_available':recovery_configuration()['ready'],'signup_available':os.environ.get('TW_PUBLIC_SIGNUP','false').lower()=='true' and self.server.store.initialized(),'initialized':self.server.store.initialized(),'setup_token_required':self.server.deployment.production and not self.server.store.initialized(),'deployment': 'hosted' if self.server.deployment.production else 'local'});return
             if path=='/api/account/mfa':self.respond(200,self.server.store.mfa_status(self.context()));return
             if path=='/api/state': self.respond(200,self.server.store.state(self.context()));return
             if path=='/api/analytics':
@@ -191,20 +191,21 @@ class Handler(BaseHTTPRequestHandler):
                 if not auth_attempt(self.server.attempts,self.server.attempts_lock,self.client_address[0],'password:'+ctx['user']['id'],time.time()):raise Problem('Too many password attempts. Wait a minute.',429)
                 result=self.server.store.change_password(ctx,data.get('current_password'),data.get('new_password'))
                 self.respond(200,result,cookie=self.server.deployment.cookie(logout=True));return
-            if path in ['/api/login','/api/setup','/api/invitations/inspect','/api/invitations/accept']:
-                identity=data.get('email') if path=='/api/login' else data.get('token') if path.startswith('/api/invitations/') else 'owner-setup'
+            if path in ['/api/login','/api/signup','/api/setup','/api/invitations/inspect','/api/invitations/accept']:
+                identity='public-signup' if path=='/api/signup' else data.get('email') if path=='/api/login' else data.get('token') if path.startswith('/api/invitations/') else 'owner-setup'
                 if not auth_attempt(self.server.attempts,self.server.attempts_lock,self.client_address[0],path+':'+(identity if isinstance(identity,str) else ''),time.time()):raise Problem('Too many login attempts. Wait a minute.',429)
                 if path=='/api/invitations/inspect':
                     self.respond(200,self.server.store.inspect_invitation(data.get('token')));return
-                if path=='/api/invitations/accept':result=self.server.store.accept_invitation(data)
+                if path=='/api/signup':result=self.server.store.signup(data.get('name'),data.get('email'),data.get('password'),data.get('business'),remember=data.get('remember') is True)
+                elif path=='/api/invitations/accept':result=self.server.store.accept_invitation(data)
                 elif path=='/api/setup':
                     candidate=data.get('setup_token','')
                     if self.server.deployment.production and (not isinstance(candidate,str) or len(candidate)>256 or not secrets.compare_digest(candidate.encode('utf-8'),self.server.deployment.setup_token.encode('utf-8'))):raise Problem('A valid deployment setup token is required.',403)
                     owner=self.server.deployment.owner_email
-                    if owner and (not isinstance(data.get('email'),str) or data['email'].strip().casefold()!=owner):raise Problem('Use the configured platform owner email for initial setup.',403)
+                    if owner and (not isinstance(data.get('email'),str) or data['email'].strip().lower()!=owner):raise Problem('Use the configured platform owner email for initial setup.',403)
                     result=self.server.store.setup(data.get('name'),data.get('email'),data.get('password'),data.get('business'))
-                else: result=self.server.store.login(data.get('email'),data.get('password'),data.get('code'))
-                self.respond(200,dict(ok=True,**({'tenant_id':result['tenant_id']} if 'tenant_id' in result else {})),cookie=self.server.deployment.cookie(result['token']));return
+                else: result=self.server.store.login(data.get('email'),data.get('password'),data.get('code'),remember=data.get('remember') is True)
+                self.respond(200,dict(ok=True,**({'tenant_id':result['tenant_id']} if 'tenant_id' in result else {})),cookie=self.server.deployment.cookie(result['token'],max_age=result.get('max_age',43200)));return
             if path=='/api/logout':
                 self.server.store.logout(self.token());self.respond(200,{'ok':True},cookie=self.server.deployment.cookie(logout=True));return
             if path=='/api/action':

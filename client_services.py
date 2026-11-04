@@ -7,8 +7,8 @@ from team_invitations import action as invitation_action
 
 
 def platform_admin(ctx):
-    owner=os.environ.get('TW_PLATFORM_OWNER_EMAIL','').strip().casefold()
-    return bool(owner and ctx['user']['email'].casefold()==owner)
+    owner=os.environ.get('TW_PLATFORM_OWNER_EMAIL','').strip().lower()
+    return bool(owner and ctx['user']['email'].lower()==owner)
 
 
 def state(store,db,ctx):

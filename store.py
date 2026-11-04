@@ -129,31 +129,47 @@ class Store:
     def initialized(self):
         with self.db() as db: return bool(db.execute('SELECT 1 FROM users LIMIT 1').fetchone())
 
-    def _new_user(self,db,name,email,password):
+    def _new_user(self,db,name,email,password,allow_operator=False):
         name=required(name,'Name',100)
         email=required(email,'Email',200).lower()
         if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email): raise Problem('Enter a valid email address.')
+        owner=os.environ.get('TW_PLATFORM_OWNER_EMAIL','').strip().lower()
+        if owner and email==owner and not allow_operator:raise Problem('The platform owner account must be created through initial setup.',403)
         if not isinstance(password,str) or not 12<=len(password)<=256: raise Problem('Use a password of 12–256 characters.')
         user=uid(); salt=secrets.token_hex(16)
         db.execute('INSERT INTO users VALUES(?,?,?,?,?)',(user,name,email,salt,password_hash(password,salt)))
         return user
 
-    def _session(self,db,user):
+    def _session(self,db,user,remember=False):
         token=secrets.token_urlsafe(32)
-        db.execute('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(token.encode()).hexdigest(),user,now()+43200))
-        return {'token':token}
+        duration=2592000 if remember is True else 43200
+        db.execute('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(token.encode()).hexdigest(),user,now()+duration))
+        return {'token':token,'max_age':duration}
 
     def setup(self,name,email,password,business):
         with self.db() as db:
             db.execute('BEGIN IMMEDIATE')
             if db.execute('SELECT 1 FROM users LIMIT 1').fetchone(): raise Problem('Setup is already complete.',409)
-            user=self._new_user(db,name,email,password)
+            user=self._new_user(db,name,email,password,allow_operator=True)
             tenant=uid()
             db.execute('INSERT INTO tenants VALUES(?,?)',(tenant,required(business,'Business name',100)))
             db.execute('INSERT INTO members VALUES(?,?,?)',(tenant,user,'admin'))
             return self._session(db,user)
 
-    def login(self,email,password,code=None):
+    def signup(self,name,email,password,business,remember=False):
+        if os.environ.get('TW_PUBLIC_SIGNUP','false').lower()!='true':raise Problem('Public account creation is not enabled.',403)
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            if not db.execute('SELECT 1 FROM users LIMIT 1').fetchone():raise Problem('The platform owner must complete initial setup first.',403)
+            normalized=email.strip().lower() if isinstance(email,str) else ''
+            if db.execute('SELECT 1 FROM users WHERE email=?',(normalized,)).fetchone():raise Problem('This email already has an account. Sign in instead.',409)
+            user=self._new_user(db,name,email,password)
+            tenant=uid();db.execute('INSERT INTO tenants VALUES(?,?)',(tenant,required(business,'Business name',100)))
+            db.execute('INSERT INTO members VALUES(?,?,?)',(tenant,user,'admin'))
+            db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(tenant,'Account registration','account.signup',now()))
+            return dict(self._session(db,user,remember),tenant_id=tenant)
+
+    def login(self,email,password,code=None,remember=False):
         if not isinstance(password,str) or len(password)>256: raise Problem('Invalid email or password.',401)
         with self.db() as db:
             u=db.execute('SELECT * FROM users WHERE email=?',(str(email).lower().strip(),)).fetchone()
@@ -164,7 +180,7 @@ class Store:
             if not db.execute('SELECT 1 FROM users WHERE id=? AND salt=? AND password=?',(u['id'],u['salt'],u['password'])).fetchone():raise Problem('Credentials changed. Sign in again.',401)
             try:account_mfa.consume(db,u['id'],code)
             except account_mfa.MFAError as e:raise Problem(str(e),e.code)
-            return self._session(db,u['id'])
+            return self._session(db,u['id'],remember)
 
     def request_password_reset(self,email):return password_recovery.request(self,email)
 

@@ -95,3 +95,9 @@ Requires the Meta configuration above, eligible number, HTTPS, microphone permis
 The complete `.env.production.example` includes SMTP password recovery, Shopify, external agent webhooks and website knowledge origin allowlists. Connection setup in each workspace shows the exact scoped names. Enable recovery only after SMTP acceptance. External agents use the application's documented signed contract, not WATI's private backend.
 
 Set TW_PUBLIC_REVIEW=false only when you are ready to stop public preview. Preserve TW_SANDBOX=false in production. Keep TW_BILLING_ENFORCE=false until billing is accepted. Environment variables do not complete missing functionality, provider approvals or live acceptance; they configure the implemented adapters.
+# Public business registration
+
+After initial owner setup, set `TW_PUBLIC_SIGNUP=true` to allow customers to create their own isolated business accounts at `/#signup`. It defaults to false. This does not expose the owner setup token or join new users to the operator's workspace. Initial owner creation remains protected separately.
+
+Sign-in and signup offer Keep me signed in for 30 days. Sessions use secure server-backed cookies; passwords are not stored in browser storage. Logout and password/security changes revoke sessions. Public signup does not verify ownership of the email address or activate provider integrations automatically.
+

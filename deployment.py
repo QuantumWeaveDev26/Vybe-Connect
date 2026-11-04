@@ -15,8 +15,9 @@ class Deployment:
     setup_token:str=field(default='',repr=False)
     owner_email:str=field(default='',repr=False)
 
-    def cookie(self,token='',logout=False):
-        return 'tw_session='+token+'; HttpOnly; SameSite=Strict; Path=/; Max-Age='+('0' if logout else '43200')+('; Secure' if self.production else '')
+    def cookie(self,token='',logout=False,max_age=43200):
+        duration='2592000' if max_age==2592000 else '43200'
+        return 'tw_session='+token+'; HttpOnly; SameSite=Strict; Path=/; Max-Age='+('0' if logout else duration)+('; Secure' if self.production else '')
 
 
 def configuration():
@@ -35,6 +36,6 @@ def configuration():
         if port is not None and not 1<=port<=65535:raise ValueError()
     except ValueError:raise ValueError('Production requires an exact HTTPS TW_PUBLIC_ORIGIN without path, credentials, query or fragment.') from None
     authority=parsed.hostname.lower()+(':'+str(port) if port not in [None,443] else '');canonical='https://'+authority
-    owner=os.environ.get('TW_PLATFORM_OWNER_EMAIL','').strip().casefold()
+    owner=os.environ.get('TW_PLATFORM_OWNER_EMAIL','').strip().lower()
     if owner and (len(owner)>200 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',owner)):raise ValueError('TW_PLATFORM_OWNER_EMAIL must be a valid owner email.')
     return Deployment(True,canonical,authority,bind,os.environ.get('TW_SETUP_TOKEN',''),owner)
