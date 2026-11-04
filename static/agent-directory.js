@@ -1,7 +1,7 @@
 'use strict';
 // Directory filtering uses only the current authenticated page's rendered cards.
 function agentDirectoryToolbar(id,label,statuses){
- return `<div class="agent-directory-toolbar"><label><span class="sr-only">Search ${esc(label)}</span><input type="search" data-agent-search="${id}" placeholder="Search ${esc(label)}" aria-label="Search ${esc(label)}"></label><label><span class="sr-only">Filter ${esc(label)} by status</span><select data-agent-filter="${id}" aria-label="Filter ${esc(label)} by status"><option value="all">All statuses</option>${statuses.map(([value,text])=>`<option value="${value}">${esc(text)}</option>`).join('')}</select></label><span data-agent-count="${id}" role="status" aria-live="polite"></span></div>`;
+ return `<div class="agent-directory-toolbar"><label><span class="sr-only">Search ${esc(label)}</span><input type="search" data-agent-search="${id}" placeholder="Search agents" aria-label="Search ${esc(label)}"></label><label><span class="sr-only">Filter ${esc(label)} by status</span><select data-agent-filter="${id}" aria-label="Filter ${esc(label)} by status"><option value="all">All statuses</option>${statuses.map(([value,text])=>`<option value="${value}">${esc(text)}</option>`).join('')}</select></label><span data-agent-count="${id}" role="status" aria-live="polite"></span></div>`;
 }
 function agentDirectoryMatches(name,status,query,filter){return name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(filter==='all'||filter===status)}
 function filterAgentDirectory(id){

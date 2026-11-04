@@ -142,6 +142,6 @@ async function openPublicReview(){
 function renderPublicReviewNotice(){
  if(!S.review)return;
  const content=document.querySelector('.content');
- content?.insertAdjacentHTML('afterbegin','<section class="notice review-notice" aria-label="Live review workspace"><div><strong>Live review</strong><span>Read-only sample workspace. Explore every available section without a setup token. AI and messaging are disconnected.</span></div><a href="/owner" class="primary">Owner setup / sign in</a></section>');
+ content?.insertAdjacentHTML('afterbegin','<section class="notice review-notice" aria-label="Live review workspace"><div><strong>Preview</strong><span>Read-only workspace preview · Messaging and AI are disconnected.</span></div><a href="/owner" class="primary">Owner setup / sign in</a></section>');
  document.querySelectorAll('.sidebar-bottom [data-do="account-security"],.sidebar-bottom [data-do="account-password"],.sidebar-bottom [data-do="logout"]').forEach(button=>button.hidden=true);
 }

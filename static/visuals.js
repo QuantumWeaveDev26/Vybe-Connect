@@ -2,7 +2,7 @@
 // Original vector characters; no external image requests or copied character assets.
 function characterAvatar(seed='Agent'){
  const hash=[...String(seed)].reduce((n,c)=>n+c.charCodeAt(0),0),variant=hash%4;
- const skin=['#edbd98','#d39b75','#a96d4f','#f0c4a4'][variant],hair=['#78492e','#322d2d','#462a21','#54342a'][variant],shirt=['#a6d7c2','#bcb2e2','#90b6ce','#d6adc5'][variant];
+ const skin=['#edbd98','#d39b75','#a96d4f','#f0c4a4'][variant],hair=['#78492e','#322d2d','#462a21','#54342a'][variant],shirt=['#a6d7c2','#b4d9c4','#90b6ce','#b8d2c5'][variant];
  return `<span class="character-avatar" aria-hidden="true"><svg viewBox="0 0 64 72"><path d="M5 74c1-18 12-23 27-23s26 5 27 23" fill="${shirt}"/><path d="M25 46h14v12c-4 6-10 6-14 0" fill="${skin}"/><path d="M13 29C9 7 23 2 34 5c17-2 24 15 16 34l-5 15H18Z" fill="${hair}"/><ellipse cx="32" cy="31" rx="18" ry="23" fill="${skin}"/><path d="M14 25C8 8 26 0 36 6 56 2 56 24 47 28l-3-12C29 25 21 14 14 25" fill="${hair}"/><path d="M19 29q5-4 10 0M36 29q5-4 10 0" stroke="${hair}" stroke-width="2" fill="none"/><ellipse cx="24" cy="34" rx="2" ry="2.4" fill="#302a29"/><ellipse cx="40" cy="34" rx="2" ry="2.4" fill="#302a29"/><path d="M31 35l-2 7h5" fill="none" stroke="#aa7054" stroke-width="1.3"/><path d="M25 46q7 8 14 0" fill="#fff" stroke="#9c5c48" stroke-width="1.1"/>${variant%2===0?'<g fill="none" stroke="#34343a" stroke-width="1.7"><rect x="16" y="28" width="15" height="12" rx="5"/><rect x="34" y="28" width="15" height="12" rx="5"/><path d="M31 32h3"/></g>':''}${variant===1?'<path d="M15 35v19l8 2-5-27M49 31l-3 24 7-3V32" fill="'+hair+'"/>':''}<path d="M21 60l7 12h8l7-12" fill="#fff" opacity=".7"/></svg></span>`;
 }
 const CUSTOMER_TEMPLATES=[
