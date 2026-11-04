@@ -13,3 +13,10 @@
 
 ## Boundaries
 No outbound messages, AI generation, charges, shipments or provider activation were performed. Passing local tests does not establish live delivery, payment acceptance, call audio or full WATI parity. AI was visibly disabled in the live workspace. Live release readback and visual review follow deployment.
+
+## Deployment readback
+- Application release e980d57e5b8113316fea243b0d3643410fde18eb deployed by successful Hostinger action 123648525.
+- All eight changed live assets match source after newline normalization; healthz and readyz 200; unauthenticated api/state 401; .env 404.
+- Live browser confirmed profile dialog and fulfilment setup badges. Both payments and shipping report Setup needed. No profile update submitted.
+- Mobile opening screenshot confirms the complete map occupies a separate band above the title; logo, copy and controls remain clear. Nine map geometries tested, including three portrait bands.
+- Existing private environment, long Meta token override and persistent data mounts preserved.
