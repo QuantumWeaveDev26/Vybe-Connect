@@ -9,8 +9,8 @@ import urllib.request
 import zipfile
 from pathlib import Path,PurePosixPath
 
-COMMIT='e980d57e5b8113316fea243b0d3643410fde18eb'
-ARCHIVE_SHA256='7c1f9deb2d367eeb6908c108b9646f3e1303f6ea05639ca5675cb8ad6c1a227b'
+COMMIT='0d7d4819b567cb50f7ff8e2e0b4f054bfb24aaea'
+ARCHIVE_SHA256='21f67a293bd100f7926f4d3399c565639e23d5505ee31ebc5f563de22a92f185'
 ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
 ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
 
