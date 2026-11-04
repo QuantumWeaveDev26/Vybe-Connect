@@ -23,4 +23,10 @@ Final local regression: 522 Python tests passed in 236.346 seconds. JavaScript r
 
 Browser control reports `Local browser use is disabled in Work settings`. Actual hover appearance, pixel alignment, touch devices, microphone/calling behavior and authenticated production interactions remain unverified in this review. No alternative browser automation was used to bypass that restriction.
 
+## Deployment verification
+
+Application release `07ce22445d47ed043af6ba66c7c362a04f3270f5`, archive SHA-256 `58f74a10367655cec8a7cfa37f317720d30bdd9dd74cd5fdfeb8294d3a30a9d9`, deployed successfully through Hostinger action `123624292`. The existing environment and volumes were preserved. The complete privately supplied access token was added through the project API, and the version was corrected to `v25.0`. No provider activation flag was changed.
+
+After deployment, health and readiness returned HTTP 200, the application container was healthy, and all 34 script/style assets matched the local release after normalizing Git line endings. The new map-layout module is served and loaded. Bootstrap still reports an initialized real owner and no public review access. Unauthenticated state returns 401; the public review route and `.env` return 404. The saved webhook token returned the exact requested challenge with HTTP 200. A Meta phone metadata request including an App Secret proof also returned 200 with the matching configured Phone Number ID. WABA/template access remains a separate unresolved configuration check.
+
 Full WATI parity is not established. Razorpay/Shiprocket live acceptance, paid AI inference, real messaging delivery, calling acceptance, and production operational readiness require their separate approval and verification. Provider activation gates remain unchanged.
