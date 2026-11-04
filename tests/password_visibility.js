@@ -1,0 +1,14 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+let click;const group={},otherGroup={};
+const input={type:'password',tagName:'INPUT',closest(){return group}};
+const other={type:'password',tagName:'INPUT',closest(){return otherGroup}};
+const button={dataset:{passwordTarget:'f-new_password'},textContent:'Show',setAttribute(k,v){this[k]=v},closest(selector){return selector==='[data-password-target]'?this:group}};
+const document={addEventListener(name,handler){if(name==='click')click=handler},getElementById(id){return id==='f-new_password'?input:other}};
+const ctx=vm.createContext({document,esc:s=>String(s).replaceAll('"','&quot;')});
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/password-visibility.js'),'utf8'),ctx);
+const html=vm.runInContext('passwordControlMarkup("<input>","f-new_password","New password")',ctx);
+assert.match(html,/type="button"/);assert.match(html,/aria-controls="f-new_password"/);assert.match(html,/Show New password/);
+click({target:button,preventDefault(){}});assert.equal(input.type,'text');assert.equal(button.textContent,'Hide');assert.equal(other.type,'password');
+click({target:button,preventDefault(){}});assert.equal(input.type,'password');assert.equal(button['aria-pressed'],'false');
+button.dataset.passwordTarget='another-field';click({target:button,preventDefault(){}});assert.equal(other.type,'password','A visibility control must stay within its own field.');
+console.log('Password visibility controls toggle only their own field and preserve accessible state.');
