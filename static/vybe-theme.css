@@ -134,3 +134,39 @@ input,select,textarea{max-width:100%;min-width:0}
  .launch-content p{margin:8px 0}.launch-content .launch-caption{margin:10px 0}
  .launch-interact{margin-top:9px}
 }
+
+/* Focused account entry, with optional MFA and room for password-manager controls. */
+.authstory{background:radial-gradient(ellipse at 20% 15%,#ddf4e6,transparent 65%),linear-gradient(145deg,#f4fbf6,#e9f6ee);border-right:1px solid #dfece3}
+.authstory h1{color:#173f2b;font-size:clamp(30px,3.5vw,52px);line-height:1.16}
+.authstory .brand{align-items:center;gap:12px}.authstory .brandmark svg{width:28px;height:28px;stroke:none}
+.authfeatures{flex-wrap:wrap;gap:10px}.authfeatures span{border:1px solid #c8e3d1;background:#ffffff9c;border-radius:9px;padding:9px 12px;color:#396e4c}
+.authform form{max-width:440px;min-width:0}.authform h2{font-size:30px;margin:22px 0 10px;letter-spacing:-.6px}
+.authform .field{margin-bottom:20px}.authform input:not([type="checkbox"]){min-height:48px;font-size:14px}
+.auth-password-control{display:flex;align-items:stretch;min-width:0;border:1px solid #d8e3dc;border-radius:9px;overflow:hidden;transition:border-color .18s,box-shadow .18s}
+.auth-password-control:focus-within{border-color:#69b78a;box-shadow:0 0 0 3px #1aa65b12}
+.auth-password-control input{flex:1;width:1%;min-width:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.auth-password-control input:focus{box-shadow:none}.auth-password-control button{flex:0 0 68px;border:0;border-left:1px solid #e0ebe4;border-radius:0;background:#f4faf6;color:#217746;font-size:12px;padding:8px}
+.auth-password-control button:focus-visible{outline:2px solid #218d52;outline-offset:-3px}
+.auth-caps{color:#936318;margin:8px 0 0}.auth-caps[hidden]{display:none}
+.authform details#auth-mfa{border:1px solid #e1e9e4;border-radius:10px;padding:12px 14px;margin:0 0 18px}
+.authform #auth-mfa summary{cursor:pointer;color:#54705e;font-size:12px;line-height:1.5}
+.authform #auth-mfa[open]{border-color:#9fceb0;background:#f7fcf9}.authform #auth-mfa .field{margin:16px 0 0}
+.authform #autherror:empty{display:none}.authform #autherror{line-height:1.6;overflow-wrap:anywhere;padding:10px 12px;border-radius:8px;background:#fff5f2;font-size:12px}
+.authform .auth-submit{min-height:48px;font-size:14px;margin-top:0}.authform .auth-forgot{display:block;margin:9px auto 0;min-height:44px;color:#237949}.authform .authfoot{margin:22px 0 0;color:#7b8e82;font-size:11px}
+.connector-popover{position:fixed;z-index:12000;width:260px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:auto;background:#fff;border:1px solid #e2e7e4;border-radius:14px;padding:12px 8px;box-shadow:0 12px 35px #193c271c;animation:hint-in .13s ease-out}
+.connector-popover>p{font-size:11px;letter-spacing:.9px;font-weight:650;color:#9aa79f;padding:7px 12px;margin:0}
+.connector-popover>a{display:block;padding:11px 12px;border-radius:8px;color:#293d31;font-weight:550;line-height:1.4}
+.connector-popover>a span{display:block;margin-top:4px;font-size:11px;font-weight:400;color:#819087;overflow-wrap:anywhere}
+.connector-popover>a:hover{background:#eff8f2;color:#14743d}.connector-popover>a:focus-visible{outline:2px solid #1aa65b;outline-offset:-2px;background:#eff8f2}
+.developer-steps{max-width:900px;margin:24px auto;display:grid;gap:16px}
+.developer-step{display:grid;grid-template-columns:42px minmax(0,1fr);gap:16px;padding:24px;border:1px solid #e0e9e3;border-radius:15px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.developer-step-number{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:#e7f5ec;color:#188147;font-size:16px;font-weight:650}
+.developer-step-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.developer-step h2{font-size:18px;margin:0;line-height:1.4;overflow-wrap:anywhere}.developer-step p{margin:10px 0;color:#6f8276;font-size:13px;overflow-wrap:anywhere}
+.developer-step-link{display:inline-block;font-size:13px;line-height:1.5;padding:5px 0;color:#13854a;font-weight:550}
+.developer-contract{max-width:900px;margin:24px auto;border:1px solid #e1e9e4;border-radius:12px;padding:18px;background:#fbfdfb}
+.developer-contract>summary{cursor:pointer;font-weight:600;line-height:1.5}.developer-contract>.card{margin-top:20px}.developer-contract code{overflow-wrap:anywhere}
+@media(hover:hover) and (pointer:fine){.developer-step:hover{border-color:#a2cdb1;box-shadow:0 6px 22px #214d2d0b}}
+@media(max-width:750px){.authstory{padding:28px;border-right:0;border-bottom:1px solid #dfece3}.authstory .brand{margin-bottom:22px}.authstory h1{font-size:30px;margin-bottom:14px}.authstory>p{font-size:13px;margin-bottom:12px}.authfeatures span{padding:7px 9px;font-size:11px}.authform{padding:30px 22px}.authform h2{font-size:27px}.developer-step{padding:18px;gap:12px;grid-template-columns:34px minmax(0,1fr)}.developer-step-number{width:34px;height:34px}.developer-step h2{font-size:16px}.developer-contract{padding:14px}}
+@media(max-width:420px){.authstory .authfeatures{display:none}.authstory h1{font-size:26px}.authstory{padding:24px}.authform{padding:26px 18px}.authform .badge{font-size:10px}.developer-step-heading .badge{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.auth-password-control,.developer-step{transition:none}.connector-popover{animation:none}}
