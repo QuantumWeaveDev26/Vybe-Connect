@@ -16,7 +16,7 @@ const fixture=JSON.parse(execFileSync('python',['-c',[
 const node={addEventListener(){},remove(){},innerHTML:'',open:false};
 const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Set,Array,Object,Promise,URL,URLSearchParams,
  document:{querySelector(){return node},querySelectorAll(){return []},addEventListener(){}},window:{addEventListener(){}},location:{hash:''},
- localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
+ localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},clearInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
 const index=fs.readFileSync(path.join(root,'static/index.html'),'utf8');
 for(const [,url] of index.matchAll(/<script src="\/([^"/]+)" defer><\/script>/g)){
  if(url.startsWith('launch'))continue;

@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+function setup(allowed=true){let stopped=0,media=0,closed=0,remote=null;const calls=[];const stream={getTracks:()=>[{stop(){stopped++}}]};
+ const c=vm.createContext({S:{workspace:'w',data:{context:{user:{id:'u'}}}},document:{addEventListener(){},body:{append(){}},createElement(){return {setAttribute(){},play:async()=>{},remove(){}}}},crypto:{randomUUID:()=> 'uuid-0123456789abcdef'},clearInterval(){},setInterval(){return 1},setTimeout(){return 1},clearTimeout(){},
+ navigator:{mediaDevices:{getUserMedia:async()=>{media++;return stream}}},RTCPeerConnection:class{constructor(){this.iceGatheringState='complete'}addTrack(){}async createOffer(){return {type:'offer',sdp:'v=0 offer'}}async setLocalDescription(d){this.localDescription=d}async setRemoteDescription(d){remote=d}close(){closed++}},
+ act:async(op,data)=>{calls.push([op,data]);if(op==='calls.permission')return {can_call:allowed,ice:{iceServers:[]}};if(op==='calls.start')return {id:'call1',status:'dialing'};return {id:'call1',status:'connected',answer:'v=0 answer'}},toast(){},refresh:async()=>{}});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/services.js'),'utf8'),c);
+ return {c,calls,get media(){return media},get stopped(){return stopped},get closed(){return closed},get remote(){return remote}};
+}
+(async()=>{let x=setup(false);await vm.runInContext('startOutboundVoice("contact","w:u")',x.c);assert.equal(x.media,0);assert.deepEqual(x.calls.map(a=>a[0]),['calls.permission']);
+ x=setup();await vm.runInContext('startOutboundVoice("contact","w:u")',x.c);assert.deepEqual(x.calls.map(a=>a[0]),['calls.permission','calls.start','calls.session']);assert.equal(x.calls[1][1].sdp,'v=0 offer');assert.equal(x.remote.type,'answer');assert.equal(x.remote.sdp,'v=0 answer');assert.equal(vm.runInContext('VOICE.id',x.c),'call1');vm.runInContext('stopVoiceLocal()',x.c);assert.equal(x.stopped,1);assert.equal(x.closed,1);
+ console.log('Outbound browser flow: permission before microphone, actual offer/answer exchange and resource cleanup passed with mocked transport.');})().catch(e=>{console.error(e);process.exitCode=1});

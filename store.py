@@ -314,7 +314,7 @@ class Store:
             data['owned_commerce']=owned_commerce.state(self,db,tenant)
             data['services']=client_services.state(self,db,ctx)
             data['provider_checks']=provider_checks.state(self,db,tenant)
-            data['calling']=dict(whatsapp_calls.status(tenant),calls=[whatsapp_calls.public(c) for c in self._list(db,tenant,'voicecall')[-100:]])
+            data['calling']=dict(whatsapp_calls.status(tenant),calls=[whatsapp_calls.public(c) for c in self._list(db,tenant,'voicecall')[-100:]],requests=[whatsapp_calls.public(c) for c in self._list(db,tenant,'callpermission')[-50:]])
             data['queue']=[dict(x) for x in db.execute('SELECT id,campaign,contact,status,due,error,external_id FROM outbound WHERE tenant=? ORDER BY rowid DESC LIMIT 500',(tenant,))]
         return dict(data,context={k:v for k,v in ctx.items() if not k.startswith('_')},meta=meta_status(tenant),ai=ai_status(tenant),sandbox=os.environ.get('TW_SANDBOX','false').lower()=='true')
 

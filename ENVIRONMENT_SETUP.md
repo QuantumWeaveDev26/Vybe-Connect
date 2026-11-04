@@ -80,15 +80,16 @@ TW_SHIPPING_WORKSPACE_ID_ENABLED=false
 
 The implemented booking workflow uses India/INR. ENABLED=true permits requests which can incur charges. Supply a real address and package details at booking; verify paid status for prepaid orders. Confirm account permissions and an approved shipment/cancellation before client use.
 
-## Optional: inbound WhatsApp calls
+## Optional: inbound and outbound WhatsApp calls
 
 ```dotenv
 TW_CALLING_WORKSPACE_ID_ENABLED=false
+TW_CALLING_WORKSPACE_ID_OUTBOUND_ENABLED=false
 TW_CALLING_WORKSPACE_ID_TURN_URLS=turn:YOUR_RELAY_HOST:3478
 TW_CALLING_WORKSPACE_ID_TURN_SECRET=YOUR_COTURN_REST_SHARED_SECRET
 ```
 
-Requires the Meta configuration above, eligible number, HTTPS, microphone permission and real two-device audio verification. TURN credentials are short-lived and derived server-side. Outbound calling, recording and transfer workflows remain unfinished.
+Requires the Meta configuration above, eligible number, HTTPS, microphone permission and real two-device audio verification. TURN credentials are short-lived and derived server-side. Outbound permission checks, in-window permission requests and browser dialing are implemented behind the separate OUTBOUND_ENABLED gate. Every dial rechecks provider permission; uncertain requests are never automatically retried. Real two-device audio and provider eligibility acceptance remain required. Recording and transfer remain unfinished.
 
 ## Other optional connectors
 
