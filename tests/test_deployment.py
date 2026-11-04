@@ -24,6 +24,13 @@ class DeploymentTests(unittest.TestCase):
     def setup_data(self):return {'name':'Owner','email':'owner@example.test','business':'Acme','password':'long-enough-password','setup_token':'test-only-setup-token-32-characters'}
     def test_production_https_origin_sets_secure_cookie_and_headers(self):
         self.start();status,headers,_=self.request('/api/setup','POST',self.setup_data());self.assertEqual(status,200);self.assertIn('; Secure',headers['Set-Cookie']);self.assertIn('Strict-Transport-Security',headers)
+    def test_first_owner_email_is_bound_without_disclosing_it_in_bootstrap(self):
+        self.start(TW_PLATFORM_OWNER_EMAIL='owner@example.test')
+        wrong=dict(self.setup_data(),email='other@example.test')
+        self.assertEqual(self.request('/api/setup','POST',wrong)[0],403)
+        self.assertFalse(self.server.store.initialized())
+        self.assertNotIn(b'owner@example.test',self.request('/api/bootstrap')[2])
+        self.assertEqual(self.request('/api/setup','POST',self.setup_data())[0],200)
     def test_unconfigured_host_and_wrong_origin_are_rejected(self):
         self.start();self.assertEqual(self.request('/',Host='evil.example')[0],403);self.assertEqual(self.request('/api/setup','POST',self.setup_data(),Origin='http://chat.example.test')[0],403)
     def test_forwarded_headers_cannot_override_configured_origin(self):

@@ -4,7 +4,7 @@ Use the private **Hostinger VPS > Docker > vybe-connect > Environment** for valu
 
 ## First: real owner workspace
 
-The root site is an explicitly read-only preview. Go to `/owner`, create/sign in to your owner account using the existing private setup token, then open Settings. Copy the variable prefix shown there. Replace WORKSPACE_ID below with your real VYBE workspace ID in uppercase. **Do not use WATI's 10248278 or the public preview workspace ID.** Keys do not create an owner account or migrate WATI data.
+The root site is an explicitly read-only preview. Go to `/owner`, create/sign in to your owner account using the existing private setup token, then open Settings. Copy the variable prefix shown there. Replace WORKSPACE_ID below with your real VYBE workspace ID in uppercase. **Do not use WATI's 10248278 or the public preview workspace ID.** Keys do not create an owner account or migrate WATI data. When TW_PLATFORM_OWNER_EMAIL is configured before setup, the initial account email must match it; the private setup token remains required.
 
 ## Minimum: WhatsApp and OpenAI
 

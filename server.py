@@ -200,6 +200,8 @@ class Handler(BaseHTTPRequestHandler):
                 elif path=='/api/setup':
                     candidate=data.get('setup_token','')
                     if self.server.deployment.production and (not isinstance(candidate,str) or len(candidate)>256 or not secrets.compare_digest(candidate.encode('utf-8'),self.server.deployment.setup_token.encode('utf-8'))):raise Problem('A valid deployment setup token is required.',403)
+                    owner=self.server.deployment.owner_email
+                    if owner and (not isinstance(data.get('email'),str) or data['email'].strip().casefold()!=owner):raise Problem('Use the configured platform owner email for initial setup.',403)
                     result=self.server.store.setup(data.get('name'),data.get('email'),data.get('password'),data.get('business'))
                 else: result=self.server.store.login(data.get('email'),data.get('password'),data.get('code'))
                 self.respond(200,dict(ok=True,**({'tenant_id':result['tenant_id']} if 'tenant_id' in result else {})),cookie=self.server.deployment.cookie(result['token']));return
