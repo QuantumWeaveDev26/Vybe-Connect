@@ -27,3 +27,7 @@ The application can be deployed and inspected, but server health is not business
 Full WATI feature parity remains incomplete. Self-service Meta onboarding, outbound calling/transfer/recording and additional WATI channels/tool coverage are not completed by entering API keys. Provider acceptance was not performed in this release. No paid API inference, WhatsApp message, charge, refund, shipment or call was initiated.
 
 The existing public preview stays isolated and read-only to support review without bypassing owner authentication. Fake customer records and fake provider responses must never be added to real workspaces. When ready, TW_PUBLIC_REVIEW=false removes public sample access.
+
+## Deployment verification
+
+Application d75f127152f55f958f5b41f930bf5c2468d47280 deployed by Hostinger action 123604854. Source initializer exited 0 and app became healthy. HTTPS healthz/readyz returned 200; all 34 frontend/data assets matched source. Unauthenticated profile POST returned 401. Live browser verified Refresh confirmation, correctly read-only preview profile and five aligned 18x18 permission checkboxes, without console errors. The authenticated profile update and agent-permission persistence tests ran against an isolated QA store, not customer production data.
