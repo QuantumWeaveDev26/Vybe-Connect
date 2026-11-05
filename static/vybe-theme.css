@@ -269,3 +269,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #238653;outline-offset:3p
 .commerce-policy{margin:20px 0;color:#60786a}.commerce-policy>summary{cursor:pointer;font-size:14px}
 
 .provider-check-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #edf2ef}.provider-check-row>div{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0}.provider-check-row button{flex-shrink:0}@media(max-width:480px){.provider-check-row{align-items:flex-start}.provider-check-row>div{align-items:flex-start;flex-direction:column}}
+
+.provider-check-hint{flex-basis:100%;margin:0;max-width:620px}.provider-check-row{align-items:flex-start}

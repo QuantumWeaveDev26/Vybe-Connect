@@ -30,6 +30,13 @@ def request(url, method='GET', payload=None, headers=None):
         return result
     except urllib.error.HTTPError as error:
         # Do not retain provider bodies, URLs, credentials, or customer details.
-        raise RemoteError('Provider returned HTTP ' + str(error.code) + '.', 400 <= error.code < 500 and error.code not in (408, 429)) from None
+        failure=RemoteError('Provider returned HTTP ' + str(error.code) + '.', 400 <= error.code < 500 and error.code not in (408, 429))
+        failure.http_status=error.code;failure.provider_code=None
+        if url.startswith('https://graph.facebook.com/'):
+            try:
+                body=json.loads(error.read(65536));code=body.get('error',{}).get('code')
+                if type(code) is int and 0<=code<=100000000:failure.provider_code=code
+            except (ValueError,TypeError,AttributeError,OSError):pass
+        raise failure from None
     except (OSError, ValueError, urllib.error.URLError):
         raise RemoteError('Provider outcome is uncertain. Reconcile before retrying.') from None
