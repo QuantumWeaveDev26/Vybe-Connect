@@ -148,6 +148,7 @@ function agentActionSummary(agent){const allowed=agent.allowed_actions??Object.k
 async function aiAction(action,el){
   ensureAIScope();const id=el.dataset.id;if(['ai-stop','ai-feedback','ai-open-source','ai-source-conversation'].includes(action))return aiExecutionAction(action,el);
   if(action==='ai-setup-knowledge')return showAI('knowledge');
+  if(action==='ai-open-agent'){const agent=(S.data.aiagents||[]).find(a=>a.id===id&&!a.archived);if(!agent)throw new Error('This agent is unavailable. Refresh the workspace.');A.chatRevision++;A.agent=id;A.chat=null;A.purpose='chat';A.tab='ask';A.draft='';return showAI('ask')}
   if(action==='ai-open')return showAI();
   if(action==='ai-agent-category'){A.tab='agents';const choices=['All','Overview','Sales','Support','Marketing','Operations'];if(!choices.includes(el.dataset.category))return;A.agentCategory=el.dataset.category;A.catalogExpanded=false;return renderAI()}
   if(action==='ai-catalog-toggle'){A.tab='agents';A.catalogExpanded=!A.catalogExpanded;return renderAI()}

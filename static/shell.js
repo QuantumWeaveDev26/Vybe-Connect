@@ -34,19 +34,31 @@ function workspaceSearchEntries(query){
  const q=String(query||'').trim().toLocaleLowerCase();if(!q)return [];
  const routes=Object.entries(names).filter(([route,label])=>(route+' '+label).toLocaleLowerCase().includes(q)).map(([route,label])=>({route,label,kind:'Page'}));
  const contacts=(S.data?.contacts||[]).filter(c=>(c.name+' '+c.phone).toLocaleLowerCase().includes(q)).slice(0,6).map(c=>({id:c.id,label:c.name,kind:'Contact'}));
- return [...routes,...contacts].slice(0,10);
+ const agents=(S.data?.aiagents||[]).filter(a=>!a.archived&&String(a.name).toLocaleLowerCase().includes(q)).slice(0,4).map(a=>({agentId:a.id,label:a.name,kind:'Agent'}));
+ return [...routes,...contacts,...agents].slice(0,10);
 }
 function renderWorkspaceSearch(query){
  const box=document.querySelector('#workspace-search-results');if(!box)return;
  const items=workspaceSearchEntries(query);box.hidden=!query.trim();
- box.innerHTML=items.map(item=>item.id?`<button type="button" data-do="open-chat" data-id="${esc(item.id)}"><span>${esc(item.label)}</span><small>${item.kind}</small></button>`:`<a href="#${esc(item.route)}"><span>${esc(item.label)}</span><small>${item.kind}</small></a>`).join('')||'<p>No matches in this workspace.</p>';
+ box.innerHTML=items.map(item=>item.agentId?`<button type="button" data-do="ai-open-agent" data-id="${esc(item.agentId)}"><span>${esc(item.label)}</span><small>Agent</small></button>`:item.id?`<button type="button" data-do="open-chat" data-id="${esc(item.id)}"><span>${esc(item.label)}</span><small>${item.kind}</small></button>`:`<a href="#${esc(item.route)}"><span>${esc(item.label)}</span><small>${item.kind}</small></a>`).join('')||'<p>No matches in this workspace.</p>';
+}
+function headerAccountMarkup(){
+ const user=S.data.context.user,unread=(S.data.mention_notifications||[]).filter(n=>!n.read).length;
+ return `<div class="header-account"><button type="button" class="header-bell" data-do="team-mentions" aria-label="${unread} unread notification${unread===1?'':'s'}" title="Mention notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unread?'<i class="notification-dot"></i>':''}</button><div class="header-account-divider"></div><button type="button" id="header-profile-toggle" class="header-profile-toggle" aria-label="Open account menu" aria-expanded="false" aria-controls="header-profile-menu"><span class="header-user-avatar" aria-hidden="true">${esc(initials(user.name))}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button><div id="header-profile-menu" class="header-profile-menu" hidden><div class="header-profile-info"><strong>${esc(user.name)}</strong><small>${esc(user.email||'')}</small></div><button type="button" data-do="account-profile">Your profile</button><button type="button" data-do="ai-open">Ask VYBE Connect AI</button><button type="button" data-do="account-security">Security</button><button type="button" data-do="refresh">Refresh workspace</button><button type="button" data-do="logout">Sign out</button></div></div>`;
+}
+function closeHeaderProfile(restoreFocus=false){
+ const menu=document.querySelector('#header-profile-menu'),toggle=document.querySelector('#header-profile-toggle');
+ if(menu)menu.hidden=true;if(toggle)toggle.setAttribute('aria-expanded','false');if(restoreFocus)toggle?.focus();
 }
 function installConceptHeader(){
- const bar=document.querySelector('.topbar');if(!bar)return;
- bar.insertAdjacentHTML('afterbegin','<button type="button" class="header-mobile-menu ghost" data-do="nav-toggle" aria-label="Toggle navigation">☰</button>');
- const picker=bar.querySelector('.buttons');
- picker?.insertAdjacentHTML('afterend',`<div class="workspace-search"><label for="workspace-search" class="sr-only">Search workspace</label>${icon('search')}<input id="workspace-search" type="search" autocomplete="off" placeholder="Search conversations, contacts, pages…" aria-controls="workspace-search-results"><div id="workspace-search-results" class="workspace-search-results" hidden></div></div><a class="header-whatsapp" href="#settings">${icon('inbox')}<span>${S.data.meta?.configured?'WhatsApp settings':'Connect WhatsApp'}</span></a>`);
+ const bar=document.querySelector('.topbar');if(!bar||bar.querySelector('.header-brand'))return;
+ bar.insertAdjacentHTML('afterbegin','<a class="header-brand" href="#campaigns" aria-label="VYBE Connect home"><span class="header-brand-v" aria-hidden="true">V</span><span>VYBE Connect</span></a><button type="button" class="header-mobile-menu ghost" data-do="nav-toggle" aria-label="Toggle navigation">☰</button>');
+ const picker=bar.querySelector('.buttons');picker?.classList.add('header-workspace');
+ picker?.insertAdjacentHTML('afterbegin','<span class="workspace-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 21V3h12v18M16 8h5v13H3M8 7h1m3 0h1M8 11h1m3 0h1M8 15h1m3 0h1M9 21v-3h3v3"/></svg></span>');
+ picker?.insertAdjacentHTML('afterend',`<div class="workspace-search"><label for="workspace-search" class="sr-only">Search workspace</label>${icon('search')}<input id="workspace-search" type="search" autocomplete="off" placeholder="Search conversations, contacts, agents…" aria-controls="workspace-search-results"><div id="workspace-search-results" class="workspace-search-results" hidden></div></div><a class="header-whatsapp" href="#settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-12 7.8L3 21l1.7-5a8.5 8.5 0 1 1 15.3-4.5Z"/><path d="m8 7 2 3-1 1q1.5 3 4 3l1-1 3 2q-1 3-4 2-6-2-7-7 0-2 2-3Z" stroke-width="1.2"/></svg><span>${S.data.meta?.configured?'WhatsApp settings':'Connect WhatsApp'}</span></a>`);
+ const right=bar.querySelector('.topright');if(right){right.classList.add('header-account-host');right.insertAdjacentHTML('beforeend',headerAccountMarkup());}
  const search=bar.querySelector('#workspace-search');if(search)search.oninput=()=>renderWorkspaceSearch(search.value);
+ const toggle=bar.querySelector('#header-profile-toggle');if(toggle)toggle.onclick=event=>{event.stopPropagation();const menu=bar.querySelector('#header-profile-menu');menu.hidden=!menu.hidden;toggle.setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button')?.focus()};
 }
 function upgradeShell(){if(!S.data)return;installConceptHeader();closeConnectorMenu();applyNavigationPreference();const sidebar=$('.sidebar nav');if(!sidebar)return;const section=shellSection();sidebar.setAttribute("aria-label","Main navigation");sidebar.innerHTML=primaryNavigation();
 const main=$('.main'),content=$('.content');main.querySelector('.context-nav')?.remove();const menu=contextMenu();main.classList.toggle('has-context',!!menu);if(menu)content.insertAdjacentHTML('beforebegin',menu);const aiButton=$('[data-do="ai-open"]');if(aiButton){aiButton.classList.add('header-assistant');aiButton.innerHTML=`<span>✧ VYBE Connect AI</span><span class="ai-context-label">${esc(S.route==='templates'?'Review templates and suggest improvements':S.route==='inbox'?'Find recent chats with buying intent':'Review campaign engagement and insights')}</span>`;$('.topbar').prepend(aiButton)} }
@@ -69,7 +81,7 @@ if(typeof document!=='undefined'){
 document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar .navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]'))){mobileNavigationOpen=false;applyNavigationPreference()}});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&mobileNavigationOpen){mobileNavigationOpen=false;applyNavigationPreference()}});
 
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
-document.addEventListener('click',event=>{if(!event.target.closest?.('.workspace-search')){const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeHeaderProfile();const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
+document.addEventListener('click',event=>{if(!event.target.closest?.('#header-profile-toggle'))closeHeaderProfile();if(!event.target.closest?.('.workspace-search')){const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
 
 }

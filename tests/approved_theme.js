@@ -20,3 +20,5 @@ assert.equal(panel.removed,true,'Agents drawer should defer to the existing full
 assert.equal(panel.innerHTML,'existing drawer','Must not render duplicate directory controls');
 assert.match(catalog.innerHTML,/Your AI team/);
 console.log('Drawer state survives refresh; full-page agents avoid duplicate search controls.');
+vm.runInContext('S.data.aiagents=[{id:"next-agent",name:"Inbox Triage"}];A.chatRevision=7;showAI=()=>{};aiAction("ai-open-agent",{dataset:{id:"next-agent"}})',c);
+assert.equal(vm.runInContext('A.chatRevision',c),8,'Header agent switching must invalidate an in-flight prior chat');

@@ -6,3 +6,5 @@ assert.equal(vm.runInContext('workspaceSearchEntries("inbox")[0].route',c),'inbo
 assert.equal(vm.runInContext('workspaceSearchEntries("customer")[0].id',c),'a');
 assert.equal(vm.runInContext('workspaceSearchEntries("missing").length',c),0);
 console.log('Workspace search returns real current-workspace contacts and destinations.');
+c.S.data.aiagents=[{id:'agent-1',name:'Priority Scout'}];
+assert.equal(vm.runInContext('workspaceSearchEntries("Scout")[0]?.agentId',c),'agent-1');
