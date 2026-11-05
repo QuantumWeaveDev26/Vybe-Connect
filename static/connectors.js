@@ -1,6 +1,6 @@
 'use strict';
 const CONNECTOR_MENU={trigger:null,timer:0,pinned:false};
-function connectorMenuMarkup(){return '<nav id="connector-popover" class="connector-popover" aria-label="Connectors"><p>CONNECTORS</p><a href="#developers">API <span>Setup and event contract</span></a><a href="#commerce">Integrations <span>Commerce and connected services</span></a><a href="#webhooks">Webhooks <span>Callback setup and delivery logs</span></a></nav>'}
+function connectorMenuMarkup(){return '<nav id="connector-popover" class="connector-popover" aria-label="Connectors"><p>CONNECTORS</p><a href="#developers">API tokens <span>Access keys and developer setup</span></a><a href="#commerce">Integrations <span>Commerce and connected services</span></a><a href="#webhooks">Webhooks <span>Callback setup and delivery logs</span></a></nav>'}
 function connectorPosition(rect,width,height,menuHeight){
  const menuWidth=Math.min(260,width-16),left=Math.max(8,Math.min(rect.right+10,width-menuWidth-8));
  return {left,top:Math.max(8,Math.min(rect.top,height-menuHeight-8)),width:menuWidth};
@@ -51,7 +51,7 @@ function developerPage(){
   ['2','Connect your agent',connected?`${connected} enabled connection${connected===1?'':'s'} with dispatch settings configured.`:'Connect your own HTTPS agent endpoint and signing secret.',connected?'Configured':'Setup needed','#external-agents','Manage agents'],
   ['3','Review webhook delivery',events.length?`${events.length} recent event${events.length===1?'':'s'} available for review.`:'Review callback setup, signed events and delivery history.',events.length?'Activity available':'No events yet','#webhooks','Open webhooks']
  ];
- return pagehead('Developer console','Connect your channel, configure agents and review real event delivery.')+`<div class="developer-steps">${steps.map(([n,title,description,status,href,label])=>`<section class="developer-step"><span class="developer-step-number">${n}</span><div><div class="developer-step-heading"><h2>${title}</h2><span class="badge">${status}</span></div><p>${esc(description)}</p><a href="${href}" class="developer-step-link">${label} →</a></div></section>`).join('')}</div><details class="developer-contract"><summary>API event contract and agent callbacks</summary>${developerContractPage()}</details>`;
+ return pagehead('Developer console','Connect your channel, configure agents and review real event delivery.')+apiTokenManagerMarkup()+`<div class="developer-steps">${steps.map(([n,title,description,status,href,label])=>`<section class="developer-step"><span class="developer-step-number">${n}</span><div><div class="developer-step-heading"><h2>${title}</h2><span class="badge">${status}</span></div><p>${esc(description)}</p><a href="${href}" class="developer-step-link">${label} →</a></div></section>`).join('')}</div><details class="developer-contract"><summary>API event contract and agent callbacks</summary>${developerContractPage()}</details>`;
 }
 function webhooksPage(){
  const m=S.data.meta,origin=location.origin||'',callback=origin+'/webhook/'+S.workspace;

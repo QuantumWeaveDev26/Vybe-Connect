@@ -18,6 +18,7 @@ from meta import settings, signature_ok
 from deployment import configuration
 from auth_limits import consume as auth_attempt
 import embedded_signup
+import api_tokens
 
 ROOT=Path(__file__).resolve().parent
 
@@ -76,6 +77,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not self.host_ok(): raise Problem('Invalid host.',403)
             path=urlsplit(self.path).path
+            if path.startswith('/api/v1/'):
+                self.respond(200,api_tokens.read(self.server.store,self.headers.get('Authorization',''),path,parse_qs(urlsplit(self.path).query),self.headers.get('X-Workspace')));return
+            if path=='/api/developer/tokens':self.respond(200,{'tokens':api_tokens.listing(self.server.store,self.context())});return
             if path=='/healthz':self.respond(200,{'status':'ok'});return
             if path=='/readyz':
                 try:
@@ -117,13 +121,13 @@ class Handler(BaseHTTPRequestHandler):
                 if q.get('hub.mode')==['subscribe'] and any(v and secrets.compare_digest(supplied,v) for v in verify): self.respond(200,q.get('hub.challenge',[''])[0],'text/plain');return
                 raise Problem('Verification failed.',403)
             files={'/interactions.js':'interactions.js','/password-visibility.js':'password-visibility.js','/auth-entry.js':'auth-entry.js','/connectors.js':'connectors.js','/launch-layout.js':'launch-layout.js','/visuals.js':'visuals.js','/world-dots.json':'world-dots.json','/launch.js':'launch.js','/services.js':'services.js','/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
-            files.update({'/customer-template-portraits.webp':'customer-template-portraits.webp','/specialist-agents.webp':'specialist-agents.webp','/inbox-filters.js':'inbox-filters.js','/metric-characters-clean.png':'metric-characters-clean.png','/concept-theme.css':'concept-theme.css','/approved-concept.png':'approved-concept.png','/privacy':'privacy.html','/data-deletion':'data-deletion.html','/whatsapp-connect.js':'whatsapp-connect.js'})
+            files.update({'/api-tokens.js':'api-tokens.js','/customer-template-portraits.webp':'customer-template-portraits.webp','/specialist-agents.webp':'specialist-agents.webp','/inbox-filters.js':'inbox-filters.js','/metric-characters-clean.png':'metric-characters-clean.png','/concept-theme.css':'concept-theme.css','/approved-concept.png':'approved-concept.png','/privacy':'privacy.html','/data-deletion':'data-deletion.html','/whatsapp-connect.js':'whatsapp-connect.js'})
             if path not in files: raise Problem('Not found.',404)
             p=ROOT/'static'/files[path]
             if not p.exists(): raise Problem('UI is not installed.',404)
             mime={'html':'text/html','js':'text/javascript','css':'text/css','json':'application/json','png':'image/png','webp':'image/webp'}[p.suffix[1:]]
             self.respond(200,p.read_bytes(),mime+('' if mime.startswith('image/') else '; charset=utf-8'))
-        except Problem as e: self.respond(e.code,{'error':str(e)})
+        except (Problem,api_tokens.APIError) as e: self.respond(e.code,{'error':str(e)})
         except Exception: self.respond(500,{'error':'An internal error occurred.'})
 
     def do_POST(self):
@@ -176,6 +180,10 @@ class Handler(BaseHTTPRequestHandler):
                         for event in value.get('statuses',[]): self.server.store.delivery(tenant,event.get('id'),event.get('status'))
                 self.respond(200,{'received':True});return
             data=json.loads(raw)
+            if path in ('/api/developer/tokens','/api/developer/tokens/revoke'):
+                if not isinstance(data,dict):raise api_tokens.APIError('Use a JSON object.')
+                handler=api_tokens.create if path=='/api/developer/tokens' else api_tokens.revoke
+                self.respond(200,handler(self.server.store,self.context(),data));return
             if not isinstance(data,dict): raise Problem('JSON object required.')
             if path in ['/api/password/request','/api/password/reset']:
                 identity=data.get('email') if path.endswith('/request') else data.get('token')
@@ -225,7 +233,7 @@ class Handler(BaseHTTPRequestHandler):
                     if not auth_attempt(self.server.service_attempts,self.server.service_attempts_lock,self.client_address[0],ctx['user']['id']+':'+operation,time.time()):raise Problem('Too many service requests. Wait a minute.',429)
                 self.respond(200,self.server.store.action(ctx,operation,payload));return
             raise Problem('Not found.',404)
-        except Problem as e: self.respond(e.code,{'error':str(e)})
+        except (Problem,api_tokens.APIError) as e: self.respond(e.code,{'error':str(e)})
         except (ValueError,TypeError,KeyError): self.respond(400,{'error':'Invalid request data.'})
         except Exception: self.respond(500,{'error':'An internal error occurred.'})
 

@@ -33,6 +33,7 @@ def action(store,ctx,operation,data):
                     if kind=='contact':team_operations.assignment(store,db,tenant,row['id'],target,'',ctx['user']['id'],'member_removed')
                     value[field]='';store._put(db,tenant,kind,value,row['id'])
         if loses_admin:
+            db.execute('UPDATE api_tokens SET revoked=1 WHERE tenant=? AND user=?',(tenant,target))
             rows=db.execute("SELECT id,data FROM entities WHERE tenant=? AND kind='workspaceinvite' AND json_extract(data,'$.issued_by')=? AND json_extract(data,'$.status')='pending'",(tenant,target)).fetchall()
             for row in rows:store._put(db,tenant,'workspaceinvite',dict(json.loads(row['data']),status='revoked',revoked_at=stamp),row['id'])
         db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(tenant,ctx['user']['name'],operation,stamp))

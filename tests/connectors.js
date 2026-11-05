@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const ctx=vm.createContext({console,document:{addEventListener(){}},window:{addEventListener(){}},S:{workspace:'workspace',data:{meta:{configured:false,present:{VERIFY_TOKEN:true}},external_agents:[],webhook_events:[]}},
- esc:v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;'),pagehead:(a,b)=>`<h1>${a}</h1><p>${b}</p>`,webhookHistory:()=>'<div>Delivery history</div>',developerContractPage:()=>'<div>Signed event contract</div>',location:{origin:'https://chat.example.test'}});
+ esc:v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;'),pagehead:(a,b)=>`<h1>${a}</h1><p>${b}</p>`,webhookHistory:()=>'<div>Delivery history</div>',apiTokenManagerMarkup:()=>'<div>API token manager</div>',developerContractPage:()=>'<div>Signed event contract</div>',location:{origin:'https://chat.example.test'}});
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/connectors.js'),'utf8'),ctx);
 let html=vm.runInContext('connectorMenuMarkup()',ctx);
 for(const route of ['developers','commerce','webhooks'])assert.match(html,new RegExp('href="#'+route+'"'));

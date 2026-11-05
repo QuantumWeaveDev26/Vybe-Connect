@@ -87,7 +87,9 @@ def action(store,ctx,operation,data):
             else:
                 codes,hashed=new_recovery(user_id);db.execute('UPDATE account_mfa SET recovery=? WHERE user=?',(hashed,user_id));result={'enabled':True,'recovery_codes':codes,'sessions_revoked':False}
         else:raise MFAError('Unknown security action.',404)
-        if result['sessions_revoked']:db.execute('DELETE FROM sessions WHERE user=?',(user_id,))
+        if result['sessions_revoked']:
+            db.execute('DELETE FROM sessions WHERE user=?',(user_id,))
+            db.execute('UPDATE api_tokens SET revoked=1 WHERE user=?',(user_id,))
         for membership in db.execute('SELECT tenant FROM members WHERE user=?',(user_id,)):
             db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(membership['tenant'],'Account security','account.mfa.'+operation,stamp))
         return result

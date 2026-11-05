@@ -53,6 +53,7 @@ import flow_publishing
 import account_mfa
 import embedded_signup
 import ai_connection
+import api_tokens
 import flow_delivery
 from flow_resources import resolve as flow_resources
 from pipeline import save as pipeline_save,state as pipeline_state
@@ -120,6 +121,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS outbound(id TEXT PRIMARY KEY,tenant TEXT,campaign TEXT,contact TEXT,payload TEXT,status TEXT,due INTEGER,claimed INTEGER,error TEXT,external_id TEXT,UNIQUE(tenant,campaign,contact));
             ''')
             embedded_signup.initialize(db)
+            api_tokens.initialize(db)
 
     @contextmanager
     def db(self):
@@ -219,6 +221,7 @@ class Store:
         salt=secrets.token_hex(16)
         db.execute('UPDATE users SET salt=?,password=? WHERE id=?',(salt,password_hash(new_password,salt),user['id']))
         db.execute('DELETE FROM sessions WHERE user=?',(user['id'],))
+        db.execute('UPDATE api_tokens SET revoked=1 WHERE user=?',(user['id'],))
         db.execute('UPDATE password_resets SET revoked=? WHERE user=? AND used=0',(now(),user['id']))
         for row in db.execute('SELECT tenant FROM members WHERE user=?',(user['id'],)):
             db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(row['tenant'],'Account security',action,now()))
@@ -292,6 +295,7 @@ class Store:
             data['aichats']=[c for c in data['aichats'] if c.get('owner')==ctx['user']['id']]
             data['aijobs']=[public_job(j) for j in data['aijobs'] if j.get('owner')==ctx['user']['id']]
             data['messages']=[dict(x) for x in db.execute('SELECT * FROM (SELECT rowid AS ordinal,* FROM messages WHERE tenant=? ORDER BY rowid DESC LIMIT 2000) ORDER BY ts,ordinal',(tenant,))]
+            data['api_tokens']=api_tokens.listing(self,ctx,strict=False)
             data['members']=[dict(x) for x in db.execute('SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON m.user=u.id WHERE m.tenant=?',(tenant,))]
             data['product_feedback']=product_feedback.state(db,ctx)
             data.update(internal_comments.state(self,db,ctx))
