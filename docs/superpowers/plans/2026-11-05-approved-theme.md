@@ -20,3 +20,5 @@ Deferred: legal-provider text correction; live AI/messaging/call/payment tests; 
 - A fresh code reviewer is checking the changes before deployment.
 
 - Fresh review found and fixed drawer-tab resets and duplicate AI directory selectors on the full-page route. Added regression coverage.
+
+- User added four distinct metric illustrations. Implemented original local SVG activity characters for contacts, campaigns, dispatch and consent; no reused AI portraits or paid generation. Added21st JS test suite. Final artwork browser review could not run after local browser use was disabled; prior desktop/mobile theme and agent persistence checks were observed.
