@@ -2,6 +2,8 @@
 
 ## Backend update — 5 November 2026
 
+Named, scoped, expiring and revocable API tokens now expose read-only contacts, messages and recorded analytics through /api/v1. Manage them under Connectors → API tokens. Password recovery, MFA enrollment/removal and administrator demotion revoke affected keys. See [public API](docs/public-api.md) for endpoints and verification limits.
+
 Customer Meta/OpenAI credential-file encryption, migration and key rotation are implemented and enabled on the existing VPS. Connection-state fixes require reconnection for missing/expired credentials and preserve disconnected state. See [credential vault](docs/credential-vault.md). Live paid-provider acceptance and full WATI parity remain separate. The runtime lock file targets Linux x86-64/Python 3.13; local vault development needs the cryptography package.
 
 ## Earlier verified increments — 29 October 2026
