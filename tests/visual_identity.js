@@ -2,7 +2,10 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const c=vm.createContext({document:{addEventListener(){}}});
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/visuals.js'),'utf8'),c);
 const portraits=vm.runInContext('CHARACTER_NAMES.map(characterAvatar)',c);
-assert.ok(new Set(portraits).size>=10,'Use the approved original 3D portrait library');
+assert.ok(new Set(portraits).size===20,'Keep preset and customer-template identities distinct');
+assert.equal(new Set(portraits.slice(0,12)).size,12,'Each AI preset must have a distinct identity');
+assert.ok(portraits.slice(6,12).every(p=>p.includes('role-portrait')),'Specialists must not reuse metric artwork');
+assert.ok(portraits.slice(12).every(p=>p.includes('template-portrait')),'Customer templates have their own exclusive portraits');
 assert.ok(portraits.every(p=>!p.includes('<svg')), 'No legacy flat people remain');
 assert.equal(vm.runInContext('new Set(CUSTOMER_TEMPLATES.map(t=>characterAvatar(t[1]))).size',c),8,'Template choices retain distinct identities within the picker');
 assert.equal(vm.runInContext('characterAvatar("Daily Digest")===characterAvatar("Daily Digest")',c),true);

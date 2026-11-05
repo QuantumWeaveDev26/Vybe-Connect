@@ -5,9 +5,11 @@ const CHARACTER_NAMES=['Daily Digest','Inbox Triage','Re-engagement Scout','Urge
 function characterAvatar(seed='Agent'){
  const name=String(seed),known=CHARACTER_NAMES.indexOf(name);let hash=2166136261;
  for(const c of name)hash=Math.imul(hash^c.codePointAt(0),16777619)>>>0;
- // Ten approved original 3D identities, shared consistently across product areas.
- const faces=[1,0,2,3,4,5,7,9,6,8,4,5,6,7,8,9,1,0,2,3];
- const face=known<0?hash%10:faces[known];
+ // Twelve distinct preset identities; the last six have role-specific original artwork.
+ const faces=[1,0,2,3,4,5,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+ const face=known<0?hash%6:faces[known];
+ if(face>=16)return `<span class="character-avatar template-portrait template-portrait-${face-16}" aria-hidden="true"></span>`;
+ if(face>=10)return `<span class="character-avatar role-portrait role-portrait-${face-10}" aria-hidden="true"></span>`;
  return face<6?`<span class="character-avatar concept-portrait portrait-${face}" aria-hidden="true"></span>`:`<span class="character-avatar character-clean portrait-clean-${face-6}" aria-hidden="true"></span>`;
 }
 const CUSTOMER_TEMPLATES=[
