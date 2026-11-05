@@ -14,7 +14,7 @@ Application source: `4d92ed526c84aeb5203a41c56a92d0e9b9497612`. Existing Hosting
 
 ## Verification performed
 
-- Full Python suite: 587 tests passed, one POSIX-only file-permission test skipped on Windows. Final focused coverage: eight AI connection tests and an HTTP auth/origin/key-privacy lifecycle passed after final changes.
+- Full Python suite: 587 tests run: 586 passed and one POSIX-only file-permission test skipped on Windows. Final focused coverage: eight AI connection tests and an HTTP auth/origin/key-privacy lifecycle passed after final changes.
 - JavaScript checks passed for routes, agent directory, rendering, login controls, responsive layout helpers, signup retry/event isolation, AI admin controls, default spending off, masking and scope cleanup.
 - The authenticated live Settings page and AI form were inspected in the in-app browser. The owner workspace displayed OpenAI configured; the form's real-usage checkbox was unchecked and key field empty/masked. The form was closed without submission. Current live mobile/device visual verification was not performed.
 - Live assets include the new AI controls and WhatsApp-first ordering. Unauthenticated state returns 401; credential paths and `.env` return 404.

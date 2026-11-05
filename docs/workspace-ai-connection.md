@@ -6,7 +6,7 @@ Keys are stored in private `TW_DATA_DIR/ai-credentials` files (0700 directory, 0
 
 Admin role and live session are rechecked before writes. Connection requests are origin-protected and rate-limited. The modal masks input, clears keys after submission and closes on workspace/session changes. Changing/removing a key is blocked while known OpenAI background work still needs it for reconciliation or cancellation; pausing leaves the key available to stop existing work. Already running provider work may continue until cancellation is confirmed.
 
-AI state reflects configured credentials and gates, not proof of a real model response. Provider metadata checks remain a separate existing Services operation. No paid test prompt, message or call was sent. Full regression passed 587 Python tests with one POSIX-only skip; focused credential tests, new HTTP authentication/origin/privacy tests, and JavaScript UI isolation/default-spend/masked-input/cleanup checks passed after final changes.
+AI state reflects configured credentials and gates, not proof of a real model response. Provider metadata checks remain a separate existing Services operation. No paid test prompt, message or call was sent. Full regression ran 587 Python tests successfully (586 passed, one POSIX-only skip); focused credential tests, new HTTP authentication/origin/privacy tests, and JavaScript UI isolation/default-spend/masked-input/cleanup checks passed after final changes.
 
 Reference: https://developers.openai.com/api/docs/guides/api-keys
 
