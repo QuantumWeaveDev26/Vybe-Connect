@@ -20,3 +20,10 @@ Application commit 07fbac5a7836d94f5a37b016c2979a06c104d0c7, successful Hostinge
 
 ## Credential handoff
 After the owner replied Saved, Hostinger still contained the same token override and environment; the existing private token file had not changed since 2026-11-04. The replacement location was requested without asking for a token in chat. Keep tokens out of GitHub and browser-visible application fields.
+
+## Meta token replacement verified — 2026-11-05
+The owner saved a changed token in the existing private token file. It was loaded without displaying it and deployed in the private Compose override by successful Hostinger action 123772321. The rest of the environment was unchanged; application source stayed pinned to 07fbac5a7836d94f5a37b016c2979a06c104d0c7.
+
+Live Meta metadata verification now PASSED: phone access, configured phone membership in its WABA and template access. The authenticated Services screen displays Metadata verified. This supersedes the earlier rejected-token blocker. No WhatsApp message, AI inference, permission request or call was executed for testing. Healthz and readyz return200; unauthenticated api/state401 and .env404.
+
+Live sending activation was requested separately for real usage because actual messages may incur provider charges. At this checkpoint the sending flag is unchanged and remains off. Calling, payment/shipping credentials and live delivery/audio acceptance remain separate work.
