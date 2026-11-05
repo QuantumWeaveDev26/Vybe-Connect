@@ -122,3 +122,18 @@ class EmbeddedSignupTests(unittest.TestCase):
         with self.store.db() as db:db.execute('UPDATE whatsapp_connections SET expires=1')
         self.assertEqual(meta.settings(self.ctx['tenant_id'])['LIVE'],'false')
         self.assertEqual(es.state(self.store,self.ctx)['status'],'expired')
+
+    def test_expired_credentials_override_stale_connection_expiry(self):
+        self.finish();es.action(self.store,self.ctx,'whatsapp.sending',{'enabled':True})
+        saved=es.read_credentials(self.ctx['tenant_id']);saved['expires_at']=1;es.write_credentials(self.ctx['tenant_id'],saved)
+        result=es.state(self.store,self.ctx)
+        self.assertEqual(result['status'],'expired');self.assertFalse(result['sending_enabled'])
+        with self.assertRaises(es.ConnectionError):es.action(self.store,self.ctx,'whatsapp.sending',{'enabled':True})
+    def test_missing_credential_file_requires_reconnect(self):
+        self.finish();es.credential_path(self.ctx['tenant_id']).unlink()
+        result=es.state(self.store,self.ctx)
+        self.assertEqual(result['status'],'needs_reconnect');self.assertFalse(result['sending_enabled'])
+    def test_disconnect_remains_disconnected_after_old_authorization_expires(self):
+        self.finish();es.action(self.store,self.ctx,'whatsapp.disconnect',{})
+        with self.store.db() as db:db.execute('UPDATE whatsapp_connections SET expires=1')
+        self.assertEqual(es.state(self.store,self.ctx)['status'],'disconnected')

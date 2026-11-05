@@ -1,9 +1,10 @@
 """Workspace-bound WhatsApp authorization. No messaging or paid verification calls.
 
 Access tokens live in private server files, not entity JSON or public API state.
-These files require encrypted host storage/backups for encryption at rest.
+Configured key rings encrypt these files with workspace-bound AES-GCM.
 """
 import hashlib
+import credential_vault
 import hmac
 import json
 import os
@@ -48,14 +49,14 @@ def credential_path(tenant,kind='meta'):
     return root/(tenant+'.json')
 
 
-def read_credentials(tenant,kind='meta'):
+def read_credentials(tenant,kind='meta',_legacy=False):
     path=credential_path(tenant,kind)
     if not path.exists():return None
     if path.is_symlink():raise ConnectionError('Credential storage is unavailable.',503)
     if os.name != 'nt' and path.stat().st_mode & 0o077:
         raise ConnectionError('Credential file permissions are unsafe.',503)
     try:
-        result=json.loads(path.read_text())
+        result=credential_vault.unseal(json.loads(path.read_text()),tenant,kind,legacy=_legacy)
         if not isinstance(result,dict) or result.get('tenant')!=tenant:raise ValueError()
         return result
     except (ValueError,OSError):raise ConnectionError('Credential storage is unavailable.',503) from None
@@ -66,10 +67,31 @@ def write_credentials(tenant,values,kind='meta'):
     fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
     try:
         with os.fdopen(fd,'w') as stream:
-            json.dump(dict(values,tenant=tenant),stream);stream.flush();os.fsync(stream.fileno())
+            json.dump(credential_vault.seal(dict(values,tenant=tenant),tenant,kind),stream);stream.flush();os.fsync(stream.fileno())
         os.replace(tmp,path)
     finally:
         if tmp.exists():tmp.unlink()
+
+
+def migrate_credentials():
+    ring=credential_vault.keys()
+    if ring is not None:
+        probe={'tenant':'0'*16}
+        credential_vault.unseal(credential_vault.seal(probe,'0'*16,'meta'),'0'*16,'meta')
+    root=Path(os.environ.get('TW_DATA_DIR',str(Path(__file__).parent/'data')))
+    pending=[]
+    for kind in ('meta','ai'):
+        directory=root/(kind+'-credentials')
+        if not directory.exists():continue
+        if directory.is_symlink():raise ConnectionError('Credential storage is unavailable.',503)
+        for path in sorted(directory.glob('*.json')):
+            tenant=path.stem
+            value=read_credentials(tenant,kind,_legacy=True)
+            envelope=json.loads(path.read_text())
+            if ring is not None and (envelope.get('vault')!=1 or envelope.get('key')!=ring[0]):pending.append((tenant,value,kind))
+    # Validate every file before changing any. Repeating an interrupted migration is safe.
+    for tenant,value,kind in pending:write_credentials(tenant,value,kind)
+    return len(pending)
 
 
 def credential_settings(tenant):
@@ -112,11 +134,17 @@ def state(store,ctx):
         row=db.execute('SELECT status,display_phone,display_name,expires,updated FROM whatsapp_connections WHERE tenant=?',(ctx['tenant_id'],)).fetchone()
     result=dict(row) if row else {'status':'not_connected'}
     if result['status'].startswith('connecting:'):result['status']='connecting'
-    if result.get('expires') and result['expires']<=int(time.time()):result['status']='expired'
     result['signup_available']=c['ready'];result['can_manage']=ctx.get('role')=='admin'
     if row and row['status']=='connected':
         saved=read_credentials(ctx['tenant_id'])
-        result['sending_enabled']=bool(saved and saved.get('LIVE')=='true' and result['status']!='expired')
+        if not saved or saved.get('disconnected') or not saved.get('TOKEN'):
+            result['status']='needs_reconnect'
+        else:
+            deadlines=[e for e in (result.get('expires'),saved.get('expires_at')) if type(e) is int and e>0]
+            if deadlines:
+                result['expires']=min(deadlines)
+                if result['expires']<=int(time.time()):result['status']='expired'
+        result['sending_enabled']=bool(saved and saved.get('LIVE')=='true' and result['status']=='connected')
     return result
 
 
@@ -246,7 +274,7 @@ def action(store,ctx,operation,data):
             db.execute('UPDATE whatsapp_auth_attempts SET used=1 WHERE tenant=?',(ctx['tenant_id'],))
         else:
             if type(data.get('enabled')) is not bool:raise ConnectionError('Choose whether sending is enabled.')
-            if not saved or saved.get('disconnected') or row['status']!='connected' or row['expires'] and row['expires']<=int(time.time()):raise ConnectionError('Reconnect WhatsApp before enabling sending.',409)
+            if not saved or saved.get('disconnected') or row['status']!='connected' or row['expires'] and row['expires']<=int(time.time()) or saved.get('expires_at') and saved['expires_at']<=int(time.time()):raise ConnectionError('Reconnect WhatsApp before enabling sending.',409)
             saved['LIVE']='true' if data['enabled'] else 'false';write_credentials(ctx['tenant_id'],saved)
         db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(ctx['tenant_id'],ctx['user']['name'],operation,int(time.time())))
     return state(store,ctx)

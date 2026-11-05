@@ -1,0 +1,15 @@
+# Workspace credential encryption
+
+Customer Meta and OpenAI credential JSON files now support AES-256-GCM authenticated encryption using the maintained cryptography package. Every write uses a random 96-bit nonce. Associated data binds the ciphertext to both the workspace identifier and the credential kind. Tampered ciphertext, unknown keys, removed keys and files copied between workspaces/kinds fail closed. Tokens and keys are never returned in public state.
+
+The private deployment environment has TW_CREDENTIAL_KEYS (a JSON mapping of key IDs to base64-encoded 32-byte random keys) and TW_CREDENTIAL_ACTIVE_KEY. Never commit these values. Preserve the key ring separately from data backups: losing it makes encrypted credentials unrecoverable. Environment variables and host administrator access remain sensitive; this does not encrypt environment-variable credentials, MFA secrets, or unrelated SQLite fields.
+
+On startup, a synthetic seal/unseal probe verifies the crypto runtime. Existing credential files are validated before migration writes begin. Each file is replaced atomically with restrictive permissions. No plaintext backup is created. Interrupted migrations can be repeated. A corrupt file stops startup instead of silently falling back to operator credentials. New writes use the active key. To rotate, add the new key alongside old keys, make it active, restart, verify migration, then remove old keys only after all files and backups have been accounted for. Do not roll back to a release without vault support after migration. Restore a matching data/key-ring backup or use a vault-aware release.
+
+Linux Python 3.13 dependencies are pinned in requirements-runtime.txt with SHA-256 hashes and binary-wheel-only installation. The source initializer installs them into a read-only runtime vendor directory before starting the application. The dependency files resolved successfully for the production platform during this release. Normal local development without a key ring remains compatible with existing tests; it does not provide application-level encryption. Encrypted files never become readable just because the key-ring variables are removed.
+
+Connection-state repairs also reconcile the saved credential expiry with the database expiry, require reconnection when a credential file is missing, reject enabling sending with expired saved credentials, and preserve disconnected status after old authorization expiry. No number registration, paid message or external provider operation is triggered by startup or migration.
+
+Verification: 80 Python tests ran (79 passed; one POSIX-permission check skipped on Windows), including nine vault tests, three additional connection-state regressions, signup, AI settings, public signup, HTTP security and initializer checks. All 24 JavaScript suites passed. Hash-locked Linux dependency downloads passed. Real Meta onboarding, number registration/coexistence, paid AI/call/payment acceptance and recovery inbox delivery are separate outstanding work.
+
+Algorithm reference: https://cryptography.io/en/stable/hazmat/primitives/aead/#cryptography.hazmat.primitives.ciphers.aead.AESGCM

@@ -1,3 +1,6 @@
+from pathlib import Path
+import site
+site.addsitedir(str(Path(__file__).resolve().parent/'_vendor'))
 """Loopback-only pilot server. Run with Python 3.13: python server.py."""
 from recovery_mail import configuration as recovery_configuration
 import argparse
@@ -228,6 +231,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def make_server(port=8787,path=None):
+    migrated=embedded_signup.migrate_credentials()
+    if embedded_signup.credential_vault.keys() is not None:print(f'Credential vault validated; {migrated} files migrated or rotated.',flush=True)
     deployment=configuration();store=Store(path or Path(os.environ.get('TW_DATA_DIR',str(ROOT/'data')))/'teamwave.db')
     if deployment.production and not store.initialized() and (not 32<=len(deployment.setup_token)<=256 or deployment.setup_token.startswith('REPLACE_')):raise ValueError('Fresh production setup requires a replaced TW_SETUP_TOKEN with 32–256 characters.')
     server=ThreadingHTTPServer((deployment.bind,port),Handler);server.daemon_threads=True
