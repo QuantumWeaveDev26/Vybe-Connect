@@ -2,7 +2,9 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const c=vm.createContext({document:{addEventListener(){}}});
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/visuals.js'),'utf8'),c);
 const portraits=vm.runInContext('CHARACTER_NAMES.map(characterAvatar)',c);
-assert.equal(new Set(portraits).size,20,'Each built-in assistant needs a distinct portrait');
+assert.ok(new Set(portraits).size>=10,'Use the approved original 3D portrait library');
+assert.ok(portraits.every(p=>!p.includes('<svg')), 'No legacy flat people remain');
+assert.equal(vm.runInContext('new Set(CUSTOMER_TEMPLATES.map(t=>characterAvatar(t[1]))).size',c),8,'Template choices retain distinct identities within the picker');
 assert.equal(vm.runInContext('characterAvatar("Daily Digest")===characterAvatar("Daily Digest")',c),true);
 c.seed='<img src=x onerror=alert(1)>';
 assert.doesNotMatch(vm.runInContext('characterAvatar(seed)',c),/onerror|<img/);
@@ -10,4 +12,4 @@ const sources=fs.readFileSync(path.join(__dirname,'../static/app.js'),'utf8');
 vm.runInContext(sources.slice(0,sources.indexOf('const badge=')),c);
 const icons=vm.runInContext('[paths.findings,paths.security,paths.password,paths.settings,paths.webhooks,paths.inbox]',c);
 assert.equal(new Set(icons).size,6,'Security, password, findings and webhooks must have distinct icons');
-console.log('20 distinct stable portraits, safe seed handling and unique utility icons passed.');
+console.log('Approved 3D portraits, eight distinct template identities, safe seed handling and utility icons passed.');

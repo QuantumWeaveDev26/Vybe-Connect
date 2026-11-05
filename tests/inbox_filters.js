@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c=vm.createContext({document:{addEventListener(){}}});
+const source=fs.existsSync('static/inbox-filters.js')?fs.readFileSync('static/inbox-filters.js','utf8'):'';vm.runInContext(source,c);
+assert.equal(vm.runInContext('typeof selectInboxContacts',c),'function');
+c.data={context:{user:{id:'me'}},contacts:[{id:'a',name:'Alice',phone:'111',tags:['VIP'],status:'open',assignee:'me',optin:true,last_real_inbound:990},{id:'b',name:'Bob',phone:'222',tags:[],status:'pending',assignee:'',optin:false,last_real_inbound:1},{id:'c',name:'Cara',phone:'333',tags:['VIP'],status:'solved',assignee:'other',optin:true,last_real_inbound:2000}],messages:[{contact:'a',direction:'in',status:'received',body:'need help',ts:990},{contact:'a',direction:'out',status:'draft',body:'unsent reply',ts:995},{contact:'b',direction:'in',status:'received',body:'pricing',ts:900},{contact:'b',direction:'out',status:'failed',body:'failed response',ts:950},{contact:'c',direction:'out',status:'accepted',body:'done',ts:980}],team_operations:{teams:[{id:'t',members:['me'],enabled:true}]}};
+function ids(options={},filter='all',query=''){c.options=options;c.filter=filter;c.query=query;return JSON.parse(vm.runInContext('JSON.stringify(selectInboxContacts(data,options,filter,query,1000).map(c=>c.id))',c))}
+assert.deepEqual(ids({assignment:'unassigned'}),['b']);assert.deepEqual(ids({attention:'awaiting-reply'}),['a','b']);assert.deepEqual(ids({attention:'draft'}),['a']);assert.deepEqual(ids({team:'t',tag:'tag:VIP'}),['a']);assert.deepEqual(ids({window:'open'}),['a','b']);assert.deepEqual(ids({window:'closed'}),['c']);assert.deepEqual(ids({consent:'no'}),['b']);assert.deepEqual(ids({},'mine'),['a']);assert.deepEqual(ids({},'all','pricing'),['b']);
+assert.deepEqual(ids({sort:'oldest'}),['b','c','a']);
+c.data.contacts[0].last_real_inbound=1000-86400;assert.ok(!ids({window:'open'}).includes('a'),'24-hour boundary must be closed');
+c.options={};vm.runInContext('selectInboxContacts(data,options,"all","",1000)',c);assert.deepEqual(c.data.contacts.map(c=>c.id),['a','b','c'],'Filtering must not mutate contact state');
+console.log('Inbox assignment/team/tag/consent/window/attention/search/sort checks passed; drafts and failed sends never count as replies.');
