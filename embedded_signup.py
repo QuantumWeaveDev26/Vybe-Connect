@@ -37,18 +37,19 @@ def configuration():
     return values
 
 
-def credential_path(tenant):
+def credential_path(tenant,kind='meta'):
     if not re.fullmatch(r'[a-f0-9]{16}',tenant or ''):
         raise ConnectionError('Invalid workspace.',403)
-    root = Path(os.environ.get('TW_DATA_DIR',str(Path(__file__).parent/'data')))/'meta-credentials'
+    if kind not in ('meta','ai'):raise ConnectionError('Invalid credential store.',403)
+    root = Path(os.environ.get('TW_DATA_DIR',str(Path(__file__).parent/'data')))/(kind+'-credentials')
     root.mkdir(mode=0o700,parents=True,exist_ok=True)
     if root.is_symlink(): raise ConnectionError('Credential storage is unavailable.',503)
     if os.name != 'nt': root.chmod(0o700)
     return root/(tenant+'.json')
 
 
-def read_credentials(tenant):
-    path=credential_path(tenant)
+def read_credentials(tenant,kind='meta'):
+    path=credential_path(tenant,kind)
     if not path.exists():return None
     if path.is_symlink():raise ConnectionError('Credential storage is unavailable.',503)
     if os.name != 'nt' and path.stat().st_mode & 0o077:
@@ -60,8 +61,8 @@ def read_credentials(tenant):
     except (ValueError,OSError):raise ConnectionError('Credential storage is unavailable.',503) from None
 
 
-def write_credentials(tenant,values):
-    path=credential_path(tenant);tmp=path.with_name(tenant+'.'+secrets.token_hex(8)+'.tmp')
+def write_credentials(tenant,values,kind='meta'):
+    path=credential_path(tenant,kind);tmp=path.with_name(tenant+'.'+secrets.token_hex(8)+'.tmp')
     fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
     try:
         with os.fdopen(fd,'w') as stream:

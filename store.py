@@ -52,6 +52,7 @@ import team_operations
 import flow_publishing
 import account_mfa
 import embedded_signup
+import ai_connection
 import flow_delivery
 from flow_resources import resolve as flow_resources
 from pipeline import save as pipeline_save,state as pipeline_state
@@ -339,6 +340,9 @@ class Store:
         except ServiceError as e:raise Problem(str(e),e.code)
         if action.startswith('whatsapp.'):
             try:return embedded_signup.action(self,ctx,action,d)
+            except embedded_signup.ConnectionError as e:raise Problem(str(e),e.code) from None
+        if action.startswith('ai.connection.'):
+            try:return ai_connection.action(self,ctx,action,d)
             except embedded_signup.ConnectionError as e:raise Problem(str(e),e.code) from None
         if action=='services.release-failed':
             from service_jobs import release_failed

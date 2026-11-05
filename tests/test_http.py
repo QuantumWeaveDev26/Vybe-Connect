@@ -390,4 +390,17 @@ class HttpTests(unittest.TestCase):
             _,headers,_=self.request('GET','/')
             self.assertIn('https://connect.facebook.net',headers['Content-Security-Policy'])
 
+    def test_ai_connection_is_authenticated_origin_checked_and_never_echoes_key(self):
+        env={'TW_DATA_DIR':self.tmp.name,'TW_AI_ENABLED':'true'}
+        data={'action':'ai.connection.save','data':{'key':'sk-'+('x'*40),'model':'test-model','enabled':False}}
+        with patch.dict(os.environ,env):
+            self.assertEqual(self.request('POST','/api/action',data)[0],401)
+            _,headers,_=self.request('POST','/api/setup',{'name':'Owner','business':'Acme','email':'owner@example.test','password':'long-enough-password'})
+            cookie={'Cookie':headers['Set-Cookie'].split(';')[0]}
+            self.assertEqual(self.request('POST','/api/action',data,dict(cookie,Origin='https://wrong.test'))[0],403)
+            status,_,body=self.request('POST','/api/action',data,cookie)
+            self.assertEqual(status,200);self.assertFalse(json.loads(body)['enabled']);self.assertNotIn(data['data']['key'],body.decode())
+            _,_,body=self.request('GET','/api/state',headers=cookie);self.assertNotIn(data['data']['key'],body.decode())
+            self.assertEqual(self.request('GET','/ai-credentials/key.json')[0],404)
+
 if __name__=='__main__': unittest.main()

@@ -218,7 +218,7 @@ class Handler(BaseHTTPRequestHandler):
                 payload=data.get('data',{})
                 if not isinstance(payload,dict): raise Problem('Action data must be an object.')
                 ctx=self.context();operation=data.get('action')
-                if isinstance(operation,str) and operation.startswith(('whatsapp.','payments.','billing.','shipping.','clients.','providers.','services.','calls.')) and operation not in ('calls.end','calls.reject','calls.release'):
+                if isinstance(operation,str) and operation.startswith(('ai.connection.','whatsapp.','payments.','billing.','shipping.','clients.','providers.','services.','calls.')) and operation not in ('calls.end','calls.reject','calls.release'):
                     if not auth_attempt(self.server.service_attempts,self.server.service_attempts_lock,self.client_address[0],ctx['user']['id']+':'+operation,time.time()):raise Problem('Too many service requests. Wait a minute.',429)
                 self.respond(200,self.server.store.action(ctx,operation,payload));return
             raise Problem('Not found.',404)

@@ -8,21 +8,30 @@ from openai_adapter import request_openai
 
 
 def openai_key(tenant):
+    from ai_connection import settings
+    saved=settings(tenant)
+    if saved is not None:return '' if saved.get('disconnected') else saved.get('key','')
     scoped=os.environ.get('TW_AI_'+str(tenant).upper()+'_OPENAI_API_KEY','') if tenant else ''
     return scoped or os.environ.get('TW_OPENAI_API_KEY','')
 
 
 def ai_status(tenant=None):
+    from ai_connection import settings
+    saved=settings(tenant)
     provider=os.environ.get('TW_AI_PROVIDER','ollama').lower()
+    if saved is not None:provider='openai'
     model=os.environ.get('TW_AI_MODEL','') or ('gpt-6-luna' if provider=='openai' else '')
+    if saved is not None:model=saved.get('model','')
     scoped=os.environ.get('TW_AI_'+str(tenant).upper()+'_MODELS') if tenant else None
     model_list=scoped if scoped is not None else os.environ.get('TW_AI_ALLOWED_MODELS',model)
+    if saved is not None:model_list=model
     models=list(dict.fromkeys(value.strip() for value in model_list.split(',') if re.fullmatch(r'[A-Za-z0-9_.:/-]{1,100}',value.strip())))[:20]
     if model not in models:model=models[0] if models else ''
     requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true'
     paid=bool(tenant and os.environ.get('TW_AI_'+str(tenant).upper()+'_ALLOW_PAID','false').lower()=='true')
+    if saved is not None:paid=saved.get('enabled') is True and not saved.get('disconnected')
     configured=bool(model and (openai_key(tenant) if provider=='openai' else provider=='ollama'))
-    return {'enabled':requested and (provider=='ollama' or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'local Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False}
+    return {'enabled':requested and (provider=='ollama' or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'local Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment'}
 
 
 def clean_history(history):
@@ -41,8 +50,8 @@ def build_system(context):
 def ask_local(question,context,history):
     tenant=context.get('_workspace_id');status=ai_status(tenant)
     selected=context.get('_model') or status['model']
-    if status['provider_id']=='openai' and not status['paid_allowed']:raise ValueError('OpenAI paid calls are disabled for this workspace. Enable its server-side ALLOW_PAID gate only after approving API usage.')
-    if not status['enabled'] or not status['configured']:raise ValueError('AI is not configured. Set the provider, model and TW_AI_ENABLED on the server; OpenAI also requires a server-side key and workspace paid-call approval.')
+    if status['provider_id']=='openai' and not status['paid_allowed']:raise ValueError('OpenAI paid calls are disabled for this workspace. Enable real usage in Settings > AI assistant connection only after approving provider charges.')
+    if not status['enabled'] or not status['configured']:raise ValueError('AI is not configured. Connect a provider in Settings. The platform operator must also enable AI processing.')
     if selected not in status['models']:raise ValueError('The selected AI model is not allowed by the server configuration.')
     if context.get('_customer_reply'):
         from customer_reply_contract import customer_system

@@ -76,13 +76,26 @@ function findingsPage(){
 document.addEventListener('change',async e=>{if(!e.target.dataset.dealStage)return;try{await act('deal.save',{id:e.target.dataset.dealStage,stage:e.target.value});await refresh()}catch(err){toast(err.message);render()}});
 
 function aiConnectionCard(){
-  const a=S.data.ai||{},prefix='TW_AI_'+S.data.context.tenant_id.toUpperCase()+'_';
-  return `<section class="card"><div class="cardhead"><h2>AI provider connection</h2>${badge(aiRuntimeLabel(),a.enabled&&a.configured?'':'gray')}</div><div class="cardbody"><p><strong>Provider:</strong> ${esc(a.provider||'Not selected')} · <strong>Model:</strong> ${esc(a.model||'Not configured')}</p><p class="hint">Manage credentials in the private server environment. Keys never appear here.</p><details><summary>Connection configuration</summary><div class="code">TW_AI_PROVIDER=openai
-TW_AI_MODEL=gpt-6-luna
-TW_AI_ENABLED=false
-${esc(prefix)}OPENAI_API_KEY=ENTER_ON_SERVER
-${esc(prefix)}ALLOW_PAID=false</div><p class="hint">OpenAI needs explicit paid-call approval. Keep activation off until approved. Local inference requires a separately installed Ollama model.</p></details></div></section>`;
+ const a=S.data.ai||{},admin=S.data.context.role==='admin',managed=a.credential_source==='workspace';
+ return `<section class="card"><div class="cardhead"><h2>AI assistant connection</h2>${badge(aiRuntimeLabel(),a.enabled&&a.configured?'':'gray')}</div><div class="cardbody"><p><strong>Provider:</strong> ${esc(a.provider||'Not selected')} &middot; <strong>Model:</strong> ${esc(a.model||'Not configured')}</p><p class="hint">${a.configured?'Credentials are configured. A real model response has not been verified by this screen.':'Connect your own OpenAI project key to use AI in this workspace.'}</p>${admin?`<div class="buttons"><button data-ai-connection="save" ${S.review?'disabled':''}>${managed&&a.configured?'Update OpenAI connection':'Connect OpenAI'}</button>${managed&&a.configured?`<button data-ai-connection="pause" ${!a.paid_allowed||S.review?'disabled':''} title="Pauses new requests; running provider work may continue">Pause AI</button><button data-ai-connection="disconnect" ${S.review?'disabled':''}>Remove connection</button>`:''}</div>`:'<p class="hint">A workspace administrator can configure AI.</p>'}<p class="hint">Keys stay on the server. Saving a key does not run a test. Real AI usage may incur provider charges.</p>${!a.requested_enabled?'<p class="hint">AI processing is currently paused by the platform operator.</p>':''}</div></section>`;
 }
+document.addEventListener('click',async event=>{
+ const el=event.target.closest?.('[data-ai-connection]');if(!el||el.disabled||!S.data)return;
+ const operation=el.dataset.aiConnection,scope=S.workspace+':'+S.data.context.user.id,same=()=>S.data&&scope===S.workspace+':'+S.data.context.user.id;
+ if(S.data.context.role!=='admin'||S.review)return;
+ if(operation==='save'){
+  const a=S.data.ai||{},saved=a.credential_source==='workspace'&&a.configured;
+  showModal('Connect your OpenAI account',`<p>Use a project key from your OpenAI account. It will not be displayed again.</p><div class="field"><label for="ai-connection-key">Project API key${saved?' (leave blank to keep existing)':''}</label><input id="ai-connection-key" name="key" type="password" autocomplete="off" spellcheck="false" maxlength="515" ${saved?'':'required'}><button type="button" data-ai-key-visible aria-controls="ai-connection-key" aria-pressed="false">Show key</button></div><div class="field"><label for="ai-connection-model">Model ID</label><input id="ai-connection-model" name="model" required maxlength="100" value="${esc(a.model||'')}"></div><label class="auth-remember"><input type="checkbox" name="enabled"><span>Enable real AI usage, including enabled schedules. Provider charges may apply.</span></label><p class="hint">Leave unchecked to save with AI paused. No test prompt will be sent.</p>`,async data=>{
+   if(!same())throw new Error('Workspace changed. Reopen AI settings.');
+   try{await act('ai.connection.save',data);if(!same())return;$('#modal').close();await refresh();toast(data.enabled?'AI enabled for real usage. No test was sent.':'AI key saved. Usage remains paused.')}finally{const input=$('#ai-connection-key');if(input)input.value='';data.key=''}
+  },'Save connection');$('#modal').dataset.aiConnectionScope=scope;return;
+ }
+ if(operation==='disconnect'&&!confirm('Remove this workspace AI connection? AI requests will stop here. Revoke the API key in OpenAI as well if it is no longer needed.'))return;
+ try{await act('ai.connection.'+operation,{});if(same())await refresh()}catch(error){if(same())toast(error.message)}
+});
+document.addEventListener('click',event=>{const button=event.target.closest?.('[data-ai-key-visible]');if(!button)return;const input=$('#ai-connection-key');if(!input)return;const visible=input.type==='password';input.type=visible?'text':'password';button.textContent=visible?'Hide key':'Show key';button.setAttribute('aria-pressed',String(visible))});
+function clearAIConnectionDialog(){const modal=$('#modal');if(!modal?.dataset?.aiConnectionScope)return;const scope=S.data?S.workspace+':'+S.data.context.user.id:'';if(!modal.open||modal.dataset.aiConnectionScope!==scope){const input=$('#ai-connection-key');if(input)input.value='';modal.close();modal.innerHTML='';delete modal.dataset.aiConnectionScope;formSubmit=null}}
+document.addEventListener('close',event=>{if(event.target.id==='modal')clearAIConnectionDialog()},true);
 
 function pipelineSettingsForm(){
   if(S.data.context.role!=='admin')throw new Error('Administrator access required.');
