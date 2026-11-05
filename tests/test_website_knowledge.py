@@ -80,6 +80,25 @@ class WebsiteKnowledgeTests(unittest.TestCase):
         self.assertFalse(any(m['direction']=='out' for m in self.s.state(self.ctx)['messages']))
 
 
+    def test_self_service_public_page_requires_explicit_permission(self):
+        with patch.dict(os.environ,{'TW_KNOWLEDGE_WEB_SELF_SERVICE':'true',self.prefix+'ALLOWED_ORIGINS':''}),patch('website_knowledge.fetch_page',return_value=('text/plain',b'New public source policy.')) as fetch:
+            with self.assertRaises(Problem):self.s.action(self.ctx,'knowledge.website.add',{'url':'https://new.example/policy','title':'New'})
+            fetch.assert_not_called()
+            source=self.s.action(self.ctx,'knowledge.website.add',{'url':'https://new.example/policy','title':'New','allow_fetch':True})
+            self.assertTrue(source['public_page_authorized']);self.assertFalse(source['enabled'])
+            self.s.action(self.ctx,'knowledge.website.refresh',{'id':source['id']})
+            self.s.action(self.ctx,'knowledge.document.delete',{'id':source['id']})
+            with self.assertRaises(Problem):self.s.action(self.ctx,'knowledge.website.refresh',{'id':source['id']})
+    def test_self_service_feature_off_stale_admin_and_private_url_fail(self):
+        with patch('website_knowledge.fetch_page') as fetch:
+            with self.assertRaises(Problem):self.s.action(self.ctx,'knowledge.website.add',{'url':'https://new.example/page','title':'New','allow_fetch':True})
+            with patch.dict(os.environ,{'TW_KNOWLEDGE_WEB_SELF_SERVICE':'true'}):
+                with self.assertRaises(Problem):self.s.action(self.ctx,'knowledge.website.add',{'url':'https://127.0.0.1/private','title':'New','allow_fetch':True})
+                stale=dict(self.ctx,_session_hash='revoked')
+                with self.assertRaises(Problem):self.s.action(stale,'knowledge.website.add',{'url':'https://new.example/page','title':'New','allow_fetch':True})
+            fetch.assert_not_called()
+
+
 class WebsiteTransportTests(unittest.TestCase):
     def test_html_extraction_excludes_active_content_and_rejects_nontext(self):
         from website_knowledge import extract_page

@@ -118,6 +118,7 @@ def submit_template(tenant,template):
 
 
 def send_template(tenant,phone,template,name):
+    if template.get('category')=='AUTHENTICATION':raise ProviderError('Authentication templates require a dedicated OTP sender; campaign name personalization is not an OTP code.',True)
     if settings(tenant)['LIVE'].lower()!='true':raise ProviderError('Live sending is disabled.',True)
     components=template.get('components',[])
     for component in components:

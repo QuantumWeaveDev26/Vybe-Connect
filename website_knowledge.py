@@ -64,12 +64,12 @@ def fetch_page(value):
     finally:connection.close()
 
 
-def allowed(tenant,value):
+def allowed(tenant,value,approved=False):
     try:url=endpoint(value)
     except ValueError:raise KnowledgeError('Use a public HTTPS URL on port 443 without credentials, queries or fragments.') from None
     origin='https://'+url.hostname.lower()
     origins={v.strip().rstrip('/').lower() for v in os.environ.get('TW_KNOWLEDGE_WEB_'+tenant.upper()+'_ALLOWED_ORIGINS','').split(',') if v.strip()}
-    if origin not in origins:raise KnowledgeError('Allow this exact website origin in the workspace server configuration before fetching.',403)
+    if origin not in origins and not (approved and os.environ.get('TW_KNOWLEDGE_WEB_SELF_SERVICE','false').lower()=='true'):raise KnowledgeError('Allow this exact website origin in the workspace server configuration before fetching.',403)
     return url._replace(netloc=url.hostname.lower(),path=url.path or '/').geturl()
 
 
@@ -83,9 +83,15 @@ def website_action(store,ctx,operation,data):
             if operation=='knowledge.website.preview':
                 chunks=db.execute('SELECT text FROM knowledge_chunks WHERE tenant=? AND document=? ORDER BY ordinal LIMIT 3',(tenant,old['id'])).fetchall()
                 return {'title':old['title'],'url':old['url'],'text':'\n\n'.join(r['text'] for r in chunks),'truncated':old['chunks']>3}
-            url=allowed(tenant,old['url']);title=old['title']
+            approved=old.get('public_page_authorized') is True
+            url=allowed(tenant,old['url'],approved);title=old['title']
         elif operation=='knowledge.website.add':
-            url=allowed(tenant,data.get('url'));title=text(data.get('title'),'Source title',120)
+            approved=data.get('allow_fetch') is True
+            if approved:
+                from embedded_signup import administrator,ConnectionError
+                try:administrator(store,ctx)
+                except ConnectionError as e:raise KnowledgeError(str(e),e.code) from None
+            url=allowed(tenant,data.get('url'),approved);title=text(data.get('title'),'Source title',120)
             documents=store._list(db,tenant,'knowledgedocument')
             if any(d.get('url')==url for d in documents):raise KnowledgeError('This page is already indexed. Use Refresh.',409)
             if len(documents)>=20:raise KnowledgeError('Use up to 20 indexed documents and pages per workspace.')
@@ -100,7 +106,7 @@ def website_action(store,ctx,operation,data):
         raise KnowledgeError('Website fetch or text extraction failed. No new snapshot was indexed.',502) from None
     stamp=int(time.time());chunks=[content[start:start+1200] for start in range(0,len(content),1000)]
     with store.db() as db:
-        db.execute('BEGIN IMMEDIATE');allowed(tenant,url)
+        db.execute('BEGIN IMMEDIATE');allowed(tenant,url,approved)
         if not db.execute("SELECT 1 FROM members WHERE tenant=? AND user=? AND role='admin'",(tenant,ctx['user']['id'])).fetchone():raise KnowledgeError('Administrator access changed during fetch.',403)
         documents=store._list(db,tenant,'knowledgedocument')
         if old:
@@ -108,7 +114,7 @@ def website_action(store,ctx,operation,data):
             if current.get('revision')!=old.get('revision') or current['enabled']!=old['enabled']:raise KnowledgeError('Source changed during fetch. Review it before refreshing again.',409)
         else:
             if len(documents)>=20 or any(d.get('url')==url for d in documents):raise KnowledgeError('Source capacity or URL changed during fetch. Refresh the list.',409)
-        values=dict(title=title,filename=title,format='website',url=url,size=len(raw),characters=len(content),chunks=len(chunks),enabled=old['enabled'] if old else False,digest=hashlib.sha256(raw).hexdigest(),updated=stamp,last_attempt=stamp,last_success=stamp,refresh_error='',revision=secrets.token_hex(16))
+        values=dict(public_page_authorized=approved,title=title,filename=title,format='website',url=url,size=len(raw),characters=len(content),chunks=len(chunks),enabled=old['enabled'] if old else False,digest=hashlib.sha256(raw).hexdigest(),updated=stamp,last_attempt=stamp,last_success=stamp,refresh_error='',revision=secrets.token_hex(16))
         document=store._put(db,tenant,'knowledgedocument',values,old['id'] if old else None)
         db.execute('DELETE FROM knowledge_chunks WHERE tenant=? AND document=?',(tenant,document['id']))
         for ordinal,chunk in enumerate(chunks):db.execute('INSERT INTO knowledge_chunks VALUES(?,?,?,?,?)',(tenant,document['id'],secrets.token_hex(8),ordinal,chunk))

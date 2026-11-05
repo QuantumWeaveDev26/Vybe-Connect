@@ -28,7 +28,12 @@ def extract(filename,raw):
                 if b'<!DOCTYPE' in content.upper() or b'<!ENTITY' in content.upper():raise KnowledgeError('Document XML declarations are unsupported.')
                 root=ET.fromstring(content);namespace='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
                 text='\n'.join(''.join(p.itertext()) for p in root.iter(namespace+'p'))
-        else:raise KnowledgeError('Supported documents: UTF-8 TXT, Markdown, CSV and DOCX. PDF extraction is not enabled.')
+        elif format=='pdf':
+            from pdf_text import extract as extract_pdf
+            try:text=extract_pdf(raw)
+            except ValueError as e:raise KnowledgeError(str(e)) from None
+            format='pdf'
+        else:raise KnowledgeError('Supported documents: UTF-8 TXT, Markdown, CSV, DOCX and text-based PDF.')
     except (UnicodeError,zipfile.BadZipFile,KeyError,ET.ParseError,RuntimeError,NotImplementedError):raise KnowledgeError('The document could not be read. Use valid UTF-8 text or an unencrypted DOCX file.') from None
     text=text.strip()
     if not text or len(text)>120000 or any(ord(c)<32 and c not in '\r\n\t' for c in text):raise KnowledgeError('Use a text document with 1–120,000 readable characters.')

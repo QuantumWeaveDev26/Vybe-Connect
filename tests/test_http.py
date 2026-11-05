@@ -44,6 +44,11 @@ class HttpTests(unittest.TestCase):
                 self.assertTrue(content)
                 self.assertIn('javascript' if asset.split('?')[0].endswith('.js') else 'text/css', headers['Content-Type'])
 
+    def test_terms_and_pdf_knowledge_assets_are_served(self):
+        status,headers,body=self.request('GET','/terms')
+        self.assertEqual(status,200);self.assertIn('text/html',headers['Content-Type']);self.assertIn(b'Service terms',body)
+        self.assertEqual(self.request('GET','/pdf_text.py')[0],404)
+
     def test_cross_origin_setup_rejected(self):
         status,_,_=self.request('POST','/api/setup',{}, {'Origin':'https://evil.example'})
         self.assertEqual(status,403)

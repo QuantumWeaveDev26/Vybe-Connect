@@ -119,7 +119,7 @@ async function aiExecutionAction(action,el){
 }
 let aiJobPolling=false;
 setInterval(async()=>{
-  if(aiJobPolling||!S.data||!$('#workspace-ai')||$('#modal')?.open||!activeAIJobs().length)return;
+  if(typeof S==='undefined'||aiJobPolling||!S.data||!$('#workspace-ai')||$('#modal')?.open||!activeAIJobs().length)return;
   const scope=A.scope;aiJobPolling=true;
   try{const state=await api('/api/state');if(S.data&&$('#workspace-ai')&&A.scope===scope&&state.context.tenant_id===S.data.context.tenant_id&&state.context.user.id===S.data.context.user.id){S.data.aichats=state.aichats;S.data.aijobs=state.aijobs;renderAI()}}catch(error){if(error.status===401)$('#workspace-ai')?.remove()}finally{aiJobPolling=false}
 },1500);

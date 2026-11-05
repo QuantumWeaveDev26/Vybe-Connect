@@ -137,3 +137,7 @@ dialog{border-radius:22px;border-color:#d8e7dc;background:#fffefa;box-shadow:0 2
 .template-portrait.template-portrait-1{background-position:33.333333% 0!important}.template-portrait.template-portrait-2{background-position:66.666667% 0!important}.template-portrait.template-portrait-3{background-position:100% 0!important}.template-portrait.template-portrait-4{background-position:0 100%!important}.template-portrait.template-portrait-5{background-position:33.333333% 100%!important}.template-portrait.template-portrait-6{background-position:66.666667% 100%!important}.template-portrait.template-portrait-7{background-position:100% 100%!important}
 
 .api-token-scope{display:flex;align-items:center;gap:10px;padding:10px 0}.api-token-scope input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:#009969}#api-token-once{display:block;width:100%;margin:10px 0;min-height:90px;overflow-wrap:anywhere;font-family:monospace}
+
+.template-edit-fields{border:0;padding:0;margin:0;min-width:0}
+
+.auth-policy-links{text-align:center;margin-top:10px;font-size:13px}.auth-policy-links a{color:#287655;text-decoration:underline}

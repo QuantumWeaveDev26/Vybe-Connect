@@ -306,6 +306,7 @@ class Store:
             data['external_agents']=[public_agent(tenant,a) for a in self._list(db,tenant,'externalagent')]
             data['webhook_events']=recent_events(db,tenant)
             data['sequence_runs']=sequence_run_state(self,db,tenant)
+            data['knowledge_web_self_service']=os.environ.get('TW_KNOWLEDGE_WEB_SELF_SERVICE','false').lower()=='true'
             data['knowledge_documents']=self._list(db,tenant,'knowledgedocument')
             data['media_assets']=[a for a in self._list(db,tenant,'media') if a.get('source')!='received']
             data['received_media']=received_media_state(db,tenant)
@@ -497,11 +498,13 @@ class Store:
                 if not re.fullmatch(r'[a-z0-9_]+',name): raise Problem('Template names use lowercase letters, numbers and underscores.')
                 category=d.get('category','UTILITY')
                 if category not in ['MARKETING','UTILITY','AUTHENTICATION']: raise Problem('Invalid template category.')
+                if category=='AUTHENTICATION':raise Problem('Authentication templates require the dedicated OTP workflow; this editor supports marketing and utility templates.')
                 try:rich=rich_text_fields(d)
                 except ValueError as e:raise Problem(str(e))
                 result=self._put(db,t,'template',dict(name=name,body=required(d.get('body'),'Template body',1024),language=required(d.get('language','en'),'Language',20),category=category,status='local_draft',updated=now(),**rich),d.get('id'))
             elif action=='campaign.save':
                 template=self._get(db,t,'template',d.get('template_id'))
+                if template.get('category')=='AUTHENTICATION':raise Problem('Authentication templates cannot be used for broadcast campaigns.')
                 schedule=d.get('schedule','')
                 if not isinstance(schedule,str) or len(schedule)>40: raise Problem('Invalid schedule.')
                 tag=str(d.get('tag',''))[:60]

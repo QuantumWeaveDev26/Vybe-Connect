@@ -11,3 +11,5 @@ __pycache__
 work
 tests
 docs
+
+_vendor/
