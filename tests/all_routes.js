@@ -20,7 +20,7 @@ const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Se
 const index=fs.readFileSync(path.join(root,'static/index.html'),'utf8');
 for(const [,url] of index.matchAll(/<script src="\/([^"/]+)" defer><\/script>/g)){
  if(url.startsWith('launch'))continue;
- vm.runInContext(fs.readFileSync(path.join(root,'static',url),'utf8'),context,{filename:url});
+ vm.runInContext(fs.readFileSync(path.join(root,'static',url.split('?')[0]),'utf8'),context,{filename:url});
 }
 context.fixture=fixture;
 vm.runInContext('S.data=fixture;S.workspace=fixture.context.tenant_id',context);

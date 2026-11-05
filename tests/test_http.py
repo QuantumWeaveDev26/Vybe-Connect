@@ -35,14 +35,14 @@ class HttpTests(unittest.TestCase):
         import re
         status, _, body = self.request('GET', '/')
         self.assertEqual(status, 200)
-        assets = re.findall(r'(?:src|href)="(/[^" ]+\.(?:js|css))"', body.decode())
-        self.assertIn('/agent-directory.js', assets)
+        assets = re.findall(r'(?:src|href)="(/[^" ]+\.(?:js|css)(?:\?v=[a-zA-Z0-9-]+)?)"', body.decode())
+        self.assertTrue(any(asset.startswith('/agent-directory.js?v=') for asset in assets))
         for asset in assets:
             with self.subTest(asset=asset):
                 code, headers, content = self.request('GET', asset)
                 self.assertEqual(code, 200)
                 self.assertTrue(content)
-                self.assertIn('javascript' if asset.endswith('.js') else 'text/css', headers['Content-Type'])
+                self.assertIn('javascript' if asset.split('?')[0].endswith('.js') else 'text/css', headers['Content-Type'])
 
     def test_cross_origin_setup_rejected(self):
         status,_,_=self.request('POST','/api/setup',{}, {'Origin':'https://evil.example'})
