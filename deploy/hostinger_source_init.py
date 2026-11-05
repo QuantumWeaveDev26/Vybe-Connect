@@ -11,8 +11,8 @@ import urllib.request
 import zipfile
 from pathlib import Path,PurePosixPath
 
-COMMIT='10dc705ac18afa7d4982127d84affa55d5523e0b'
-ARCHIVE_SHA256='f98b8e5c4f02efadd773d1dc8c37e1ddfe1a68a3d4c859437ba81999df061a57'
+COMMIT='e5c0cda130eff6c942ad40997ef085201dc6f0f7'
+ARCHIVE_SHA256='ffc182a776df07136ffb01b2cf87f3f2da32b54a5bbfa726c72ff8c3671a274e'
 ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
 ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
 
@@ -54,6 +54,7 @@ def initialize():
     try:
         unpack(data,staging)
         subprocess.run([sys.executable,'-m','pip','install','--disable-pip-version-check','--no-cache-dir','--only-binary=:all:','--require-hashes','--target',str(staging/'_vendor'),'-r',str(staging/'requirements-runtime.txt')],check=True,env=dict(os.environ,TMPDIR=str(staging)))
+        subprocess.run([sys.executable,'-B','-c','import sys;sys.path.insert(0,sys.argv[1]);from pdf_text import verify_runtime;verify_runtime();print("PDF runtime verified.")',str(staging)],check=True,env=dict(os.environ,TMPDIR=str(staging)))
         (staging/'.archive-sha256').write_text(ARCHIVE_SHA256+'\n');staging.chmod(0o755)
         staging.rename(release)
     finally:
