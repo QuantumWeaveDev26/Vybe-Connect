@@ -14,6 +14,9 @@ def signature_ok(raw, signature, secret):
 
 
 def settings(tenant):
+    from embedded_signup import credential_settings
+    saved=credential_settings(tenant)
+    if saved is not None:return saved
     prefix = 'TW_META_' + tenant.upper() + '_'
     return {k: os.environ.get(prefix+k, '') for k in ['TOKEN','PHONE_ID','WABA_ID','APP_SECRET','VERIFY_TOKEN','VERSION','LIVE']}
 

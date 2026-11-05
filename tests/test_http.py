@@ -367,4 +367,27 @@ class HttpTests(unittest.TestCase):
         for path in ['/help-widget.js','/help-widget.css','/vybe-theme.css']:self.assertEqual(self.request('GET',path)[0],200)
         _,_,body=self.request('GET','/');self.assertIn('VYBE Connect',body.decode());self.assertIn('/help-widget.js',body.decode())
 
+    def test_customer_whatsapp_begin_requires_session_and_same_origin(self):
+        env={'TW_META_PLATFORM_ENABLED':'true','TW_META_PLATFORM_APP_ID':'123','TW_META_PLATFORM_CONFIG_ID':'456','TW_META_PLATFORM_APP_SECRET':'a'*32,'TW_META_PLATFORM_VERIFY_TOKEN':'v'*40,'TW_META_PLATFORM_VERSION':'v25.0','TW_PUBLIC_ORIGIN':'https://example.test'}
+        with patch.dict(os.environ,env):
+            payload={'action':'whatsapp.begin','data':{}}
+            self.assertEqual(self.request('POST','/api/action',payload)[0],401)
+            _,headers,_=self.request('POST','/api/setup',{'name':'Owner','business':'Acme','email':'owner@example.test','password':'long-enough-password'})
+            cookie={'Cookie':headers['Set-Cookie'].split(';')[0]}
+            self.assertEqual(self.request('POST','/api/action',payload,dict(cookie,Origin='https://wrong.test'))[0],403)
+            status,_,body=self.request('POST','/api/action',payload,cookie)
+            self.assertEqual(status,200);self.assertEqual(json.loads(body)['config_id'],'456');self.assertNotIn('APP_SECRET',body.decode())
+            self.assertEqual(self.request('GET','/meta-credentials/owner.json')[0],404)
+
+    def test_customer_webhook_verification_can_use_platform_token(self):
+        from urllib.parse import urlencode
+        env={'TW_META_PLATFORM_ENABLED':'true','TW_META_PLATFORM_APP_ID':'123','TW_META_PLATFORM_CONFIG_ID':'456','TW_META_PLATFORM_APP_SECRET':'a'*32,'TW_META_PLATFORM_VERIFY_TOKEN':'v'*40,'TW_META_PLATFORM_VERSION':'v25.0','TW_PUBLIC_ORIGIN':'https://example.test'}
+        with patch.dict(os.environ,env):
+            query=urlencode({'hub.mode':'subscribe','hub.verify_token':'v'*40,'hub.challenge':'challenge'})
+            code,_,body=self.request('GET','/webhook/0123456789abcdef?'+query)
+            self.assertEqual(code,200);self.assertEqual(body,b'challenge')
+            self.assertEqual(self.request('GET','/webhook/0123456789abcdef?'+query.replace('v'*40,'wrong'))[0],403)
+            _,headers,_=self.request('GET','/')
+            self.assertIn('https://connect.facebook.net',headers['Content-Security-Policy'])
+
 if __name__=='__main__': unittest.main()

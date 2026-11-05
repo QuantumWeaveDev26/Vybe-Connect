@@ -51,6 +51,7 @@ import internal_comments
 import team_operations
 import flow_publishing
 import account_mfa
+import embedded_signup
 import flow_delivery
 from flow_resources import resolve as flow_resources
 from pipeline import save as pipeline_save,state as pipeline_state
@@ -117,6 +118,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS agent_leases(tenant TEXT,agent TEXT,token TEXT,expires INTEGER,PRIMARY KEY(tenant,agent));
             CREATE TABLE IF NOT EXISTS outbound(id TEXT PRIMARY KEY,tenant TEXT,campaign TEXT,contact TEXT,payload TEXT,status TEXT,due INTEGER,claimed INTEGER,error TEXT,external_id TEXT,UNIQUE(tenant,campaign,contact));
             ''')
+            embedded_signup.initialize(db)
 
     @contextmanager
     def db(self):
@@ -316,6 +318,7 @@ class Store:
             data['provider_checks']=provider_checks.state(self,db,tenant)
             data['calling']=dict(whatsapp_calls.status(tenant),calls=[whatsapp_calls.public(c) for c in self._list(db,tenant,'voicecall')[-100:]],requests=[whatsapp_calls.public(c) for c in self._list(db,tenant,'callpermission')[-50:]])
             data['queue']=[dict(x) for x in db.execute('SELECT id,campaign,contact,status,due,error,external_id FROM outbound WHERE tenant=? ORDER BY rowid DESC LIMIT 500',(tenant,))]
+        data['whatsapp_connection']=embedded_signup.state(self,ctx)
         return dict(data,context={k:v for k,v in ctx.items() if not k.startswith('_')},meta=meta_status(tenant),ai=ai_status(tenant),sandbox=os.environ.get('TW_SANDBOX','false').lower()=='true')
 
     def _contact(self,db,t,d):
@@ -334,6 +337,9 @@ class Store:
         t=ctx['tenant_id']; user=ctx['user']['id']
         try:client_services.enforce(self,ctx,action)
         except ServiceError as e:raise Problem(str(e),e.code)
+        if action.startswith('whatsapp.'):
+            try:return embedded_signup.action(self,ctx,action,d)
+            except embedded_signup.ConnectionError as e:raise Problem(str(e),e.code) from None
         if action=='services.release-failed':
             from service_jobs import release_failed
             try:return release_failed(self,ctx,d.get('id'))
