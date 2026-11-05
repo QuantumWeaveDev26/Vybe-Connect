@@ -42,3 +42,8 @@ assert.match(diagnostic,/Metadata verified/);assert.match(diagnostic,/Access not
 vm.runInContext('S.data.provider_checks.forEach(check=>check.current=false)',context);diagnostic=vm.runInContext('servicesPage()',context);
 assert.match(diagnostic,/Recheck needed/);assert.doesNotMatch(diagnostic,/Metadata verified/);
 console.log('Provider diagnostics persist results and reject stale verification states.');
+
+vm.runInContext('S.data.contacts=[];S.data.meta.configured=true;S.chat=null',context);
+let inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/Check your webhook subscription/);assert.doesNotMatch(inboxEmpty,/Connect Meta for real incoming/);
+vm.runInContext('S.data.meta.configured=false',context);inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/Connect your WhatsApp account/);
+console.log('Inbox setup guidance reflects the actual connection configuration.');
