@@ -27,3 +27,8 @@ The owner saved a changed token in the existing private token file. It was loade
 Live Meta metadata verification now PASSED: phone access, configured phone membership in its WABA and template access. The authenticated Services screen displays Metadata verified. This supersedes the earlier rejected-token blocker. No WhatsApp message, AI inference, permission request or call was executed for testing. Healthz and readyz return200; unauthenticated api/state401 and .env404.
 
 Live sending activation was requested separately for real usage because actual messages may incur provider charges. At this checkpoint the sending flag is unchanged and remains off. Calling, payment/shipping credentials and live delivery/audio acceptance remain separate work.
+
+## Real usage activation and complete no-cost regression
+The owner explicitly approved WhatsApp sending for real usage. The zero-job queue preflight prevented unintended sends, and action123772780 enabled only the workspace LIVE flag. Meta metadata passed again after activation. OpenAI remained enabled for approved real usage. No test messages or paid AI calls were made.
+
+All558 backend tests and all15 frontend checks passed on2026-11-05; see docs/no-cost-verification-2026-11-05.md for exact scope and live acceptance limitations. Corrected inbox guidance deployed in application f4d50f0bcbff5b97d40194c57d4cab34dec668a9 (action123773419).
