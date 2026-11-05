@@ -4,13 +4,15 @@ import io
 import os
 import shutil
 import stat
+import subprocess
+import sys
 import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path,PurePosixPath
 
-COMMIT='a6925a33455b890ce355a0a12c0a2a9b5211a3a4'
-ARCHIVE_SHA256='41ce52cc77d699e59a00ded3321895b7c08a964018904c3d02138887871bb960'
+COMMIT='9c3f5a4fdbe3175a5f2517b46a00faf68da1c118'
+ARCHIVE_SHA256='fe513366d361494e421946e8b25cc645436d4314bb0989d8481d79cc4ee884f5'
 ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
 ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
 
@@ -50,7 +52,9 @@ def initialize():
     if len(data)>5*1024*1024:raise ValueError('Release download is oversized.')
     staging=Path(tempfile.mkdtemp(prefix='release-',dir=root))
     try:
-        unpack(data,staging);(staging/'.archive-sha256').write_text(ARCHIVE_SHA256+'\n');staging.chmod(0o755)
+        unpack(data,staging)
+        subprocess.run([sys.executable,'-m','pip','install','--disable-pip-version-check','--no-cache-dir','--only-binary=:all:','--require-hashes','--target',str(staging/'_vendor'),'-r',str(staging/'requirements-runtime.txt')],check=True,env=dict(os.environ,TMPDIR=str(staging)))
+        (staging/'.archive-sha256').write_text(ARCHIVE_SHA256+'\n');staging.chmod(0o755)
         staging.rename(release)
     finally:
         if staging.exists():shutil.rmtree(staging)

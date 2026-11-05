@@ -1,6 +1,10 @@
 # VYBE Connect - business messaging workspace
 
-## Current verified increment — 29 October 2026
+## Backend update — 5 November 2026
+
+Customer Meta/OpenAI credential-file encryption, migration and key rotation are implemented and enabled on the existing VPS. Connection-state fixes require reconnection for missing/expired credentials and preserve disconnected state. See [credential vault](docs/credential-vault.md). Live paid-provider acceptance and full WATI parity remain separate. The runtime lock file targets Linux x86-64/Python 3.13; local vault development needs the cryptography package.
+
+## Earlier verified increments — 29 October 2026
 
 Team management now supports expiring availability, capacity-aware routing, assignment history and private comments with teammate mention notifications. See [team operations](docs/team-operations.md).
 
