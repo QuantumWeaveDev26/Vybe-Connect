@@ -1,0 +1,8 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c=vm.createContext({S:{data:{contacts:[{id:'a',name:'A <customer>',phone:'123'}]}},names:{inbox:'Team Inbox','ai-agents':'AI Agents'},document:{addEventListener(){}},window:{addEventListener(){}}});
+vm.runInContext(fs.readFileSync('static/shell.js','utf8'),c);
+assert.equal(vm.runInContext('typeof workspaceSearchEntries',c),'function');
+assert.equal(vm.runInContext('workspaceSearchEntries("inbox")[0].route',c),'inbox');
+assert.equal(vm.runInContext('workspaceSearchEntries("customer")[0].id',c),'a');
+assert.equal(vm.runInContext('workspaceSearchEntries("missing").length',c),0);
+console.log('Workspace search returns real current-workspace contacts and destinations.');

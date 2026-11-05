@@ -4,6 +4,8 @@
 const CHARACTER_NAMES=['Daily Digest','Inbox Triage','Re-engagement Scout','Urgency Watcher','Top Topics','Spam Watcher','Ready-to-Buy','Automation Health Check','Campaign Readiness Checker','Segment & Contact Checker','Campaign Idea Finder','Account Health Checker','Admissions inquiry & Counseling','Course discovery','Student support & FAQ','Appointment booking & reschedules','Customer concierge','Property inquiries','Shopping assistant','Order support'];
 function characterAvatar(seed='Agent'){
  const name=String(seed),known=CHARACTER_NAMES.indexOf(name);
+ const conceptPortraits={'Inbox Triage':0,'Daily Digest':1,'Re-engagement Scout':2,'Urgency Watcher':3,'Top Topics':4,'Spam Watcher':5};
+ if(Object.prototype.hasOwnProperty.call(conceptPortraits,name))return `<span class="character-avatar concept-portrait portrait-${conceptPortraits[name]}" aria-hidden="true"></span>`;
  let hash=2166136261;for(const c of name)hash=Math.imul(hash^c.codePointAt(0),16777619)>>>0;
  const identity=known<0?hash:known;
  const skin=['#f0c4a4','#b77b55','#d99f78','#8f5b42','#e5b28b'][identity%5];

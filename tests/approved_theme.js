@@ -1,0 +1,22 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c=vm.createContext({S:{data:{context:{role:'admin',tenant_id:'test',user:{id:'owner'}},meta:{configured:false},ai:{},aiagents:[]}},document:{addEventListener(){}},esc:String,btn:(text,action,extra='',cls='')=>`<button data-do="${action}" ${extra}>${text}</button>`,characterAvatar:n=>`<span>${n}</span>`,setInterval(){}});
+vm.runInContext(fs.readFileSync('static/assistant.js','utf8'),c);
+assert.equal(vm.runInContext('typeof agentWorkspacePage',c),'function','The approved concept needs an actual full-page directory');
+const html=vm.runInContext('agentWorkspacePage()',c);
+assert.match(html,/Built for your business/);assert.match(html,/Quick setup/);assert.match(html,/href="#settings"/);assert.match(html,/data-do="ai-setup-knowledge"/);assert.match(html,/id="agent-workspace-catalog"/);
+assert.match(html,/data-preset="0"/);assert.doesNotMatch(html,/Live connected|98%|qualified leads today/);
+vm.runInContext('S.data.context.role="agent"',c);
+assert.doesNotMatch(vm.runInContext('agentWorkspacePage()',c),/data-do="ai-preset"/);
+console.log('Approved theme full-page route, real setup links and role gates passed.');
+
+vm.runInContext('ensureAIScope();A.tab="knowledge";agentWorkspacePage()',c);
+assert.equal(vm.runInContext('A.tab',c),'knowledge','Page refresh must preserve the active drawer tab');
+const panel={removed:false,innerHTML:'existing drawer',remove(){this.removed=true}};
+const catalog={innerHTML:''};
+c.$=selector=>selector==='#workspace-ai'?panel:selector==='#agent-workspace-catalog'?catalog:null;
+c.filterAgentDirectory=()=>{};
+vm.runInContext('S.route="ai-agents";A.tab="agents";renderAI()',c);
+assert.equal(panel.removed,true,'Agents drawer should defer to the existing full-page directory');
+assert.equal(panel.innerHTML,'existing drawer','Must not render duplicate directory controls');
+assert.match(catalog.innerHTML,/Your AI team/);
+console.log('Drawer state survives refresh; full-page agents avoid duplicate search controls.');
