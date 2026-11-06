@@ -148,3 +148,5 @@ dialog{border-radius:22px;border-color:#d8e7dc;background:#fffefa;box-shadow:0 2
 @media(min-width:1101px){.inbox{grid-template-columns:300px minmax(260px,1fr) 230px}.inbox:not(:has(.contactpanel)){grid-template-columns:300px minmax(0,1fr)}}
 @media(max-width:750px){.template-preview-card .templatepreview{padding:20px 14px}.template-preview-card .phone{max-width:360px}.inbox .chatlist{max-height:420px}.inbox .listhead{padding:16px}.inbox .chatfilters{grid-template-columns:repeat(4,minmax(0,1fr))}.inbox .chatfilters button{font-size:13px;padding:10px 4px}}
 @media(prefers-reduced-motion:no-preference){.template-preview-card{animation:vybe-preview-enter .25s ease-out}@keyframes vybe-preview-enter{from{opacity:.4;transform:translateY(7px)}to{opacity:1;transform:none}}}
+
+.template-preview-card~*{min-width:0}.split>.card .tablewrap td button{white-space:nowrap;word-break:normal;overflow-wrap:normal;min-width:64px}.split>.card .tablewrap td:last-child{min-width:90px}
