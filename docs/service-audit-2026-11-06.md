@@ -23,3 +23,9 @@ REA isolated browser: all 26 authenticated page routes completed navigation at 3
 ## Still not established by this audit
 
 Real Meta onboarding/approval and Flow create/upload/publish/send acceptance; paid AI inference and agent outcomes; live calling/audio; payment/shipping/subscription acceptance; recovery email arrival; native Google/Zoho/WooCommerce connections; branch visibility restrictions; physical-device behavior and complete WATI parity. Existing test doubles do not prove these integrations work with real accounts. No readiness percentage or full production-service clearance is claimed.
+
+## Deployed verification
+
+Runtime commit fb2caaaa68bcf694f0649299243f28fd52b5a6f9; archive SHA-256 515ac6899d5e11ba36869358a6aec947b9d70a3f2228a2f34df6eb30652fdd51. Hostinger VPS 1871828, project vybe-connect, action 123973794 succeeded. The source initializer exited 0; one app container is healthy. PDF runtime and credential-vault validation passed. Live compose/environment readback exactly matches the candidate; private environment changes: zero.
+
+All 44 deployed JS/CSS assets match the pinned runtime source byte-for-byte. Thirteen live HTTP/security checks passed, including unauthenticated action/recipe rejection; no customer records were created. Fresh live mobile Chrome sign-in/password-visibility acceptance at 320 x 740 completed with no page errors. The isolated review server was stopped after verification.
