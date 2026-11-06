@@ -24,6 +24,7 @@ function selectInboxContacts(data,options={},mainFilter='all',query='',stamp=Dat
  const view={...INBOX_VIEW_DEFAULTS,...options},index=inboxMessageIndex(data.messages),needle=String(query).trim().toLocaleLowerCase();
  const user=data.context.user.id,team=(data.team_operations?.teams||[]).find(t=>t.id===view.team);
  const list=(data.contacts||[]).filter(contact=>{
+  if(contact.snoozed_until>stamp)return false;
   const messages=index.get(contact.id)||{activity:0,incoming:0,reply:0,draft:false,text:[]};
   if(mainFilter==='mine'&&contact.assignee!==user)return false;
   if(['open','pending','solved'].includes(mainFilter)&&contact.status!==mainFilter)return false;

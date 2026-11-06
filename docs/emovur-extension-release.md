@@ -1,0 +1,16 @@
+# Growth and customer-support extension
+
+Six existing areas are extended; no new third-party accounts, charges, production sample records or automatic activation are introduced.
+
+| Area | Delivered behavior | Limits |
+|---|---|---|
+| Integrations | Named authenticated webhook recipes, dot-path mapping, contact upsert, genuine CRM lead creation, reply drafts, branch labeling, secret rotation, persistent event-ID deduplication and conflicting-replay rejection | n8n/Zapier/HTTP-compatible event integration, not native Google/Zoho/WooCommerce OAuth. No automatic WhatsApp sending or consent creation. Recipe owner must retain administrator access; subscription enforcement is respected. |
+| WhatsApp forms | No-code question builder (text/email/phone/choice), local JSON export, explicit Meta create/upload/publish/sync, separate live send with 24-hour window/live gate, durable uncertainty markers and nonce protection, correlated verified completion answers | Static single-screen lead/request forms. Meta account eligibility and live acceptance pending. No scheduling booking engine, dynamic data exchange or out-of-window Flow templates. Ambiguous create results require operator reconciliation in Meta; no blind retry. |
+| Support | Timed snooze with real-inbound wake, resolve, atomic reply-draft/private-note/tag macros, expiring one-response CSAT links, team resolution and feedback counts | Links shared manually; no paid survey tests. Timing begins at the latest real inbound message and is recorded only for new Support tools Resolve actions, not retroactively inferred full-case SLA. Macros do not auto-send attachments or messages. |
+| CRM branches | Current teammate selection, least-active-conversation assignment, branch contact/deal/won counts | Routing/reporting within the existing workspace. No branch data-visibility isolation; use separate workspaces for isolated customers. |
+| Attribution | First recorded verified Meta referral source or explicitly labeled integration source; lead/deal/won counts | Not an ads campaign manager, spend tracker, ROAS calculator or verified payment-revenue attribution. |
+| Public help centre | Private drafts, explicit public-publication confirmation, unique article URLs, escaped plaintext, public article reading without login, copy from existing text knowledge, unpublish/delete | Plaintext article publishing; no automatic exposure of private knowledge. |
+
+Security and operation: existing tenant checks remain at every write; administrator privileges are rechecked from current membership. Incoming recipes use private bearer credentials stored only as hashes and mandatory event IDs. External events never grant opt-in or establish a WhatsApp service window. CSAT stores only a token hash, expires after 30 days and allows one submission. Public HTML is escaped and uses existing security headers. No provider calls occur while saving ordinary drafts or loading these screens.
+
+Official reference contracts: https://emovur.com/whatsapp-business-api/integrations ; https://support.emovur.com/modules/team-inbox ; https://emovur.com/crm ; https://support.emovur.com/modules/flows ; Meta-owned WhatsApp Flows Postman collection (create, assets, publish and messages endpoints). These are implementation references, not evidence of live-provider acceptance.

@@ -1,6 +1,6 @@
 'use strict';
 const CONNECTOR_MENU={trigger:null,timer:0,pinned:false};
-function connectorMenuMarkup(){return '<nav id="connector-popover" class="connector-popover" aria-label="Connectors"><p>CONNECTORS</p><a href="#developers">API tokens <span>Access keys and developer setup</span></a><a href="#commerce">Integrations <span>Commerce and connected services</span></a><a href="#webhooks">Webhooks <span>Callback setup and delivery logs</span></a></nav>'}
+function connectorMenuMarkup(){return '<nav id="connector-popover" class="connector-popover" aria-label="Connectors"><p>CONNECTORS</p><a href="#developers">API tokens <span>Access keys and developer setup</span></a><a href="#commerce">Integrations <span>Commerce and connected services</span></a><a href="#recipes">Integration recipes <span>Map incoming business events</span></a><a href="#webhooks">Webhooks <span>Callback setup and delivery logs</span></a></nav>'}
 function connectorPosition(rect,width,height,menuHeight){
  const menuWidth=Math.min(260,width-16),left=Math.max(8,Math.min(rect.right+10,width-menuWidth-8));
  return {left,top:Math.max(8,Math.min(rect.top,height-menuHeight-8)),width:menuWidth};

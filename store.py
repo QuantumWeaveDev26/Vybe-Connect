@@ -41,6 +41,8 @@ import shipping_services
 from service_jobs import ServiceError
 from customer_orders import order_action
 from website_knowledge import website_action
+import growth_services
+import whatsapp_forms
 from chat_jobs import ChatError, chat_action, public_job, process_chat_job_once as run_chat_job
 from agents import configure_agent, claim_lease, lease_valid, scheduled_context
 from reviews import CONTRACT, captured_fingerprint, parse_findings, review_finding
@@ -295,6 +297,7 @@ class Store:
             data['aichats']=[c for c in data['aichats'] if c.get('owner')==ctx['user']['id']]
             data['aijobs']=[public_job(j) for j in data['aijobs'] if j.get('owner')==ctx['user']['id']]
             data['messages']=[dict(x) for x in db.execute('SELECT * FROM (SELECT rowid AS ordinal,* FROM messages WHERE tenant=? ORDER BY rowid DESC LIMIT 2000) ORDER BY ts,ordinal',(tenant,))]
+            data['growth']=growth_services.state(self,db,ctx)
             data['api_tokens']=api_tokens.listing(self,ctx,strict=False)
             data['members']=[dict(x) for x in db.execute('SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON m.user=u.id WHERE m.tenant=?',(tenant,))]
             data['product_feedback']=product_feedback.state(db,ctx)
@@ -343,6 +346,8 @@ class Store:
         t=ctx['tenant_id']; user=ctx['user']['id']
         try:client_services.enforce(self,ctx,action)
         except ServiceError as e:raise Problem(str(e),e.code)
+        if action.startswith('growth.form.'):return whatsapp_forms.action(self,ctx,action,d)
+        if action.startswith('growth.'):return growth_services.action(self,ctx,action,d)
         if action.startswith('whatsapp.'):
             try:return embedded_signup.action(self,ctx,action,d)
             except embedded_signup.ConnectionError as e:raise Problem(str(e),e.code) from None
@@ -898,6 +903,8 @@ class Store:
         try: timestamp=min(int(event.get('timestamp',now())),now())
         except (TypeError,ValueError): timestamp=now()
         c=dict(c,last_inbound=max(c.get('last_inbound',0),timestamp),status='open')
+        c=growth_services.inbound(self,db,t,c,event,simulated)
+        if not simulated:whatsapp_forms.receive(self,db,t,c,event)
         if not simulated: c['last_real_inbound']=max(c.get('last_real_inbound',0),timestamp)
         stop=text.strip().lower() in ['stop','unsubscribe','cancel','stop all']
         if stop: c['optin']=False;c.pop('flow_session',None);c.pop('outgoing_watch',None)

@@ -27,14 +27,14 @@ class DeploymentTests(unittest.TestCase):
         self.start()
         status,_,html=self.request('/')
         self.assertEqual(status,200)
-        urls=re.findall(rb'(?:src|href)="(/[^"?#]+\.(?:js|css))"',html)
-        self.assertIn(b'/interactions.js',urls)
+        urls=re.findall(rb'(?:src|href)="(/[^"?#]+\.(?:js|css)(?:\?v=[a-zA-Z0-9-]+)?)"',html)
+        self.assertTrue(any(url.split(b'?')[0]==b'/interactions.js' for url in urls))
         for url in urls:
             status,headers,body=self.request(url.decode())
             self.assertEqual(status,200,url)
             self.assertTrue(body,url)
             self.assertNotIn(b'<html',body[:100].lower(),url)
-            self.assertIn('javascript' if url.endswith(b'.js') else 'text/css',headers['Content-Type'],url)
+            self.assertIn('javascript' if url.split(b'?')[0].endswith(b'.js') else 'text/css',headers['Content-Type'],url)
     def test_production_https_origin_sets_secure_cookie_and_headers(self):
         self.start();status,headers,_=self.request('/api/setup','POST',self.setup_data());self.assertEqual(status,200);self.assertIn('; Secure',headers['Set-Cookie']);self.assertIn('Strict-Transport-Security',headers)
     def test_first_owner_email_is_bound_without_disclosing_it_in_bootstrap(self):
