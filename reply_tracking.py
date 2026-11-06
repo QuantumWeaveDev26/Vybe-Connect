@@ -1,5 +1,6 @@
 """Record accepted outbound anchors without interpreting drafts or delivery upgrades."""
 import json
+import business_hours
 
 
 def accepted(store,db,tenant,message_id,stamp):
@@ -8,6 +9,7 @@ def accepted(store,db,tenant,message_id,stamp):
     row=db.execute("SELECT id,data FROM entities WHERE tenant=? AND kind='contact' AND id=?",(tenant,message['contact'])).fetchone()
     if not row:return False
     contact=dict(json.loads(row['data']),id=row['id']);previous=contact.get('outgoing_watch',{})
+    business_hours.accepted(store,db,tenant,contact['id'],message_id,stamp)
     if contact.get('automation_hold') or previous.get('ordinal',0)>=message['ordinal']:return False
     store._put(db,tenant,'contact',dict(contact,outgoing_watch={'message_id':message_id,'ordinal':message['ordinal'],'accepted':stamp}),contact['id'])
     return True

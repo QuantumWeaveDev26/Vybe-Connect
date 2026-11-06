@@ -20,6 +20,7 @@ from auth_limits import consume as auth_attempt
 import embedded_signup
 import api_tokens
 import growth_services
+import google_connections
 
 ROOT=Path(__file__).resolve().parent
 
@@ -78,6 +79,15 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not self.host_ok(): raise Problem('Invalid host.',403)
             path=urlsplit(self.path).path
+            if path==google_connections.CALLBACK:
+                cookies=SimpleCookie();cookies.load(self.headers.get('Cookie',''))
+                cookie=cookies.get('tw_google_flow');ok=False
+                try:
+                    google_connections.callback(self.server.store,parse_qs(urlsplit(self.path).query),cookie.value if cookie else '')
+                    ok=True
+                except Problem:pass
+                content='<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>'+('Google connected' if ok else 'Google connection not completed')+'</h1><p>'+('Your account is connected to your workspace.' if ok else 'Return to your workspace and reconnect. Check that Google permissions and platform setup are complete.')+'</p><a href="/#google-connections">Return to VYBE Connect</a></body></html>'
+                self.respond(200 if ok else 400,content,'text/html; charset=utf-8',cookie='tw_google_flow=; Path='+google_connections.CALLBACK+'; HttpOnly; SameSite=Lax; Secure; Max-Age=0');return
             if path.startswith('/help/'):
                 parts=path.strip('/').split('/')
                 if len(parts) not in (2,3):raise Problem('Article not found.',404)
@@ -127,7 +137,7 @@ class Handler(BaseHTTPRequestHandler):
                 supplied=q.get('hub.verify_token',[''])[0]
                 if q.get('hub.mode')==['subscribe'] and any(v and secrets.compare_digest(supplied,v) for v in verify): self.respond(200,q.get('hub.challenge',[''])[0],'text/plain');return
                 raise Problem('Verification failed.',403)
-            files={'/growth.js':'growth.js','/growth.css':'growth.css','/interactions.js':'interactions.js','/password-visibility.js':'password-visibility.js','/auth-entry.js':'auth-entry.js','/connectors.js':'connectors.js','/launch-layout.js':'launch-layout.js','/visuals.js':'visuals.js','/world-dots.json':'world-dots.json','/launch.js':'launch.js','/services.js':'services.js','/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
+            files={'/extensions.js':'extensions.js','/growth.js':'growth.js','/growth.css':'growth.css','/interactions.js':'interactions.js','/password-visibility.js':'password-visibility.js','/auth-entry.js':'auth-entry.js','/connectors.js':'connectors.js','/launch-layout.js':'launch-layout.js','/visuals.js':'visuals.js','/world-dots.json':'world-dots.json','/launch.js':'launch.js','/services.js':'services.js','/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
             files.update({'/api-tokens.js':'api-tokens.js','/customer-template-portraits.webp':'customer-template-portraits.webp','/specialist-agents.webp':'specialist-agents.webp','/inbox-filters.js':'inbox-filters.js','/metric-characters-clean.png':'metric-characters-clean.png','/concept-theme.css':'concept-theme.css','/approved-concept.png':'approved-concept.png','/terms':'terms.html','/privacy':'privacy.html','/data-deletion':'data-deletion.html','/whatsapp-connect.js':'whatsapp-connect.js'})
             if path not in files: raise Problem('Not found.',404)
             p=ROOT/'static'/files[path]
@@ -243,9 +253,11 @@ class Handler(BaseHTTPRequestHandler):
                 payload=data.get('data',{})
                 if not isinstance(payload,dict): raise Problem('Action data must be an object.')
                 ctx=self.context();operation=data.get('action')
-                if isinstance(operation,str) and operation.startswith(('ai.connection.','whatsapp.','payments.','billing.','shipping.','clients.','providers.','services.','calls.','growth.form.')) and operation not in ('calls.end','calls.reject','calls.release'):
+                if isinstance(operation,str) and operation.startswith(('ai.connection.','whatsapp.','payments.','billing.','shipping.','clients.','providers.','services.','calls.','growth.form.','google.','semantic.')) and operation not in ('calls.end','calls.reject','calls.release'):
                     if not auth_attempt(self.server.service_attempts,self.server.service_attempts_lock,self.client_address[0],ctx['user']['id']+':'+operation,time.time()):raise Problem('Too many service requests. Wait a minute.',429)
-                self.respond(200,self.server.store.action(ctx,operation,payload));return
+                result=self.server.store.action(ctx,operation,payload)
+                cookie=result.pop('_flow_cookie',None) if operation=='google.start' else None
+                self.respond(200,result,cookie=cookie);return
             raise Problem('Not found.',404)
         except (Problem,api_tokens.APIError) as e: self.respond(e.code,{'error':str(e)})
         except (ValueError,TypeError,KeyError): self.respond(400,{'error':'Invalid request data.'})

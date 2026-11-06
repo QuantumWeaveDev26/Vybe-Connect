@@ -28,7 +28,7 @@ def keys():
 
 
 def aad(tenant,kind):
-    if not re.fullmatch(r'[a-f0-9]{16}',tenant) or kind not in ('meta','ai'):raise VaultError('Invalid credential scope.')
+    if not re.fullmatch(r'[a-f0-9]{16}',tenant) or kind not in ('meta','ai','google_sheets','google_calendar'):raise VaultError('Invalid credential scope.')
     return ('vybe-credentials:v1:'+kind+':'+tenant).encode()
 
 

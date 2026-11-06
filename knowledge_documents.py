@@ -61,6 +61,7 @@ def document_action(store,ctx,action,data):
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE');document=store._get(db,tenant,'knowledgedocument',data.get('id'))
         if action=='knowledge.document.delete':
+            db.execute('DELETE FROM knowledge_vectors WHERE tenant=? AND document=?',(tenant,document['id']))
             db.execute("DELETE FROM entities WHERE tenant=? AND id=? AND kind='knowledgedocument'",(tenant,document['id']));db.execute('DELETE FROM knowledge_chunks WHERE tenant=? AND document=?',(tenant,document['id']));result={'deleted':True}
         elif action=='knowledge.document.update':
             if not isinstance(data.get('enabled'),bool):raise KnowledgeError('Enabled must be true or false.')
@@ -77,9 +78,12 @@ def retrieve(store,db,tenant,query,document_ids=None):
     documents={d['id']:d for d in store._list(db,tenant,'knowledgedocument') if d['enabled'] and (document_ids is None or d['id'] in document_ids)}
     if not documents:return []
     rows=[dict(r) for r in db.execute('SELECT * FROM knowledge_chunks WHERE tenant=? ORDER BY document,ordinal',(tenant,)) if r['document'] in documents]
+    from semantic_knowledge import rank
+    semantic=rank(store,db,tenant,query,documents,rows)
     terms=set(sorted(tokens(query))[:64]);wordsets=[tokens(row['text']) for row in rows];frequency={term:sum(term in words for words in wordsets) for term in terms};ranked=[]
     for row,words in zip(rows,wordsets):
         score=sum(1+math.log((len(rows)+1)/(frequency[term]+1)) for term in terms&words)
+        score+=semantic.get(row['id'],0)*4
         if terms and not score:continue
         ranked.append((score,row))
     ranked.sort(key=lambda pair:(-pair[0],pair[1]['document'],pair[1]['ordinal']))

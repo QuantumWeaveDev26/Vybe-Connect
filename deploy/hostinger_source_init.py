@@ -54,7 +54,7 @@ def initialize():
     try:
         unpack(data,staging)
         subprocess.run([sys.executable,'-m','pip','install','--disable-pip-version-check','--no-cache-dir','--only-binary=:all:','--require-hashes','--target',str(staging/'_vendor'),'-r',str(staging/'requirements-runtime.txt')],check=True,env=dict(os.environ,TMPDIR=str(staging)))
-        subprocess.run([sys.executable,'-B','-c','import sys;sys.path.insert(0,sys.argv[1]);from pdf_text import verify_runtime;verify_runtime();print("PDF runtime verified.")',str(staging)],check=True,env=dict(os.environ,TMPDIR=str(staging)))
+        subprocess.run([sys.executable,'-B','-c','import sys;sys.path.insert(0,sys.argv[1]);import site;site.addsitedir(sys.argv[1]+"/_vendor");from pdf_text import verify_runtime;verify_runtime();from zoneinfo import ZoneInfo;ZoneInfo("Asia/Kolkata");ZoneInfo("America/New_York");print("PDF and timezone runtimes verified.")',str(staging)],check=True,env=dict(os.environ,TMPDIR=str(staging)))
         (staging/'.archive-sha256').write_text(ARCHIVE_SHA256+'\n');staging.chmod(0o755)
         staging.rename(release)
     finally:

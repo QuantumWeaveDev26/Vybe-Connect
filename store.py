@@ -42,6 +42,9 @@ from service_jobs import ServiceError
 from customer_orders import order_action
 from website_knowledge import website_action
 import growth_services
+import business_hours
+import google_connections
+import semantic_knowledge
 import whatsapp_forms
 from chat_jobs import ChatError, chat_action, public_job, process_chat_job_once as run_chat_job
 from agents import configure_agent, claim_lease, lease_valid, scheduled_context
@@ -124,6 +127,7 @@ class Store:
             ''')
             embedded_signup.initialize(db)
             api_tokens.initialize(db)
+            semantic_knowledge.initialize(db)
 
     @contextmanager
     def db(self):
@@ -298,6 +302,9 @@ class Store:
             data['aijobs']=[public_job(j) for j in data['aijobs'] if j.get('owner')==ctx['user']['id']]
             data['messages']=[dict(x) for x in db.execute('SELECT * FROM (SELECT rowid AS ordinal,* FROM messages WHERE tenant=? ORDER BY rowid DESC LIMIT 2000) ORDER BY ts,ordinal',(tenant,))]
             data['growth']=growth_services.state(self,db,ctx)
+            data['business_hours']=business_hours.state(self,db,tenant)
+            data['google_connections']=google_connections.state(self,db,tenant)
+            data['semantic_knowledge']=semantic_knowledge.state(self,db,tenant)
             data['api_tokens']=api_tokens.listing(self,ctx,strict=False)
             data['members']=[dict(x) for x in db.execute('SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON m.user=u.id WHERE m.tenant=?',(tenant,))]
             data['product_feedback']=product_feedback.state(db,ctx)
@@ -346,6 +353,13 @@ class Store:
         t=ctx['tenant_id']; user=ctx['user']['id']
         try:client_services.enforce(self,ctx,action)
         except ServiceError as e:raise Problem(str(e),e.code)
+        if action.startswith('google.'):
+            try:return google_connections.action(self,ctx,action,d)
+            except embedded_signup.ConnectionError as e:raise Problem(str(e),e.code) from None
+        if action.startswith('semantic.'):return semantic_knowledge.action(self,ctx,action,d)
+        if action=='growth.hours.save':
+            try:return business_hours.action(self,ctx,d)
+            except embedded_signup.ConnectionError as e:raise Problem(str(e),e.code) from None
         if action.startswith('growth.form.'):return whatsapp_forms.action(self,ctx,action,d)
         if action.startswith('growth.'):return growth_services.action(self,ctx,action,d)
         if action.startswith('whatsapp.'):
@@ -634,7 +648,11 @@ class Store:
             if agent.get('archived'):raise Problem('This agent is archived. Restore it before running.')
         else:agent=None
         context={'business':ctx['workspace']['name'],'page':str(d.get('page',''))[:100],'role':ctx['role'],'contacts':len(state['contacts']),'opted_in':sum(c['optin'] for c in state['contacts']),'tickets':{s:sum(c['status']==s for c in state['contacts']) for s in ['open','pending','solved']},'campaigns':[{'name':c['name'],'status':c['status'],'audience':c['audience']} for c in state['campaigns'][:30]],'templates':[{'name':t['name'],'body':t['body'],'status':t['status']} for t in state['templates'][:20]],'messages_by_status':{s:sum(m['status']==s for m in state['messages']) for s in ['accepted','sent','delivered','read','failed','unknown']}}
-        with self.db() as db:context['knowledge_passages']=retrieve_documents(self,db,ctx['tenant_id'],d.get('question') or (agent or {}).get('instructions',''))
+        question=d.get('question') or (agent or {}).get('instructions','')
+        # Optional semantic calls happen outside database transactions; lexical fallback remains available.
+        try:semantic_knowledge.prepare_query(self,ctx['tenant_id'],question)
+        except Problem:pass
+        with self.db() as db:context['knowledge_passages']=retrieve_documents(self,db,ctx['tenant_id'],question)
         context['knowledge_sources']=[{k:source[k] for k in ['id','title','body']} for source in state['knowledges'] if source.get('enabled')]
         context['connection_configuration']={'meta_configured':state['meta']['configured'],'live_gate_enabled':state['meta']['live'],'provider_health':'not verified','wallet_balance':None}
         context['automation_configuration']=[{'name':r['name'],'keyword':r['keyword'],'enabled':r['enabled'],'executions':r.get('executions',0)} for r in (state['rules']+state['flows'])[:30]]
@@ -910,6 +928,7 @@ class Store:
         if stop: c['optin']=False;c.pop('flow_session',None);c.pop('outgoing_watch',None)
         self._put(db,t,'contact',c,c['id'])
         message=self._message(db,t,c['id'],text,'in','simulated' if simulated else 'received',external,timestamp)
+        if not simulated and not stop:business_hours.inbound(self,db,t,c,message)
         if not simulated:
             c['last_real_inbound_ordinal']=db.execute('SELECT rowid FROM messages WHERE id=?',(message['id'],)).fetchone()[0];self._put(db,t,'contact',c,c['id'])
         if not simulated and event.get('type','text')!='text':

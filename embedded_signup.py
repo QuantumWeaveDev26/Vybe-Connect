@@ -41,7 +41,7 @@ def configuration():
 def credential_path(tenant,kind='meta'):
     if not re.fullmatch(r'[a-f0-9]{16}',tenant or ''):
         raise ConnectionError('Invalid workspace.',403)
-    if kind not in ('meta','ai'):raise ConnectionError('Invalid credential store.',403)
+    if kind not in ('meta','ai','google_sheets','google_calendar'):raise ConnectionError('Invalid credential store.',403)
     root = Path(os.environ.get('TW_DATA_DIR',str(Path(__file__).parent/'data')))/(kind+'-credentials')
     root.mkdir(mode=0o700,parents=True,exist_ok=True)
     if root.is_symlink(): raise ConnectionError('Credential storage is unavailable.',503)
@@ -80,7 +80,7 @@ def migrate_credentials():
         credential_vault.unseal(credential_vault.seal(probe,'0'*16,'meta'),'0'*16,'meta')
     root=Path(os.environ.get('TW_DATA_DIR',str(Path(__file__).parent/'data')))
     pending=[]
-    for kind in ('meta','ai'):
+    for kind in ('meta','ai','google_sheets','google_calendar'):
         directory=root/(kind+'-credentials')
         if not directory.exists():continue
         if directory.is_symlink():raise ConnectionError('Credential storage is unavailable.',503)
