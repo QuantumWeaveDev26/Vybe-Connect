@@ -22,4 +22,10 @@ This release does not establish full WATI parity, Google public-app approval, Me
 
 ## Deployment
 
-Release pin, Hostinger action, container health and deployed asset checks are recorded after rollout below.
+* Runtime source: `6df752dc69876dbdc69a957ed487e4e421370d9a`.
+* Source archive SHA-256: `85f3f1d13833a6538047cc7d90266088eab5e1fd9297fe884b32474a1ae52186` (4,934,629 bytes).
+* Hostinger action `124010371`: success. Application container healthy; source initializer exited zero.
+* Runtime logs confirmed PDF extraction, both timezone probes, credential-vault validation and verified release initialization; no traceback was observed.
+* All 45 deployed JS/CSS files matched the pinned Git source byte for byte.
+* Eleven public HTTP checks passed: health/readiness 200, unauthenticated state 401, private/source paths 404, invalid OAuth callback 400, privacy/terms/deletion pages 200. CSP present.
+* Compose readback matched the candidate exactly; the private environment was unchanged. Only initializer/source references changed, preserving mounts, networks and feature gates.
