@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const c=vm.createContext({S:{data:{context:{tenant_id:'scope',role:'admin',user:{id:'owner'}},contacts:[],members:[],growth:{}},chat:''},location:{origin:'https://example.test'},pagehead:(t,d,a='')=>`<h1>${t}</h1><p>${d}</p>${a}`,esc:v=>String(v??'').replace(/[<>&"']/g,'_'),btn:(t,a,e='')=>`<button data-do="${a}" ${e}>${t}</button>`,field:()=>'',document:{addEventListener(){}},Date});
+const c=vm.createContext({S:{data:{context:{tenant_id:'scope',role:'admin',user:{id:'owner'}},contacts:[],members:[],growth:{}},chat:''},location:{origin:'https://example.test'},pagehead:(t,d,a='')=>`<h1>${t}</h1><p>${d}</p>${a}`,esc:v=>String(v??'').replace(/[<>&"']/g,'_'),btn:(t,a,e='')=>`<button data-do="${a}" ${e}>${t}</button>`,field:()=>'',document:{addEventListener(){},querySelectorAll(){return []},querySelector(){return null}},Date});
 vm.runInContext(fs.readFileSync('static/growth.js','utf8'),c);
 for(const name of ['recipesPage','supportToolsPage','branchesPage','attributionPage','helpCentrePage','whatsappFormsPage']){
  const result=vm.runInContext(`${name}()`,c);assert.match(result,/<h1>/);assert.doesNotMatch(result,/undefined|NaN/);
@@ -10,4 +10,7 @@ assert.match(vm.runInContext('whatsappFormsPage()',c),/growth-form-send/);
 assert.match(vm.runInContext('branchesPage()',c),/do not restrict teammate visibility/);
 const callbacks=[];c.showModal=(title,body,submit)=>callbacks.push(submit);c.calls=0;c.act=async()=>{c.calls++;return {}};c.$=()=>({close(){}});c.refresh=async()=>{};
 vm.runInContext(`growthDialog('Scope check','',()=>act('unexpected',{}));S.data.context.tenant_id='another-workspace'`,c);
-(async()=>{await assert.rejects(()=>callbacks[0]({}),/Workspace changed/);assert.equal(c.calls,0);console.log('Growth page empty/filled states, escaping, scope guards and truthful controls passed.')})().catch(e=>{console.error(e);process.exitCode=1});
+(async()=>{await assert.rejects(()=>callbacks[0]({}),/Workspace changed/);assert.equal(c.calls,0);
+ const secret={value:'private',removeAttribute(){this.removed=true}},modal={dataset:{growthScope:'old:owner'},close(){this.closed=true},replaceChildren(){this.cleared=true}};c.document.querySelectorAll=()=>[secret];c.document.querySelector=()=>modal;vm.runInContext('clearGrowthDialogIfScopeChanged()',c);assert.equal(secret.value,'');assert.ok(secret.removed&&modal.closed&&modal.cleared);
+ c.S.workspace=c.S.data.context.tenant_id;let resolve;c.act=()=>new Promise(r=>resolve=r);const pending=vm.runInContext("growthSave('recipe.rotate',{id:'recipe'})",c);c.S.workspace='switched-before-response';resolve({secret:'must-not-display'});await assert.rejects(()=>pending,/Workspace changed/);
+ console.log('Growth page empty/filled states, escaping, scope guards and truthful controls passed.')})().catch(e=>{console.error(e);process.exitCode=1});
