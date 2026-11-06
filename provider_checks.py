@@ -30,6 +30,9 @@ def state(store,db,tenant):
 
 
 def check(store,ctx,provider):
+    import platform_ai
+    from client_services import platform_admin
+    if platform_ai.enabled() and not platform_admin(ctx) and provider!='meta':raise ServiceError('Platform service connections are managed by VYBE Connect.',403)
     if ctx['role']!='admin':raise ServiceError('Administrator access required.',403)
     if os.environ.get('TW_PROVIDER_READS','false').lower()!='true':raise ServiceError('Enable TW_PROVIDER_READS on the server before making provider metadata requests.')
     tenant=ctx['tenant_id'];digest=fingerprint(tenant,provider)

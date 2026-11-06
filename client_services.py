@@ -18,11 +18,15 @@ def state(store,db,ctx):
     result=current.get('result',{}) if current else {}
     end=result.get('current_end',0)
     active=result.get('provider_status')=='active' and type(end) is int and end>int(time.time())
-    return {'connections':{provider:status(tenant,provider) for provider in ('payments','shipping','billing')},
+    import platform_ai
+    if platform_ai.managed(tenant):active=platform_ai.grant(db,tenant)['active']
+    operator=platform_admin(ctx);connections={provider:status(tenant,provider) for provider in ('payments','shipping','billing')}
+    if platform_ai.enabled() and not operator:connections={k:{field:v[field] for field in ('provider','ready','configured','enabled','mode')} for k,v in connections.items()}
+    return {'connections':connections,'platform_ai_mode':platform_ai.enabled(),
             'jobs':[public(j) for j in jobs[-100:] if ctx['role']=='admin' or not j['kind'].startswith('billing.')],'platform_admin':platform_admin(ctx),
             'plans':[dict({k:v for k,v in plan.items() if k!='plan_id'},key=key) for key,plan in plans().items()],
             'subscription':public(current) if current and ctx['role']=='admin' else None,'subscription_active':active,
-            'billing_enforced':os.environ.get('TW_BILLING_ENFORCE','false').lower()=='true',
+            'billing_enforced':platform_ai.enabled() or os.environ.get('TW_BILLING_ENFORCE','false').lower()=='true',
             'clients':store._list(db,tenant,'clientworkspace') if platform_admin(ctx) else []}
 
 
@@ -51,7 +55,8 @@ def action(store,ctx,operation,data):
 
 
 def enforce(store,ctx,operation):
-    if os.environ.get('TW_BILLING_ENFORCE','false').lower()!='true' or platform_admin(ctx) or ctx.get('review_only'):return
+    import platform_ai
+    if (os.environ.get('TW_BILLING_ENFORCE','false').lower()!='true' and not platform_ai.enabled()) or platform_admin(ctx) or ctx.get('review_only'):return
     # Keep billing, account security, exports and read access available for recovery.
     if operation.startswith(('billing.','invite.','notification.','feedback.')) or operation in ('calls.end','calls.reject','calls.release','services.release-failed'):return
     with store.db() as db:current=state(store,db,ctx)

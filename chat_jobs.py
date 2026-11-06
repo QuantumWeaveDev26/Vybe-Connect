@@ -206,6 +206,8 @@ def process_chat_job_once(store):
                 if job.get('purpose')=='agent_builder':context={'_workspace_id':tenant,'_gateway_path':str(store.path),'_model':job['model'],'_agent_builder':True,'business':ctx['workspace']['name'],'analysis_contract':agent_schema()}
                 answer=ask_local(job['question'],context,history);finish_answer(store,tenant,job,lease,{},local_answer=answer);return True
             stage='create'
+            from platform_ai import reserve
+            reserve(tenant,str(store.path),build_system(context),job['question'],history)
             if job.get('purpose')=='agent_builder':result=openai_create_agent(openai_key(tenant),job['model'],builder_system(ctx['workspace']['name']),job['question'],history)
             else:result=openai_create(openai_key(tenant),job['model'],build_system(context),job['question'],history)
             response_path(result.get('id'));job=commit_job(store,tenant,job['id'],lease,{'provider_id':result['id'],'phase':'Waiting for model'})

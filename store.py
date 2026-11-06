@@ -46,6 +46,7 @@ import business_hours
 import google_connections
 import semantic_knowledge
 import ai_gateway
+import platform_ai
 import whatsapp_forms
 from chat_jobs import ChatError, chat_action, public_job, process_chat_job_once as run_chat_job
 from agents import configure_agent, claim_lease, lease_valid, scheduled_context
@@ -130,6 +131,7 @@ class Store:
             api_tokens.initialize(db)
             semantic_knowledge.initialize(db)
             ai_gateway.initialize(db)
+            platform_ai.initialize(db)
 
     @contextmanager
     def db(self):

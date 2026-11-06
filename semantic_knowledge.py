@@ -25,6 +25,8 @@ def config(store,db,tenant):
 
 
 def allowed(tenant):
+    import platform_ai
+    if platform_ai.managed(tenant):return False
     from ai import ai_status
     status=ai_status(tenant)
     return status['enabled'] and status['configured'] and status['paid_allowed'] and status['provider_id']=='openai'

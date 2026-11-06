@@ -11,6 +11,9 @@ def settings(tenant):
 
 def action(store,ctx,operation,data):
     administrator(store,ctx)
+    import platform_ai
+    from client_services import platform_admin
+    if platform_ai.enabled() and not platform_admin(ctx):raise ConnectionError('AI is included with your subscription and managed by VYBE Connect.',403)
     tenant=ctx['tenant_id']
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
