@@ -42,3 +42,11 @@ Navigated all 31 named app destinations in this QA workspace: every route render
 Full Python discovery: 682 tests, one skipped, all others passed. Three additional budget-guard checks passed. All 30 JavaScript suites passed; focused template/startup/renderer checks passed after the final template-dialog guard. The UI detector reported no findings in the changed JS targets; this does not certify WCAG compliance.
 
 Razorpay keys/real plan IDs remain absent, so real checkout, authorization, renewal/cancellation and refunds were not tested. No shipping or WhatsApp message/call was sent. Official Meta customer onboarding/approvals and live delivery/call acceptance remain separate. Google OAuth and other unconfigured external endpoints were not represented as live successes. These checks do not establish full WATI parity or comprehensive paid-client readiness.
+
+## Verified deployment
+
+Hostinger VPS 1871828, project vybe-connect, action 124094890 succeeded. Runtime source e5aaaa516697222272e5a6c34fbc82239266422c. App healthy; source initializer exited 0. Deployed Compose matched the candidate and private environment was unchanged. Live index and all 45 referenced JS/CSS assets matched the pinned Git source byte for byte. Six public health/authentication/private-path checks passed, including that the acceptance harness is not publicly served.
+
+Authenticated post-deployment browser checks confirmed Submit to Meta and Launch campaign are disabled in the unconnected QA workspace; the existing template/footer persisted across restart, and the new save lock disabled the editor while its request was pending. Contact marketing consent now exposes its complete accessible label. The QA campaign remained a draft with zero audience, zero queued messages and no send event. No extra paid model requests were made during rollout.
+
+Final browser pass: saved template edit rechecked after deployment; rendered at requested 390 and 1280 pixel widths without page-wide horizontal overflow. The current owner workspace selector was restored to QuantumWeave AI; the clearly labeled QA workspace remains available separately. No browser errors were captured in the final pass.
