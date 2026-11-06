@@ -37,6 +37,7 @@ def state(store,db,ctx):
     t=ctx['tenant_id'];now=int(time.time())
     result={k+'s':[public_record(r) for r in store._list(db,t,k)] for k in KINDS}
     result['form_responses']=[public_record(r) for r in store._list(db,t,'formresponse')[-100:]] if ctx['role']=='admin' else []
+    result['form_sends']=[{k:r[k] for k in ('id','form_id','contact_id','created','status','external_id','completed') if k in r} for r in store._list(db,t,'formsend')[-100:]] if ctx['role']=='admin' else []
     contacts=store._list(db,t,'contact');deals=store._list(db,t,'deal')
     result['branch_report']=[];result['attribution_report']=[]
     for b in result['branchs']:
@@ -115,6 +116,9 @@ def action(store,ctx,operation,data):
                 values=dict(c,status='solved',resolved_at=stamp,snoozed_until=0)
                 if c.get('status')!='solved':store._put(db,t,'supportresolution',{'contact_id':c['id'],'actor':ctx['user']['id'],'created':stamp,'seconds_since_last_inbound':stamp-c['last_real_inbound'] if c.get('last_real_inbound') and stamp>=c['last_real_inbound'] else None})
             result=store._put(db,t,'contact',values,c['id'])
+            if op=='resolve':
+                from rule_events import status_change
+                result=status_change(store,db,t,c,result)
         elif op=='macro.save':
             tag=text(data.get('tag',''),'tag',60,True)
             result=store._put(db,t,'macro',dict(name=text(data.get('name'),'macro name',100),reply=text(data.get('reply',''),'reply',4000,True),note=text(data.get('note',''),'private note',2000,True),tag=tag),data.get('id'))
@@ -181,6 +185,7 @@ def receive(store,recipe_id,authorization,event_id,raw):
         from store import phone_number
         phone=phone_number(phone)
         c=next((c for c in store._list(db,t,'contact') if c['phone']==phone),None)
+        before=dict(c) if c else None
         if not c:c=store._contact(db,t,{'phone':phone,'name':text(name or phone,'contact name',100),'optin':False})
         # A webhook can never create marketing consent or forge a WhatsApp service window.
         values=dict(c,source='integration')
@@ -188,6 +193,8 @@ def receive(store,recipe_id,authorization,event_id,raw):
         if source and not c.get('attribution'):values['attribution']={'source_id':text(source,'source ID',150),'kind':'integration','received':int(time.time())}
         if r.get('branch_id'):store._get(db,t,'branch',r['branch_id']);values['branch_id']=r['branch_id']
         c=store._put(db,t,'contact',values,c['id'])
+        from rule_events import contact_change
+        c=contact_change(store,db,t,before,c)
         if r['mode']=='draft':store._message(db,t,c['id'],r['reply'].replace('{{name}}',c['name']),'out','draft')
         if r['mode']=='lead':
             from crm import crm_action

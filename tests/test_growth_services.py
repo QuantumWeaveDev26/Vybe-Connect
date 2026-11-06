@@ -106,6 +106,14 @@ class GrowthTests(unittest.TestCase):
             item=self.store._get(db,self.tenant,'csatsurvey',other['id']);self.store._put(db,self.tenant,'csatsurvey',dict(item,expires=1),item['id'])
         with self.assertRaises(Problem):growth.survey(self.store,other['token'])
 
+    def test_growth_actions_run_existing_automation_events_once(self):
+        self.store.action(self.ctx,'rule.save',{'name':'Contact follow-up','event':'contact_created','keyword':'','reply':'','enabled':True,'actions':[{'type':'tag','value':'New lead'}]})
+        self.store.action(self.ctx,'rule.save',{'name':'Resolved follow-up','event':'conversation_resolved','keyword':'','reply':'','enabled':True,'actions':[{'type':'task','value':'Review resolved case'}]})
+        r=self.recipe();new=self.event(r);self.event(r)
+        c=next(c for c in self.store.state(self.ctx)['contacts'] if c['id']==new['contact_id']);self.assertIn('New lead',c['tags'])
+        self.act('resolve',{'contact_id':c['id']});self.act('resolve',{'contact_id':c['id']})
+        tasks=self.store.state(self.ctx)['tasks'];self.assertEqual(len(tasks),1);self.assertEqual(tasks[0]['title'],'Review resolved case')
+
 
 class WhatsAppFormTests(GrowthTests):
     def form(self):return self.act('form.save',{'title':'Course inquiry','fields':[{'label':'Your name','type':'text','required':True},{'label':'Course','type':'choice','required':True,'options':['Science','Arts']}]})
@@ -146,3 +154,60 @@ class WhatsAppFormTests(GrowthTests):
             with self.assertRaises(Problem):self.act('form.create',{'id':f['id'],'confirm':True})
             with self.assertRaises(Problem):self.act('form.create',{'id':f['id'],'confirm':True})
             self.assertEqual(graph.call_count,1)
+
+    def test_sync_cannot_interrupt_an_active_provider_operation(self):
+        f=self.form()
+        with self.store.db() as db:self.store._put(db,self.tenant,'whatsappform',dict(f,meta_id='789',status='PUBLISHED',operation='in-progress',operation_started=int(time.time()),operation_kind='send'),f['id'])
+        with patch('meta.status',return_value={'configured':True,'live':True}),patch('meta.graph_request',return_value={'id':'789','status':'PUBLISHED'}) as graph:
+            with self.assertRaises(Problem):self.act('form.sync',{'id':f['id'],'confirm':True})
+            graph.assert_not_called()
+
+    def test_unknown_send_blocks_new_nonce_until_correlated_completion(self):
+        f=self.form();stamp=int(time.time())
+        self.store.inbound(self.tenant,{'id':'window-open','from':self.contact['phone'],'text':{'body':'Form please'}})
+        with self.store.db() as db:
+            self.store._put(db,self.tenant,'whatsappform',dict(f,meta_id='789',status='PUBLISHED'),f['id'])
+            self.store._put(db,self.tenant,'formsend',{'form_id':f['id'],'contact_id':self.contact['id'],'nonce':'old','flow_token':'correlation-token','created':stamp,'status':'unknown'})
+        with patch('meta.status',return_value={'configured':True,'live':True}),patch('meta.settings',return_value=self.settings()),patch('meta.graph_request',return_value={'messages':[{'id':'wamid.new'}]}) as graph:
+            with self.assertRaises(Problem):self.act('form.send',{'id':f['id'],'contact_id':self.contact['id'],'nonce':'new','confirm':True})
+            graph.assert_not_called()
+        event={'id':'completed-unknown-send','from':self.contact['phone'],'type':'interactive','interactive':{'nfm_reply':{'response_json':json.dumps({'flow_token':'correlation-token','question_1':'Student','question_2':'0'})}}}
+        self.store.inbound(self.tenant,event)
+        state=self.store.state(self.ctx)['growth'];self.assertEqual(len(state['form_responses']),1);self.assertEqual(state['form_sends'][0]['status'],'completed');self.assertNotIn('correlation-token',json.dumps(state))
+
+    def test_reconcile_creation_requires_same_account_name_and_unpublished_draft(self):
+        f=self.form()
+        with patch('meta.status',return_value={'configured':True,'live':True}),patch('meta.settings',return_value=self.settings()),patch('meta.graph_request') as graph:
+            data={'id':f['id'],'meta_id':'789','confirm':True}
+            for change in [{'whatsapp_business_account':{'id':'other'}},{'name':'Other form'},{'status':'PUBLISHED'}]:
+                graph.return_value=dict({'id':'789','name':f['title'],'status':'DRAFT','whatsapp_business_account':{'id':'123'}},**change)
+                with self.subTest(change=change),self.assertRaises(Problem):self.act('form.adopt',data)
+            graph.return_value={'id':'789','name':f['title'],'status':'DRAFT','whatsapp_business_account':{'id':'123'}}
+            linked=self.act('form.adopt',data);self.assertEqual(linked['meta_id'],'789');self.assertFalse(linked['uploaded'])
+            with self.assertRaises(Problem):self.act('form.publish',{'id':f['id'],'confirm':True})
+
+    def test_completed_response_is_not_overwritten_by_late_provider_result(self):
+        f=self.form();self.store.inbound(self.tenant,{'id':'window-open','from':self.contact['phone'],'text':{'body':'Send form'}})
+        with self.store.db() as db:self.store._put(db,self.tenant,'whatsappform',dict(f,meta_id='789',status='PUBLISHED'),f['id'])
+        def provider(*args,**kwargs):
+            token=args[4]['interactive']['action']['parameters']['flow_token']
+            self.store.inbound(self.tenant,{'id':'fast-completion','from':self.contact['phone'],'type':'interactive','interactive':{'nfm_reply':{'response_json':json.dumps({'flow_token':token,'question_1':'Student','question_2':'0'})}}})
+            raise meta.ProviderError('Result unknown')
+        with patch('meta.status',return_value={'configured':True,'live':True}),patch('meta.settings',return_value=self.settings()),patch('meta.graph_request',provider):
+            with self.assertRaises(Problem):self.act('form.send',{'id':f['id'],'contact_id':self.contact['id'],'nonce':'fast-response','confirm':True})
+            state=self.store.state(self.ctx)['growth'];self.assertEqual(state['form_sends'][0]['status'],'completed');self.assertEqual(len(state['form_responses']),1)
+
+    def test_delivery_history_and_malformed_provider_responses_are_safe(self):
+        f=self.form()
+        with patch('meta.status',return_value={'configured':True,'live':True}),patch('meta.settings',return_value=self.settings()),patch('meta.graph_request',return_value=[]):
+            with self.assertRaises(Problem):self.act('form.create',{'id':f['id'],'confirm':True})
+        current=self.store.state(self.ctx)['growth']['whatsappforms'][0]
+        self.assertTrue(current['operation']);self.assertIn('invalid or uncertain',current['last_error'])
+        with self.store.db() as db:
+            r=self.store._put(db,self.tenant,'formsend',{'form_id':f['id'],'contact_id':self.contact['id'],'created':int(time.time()),'status':'accepted','external_id':'wamid.receipt','flow_token':'private-correlation'})
+        self.store.delivery(self.tenant,'wamid.receipt','read');self.store.delivery(self.tenant,'wamid.receipt','sent')
+        self.assertEqual(self.store.state(self.ctx)['growth']['form_sends'][0]['status'],'read')
+        with self.store.db() as db:
+            r=self.store._get(db,self.tenant,'formsend',r['id']);self.store._put(db,self.tenant,'formsend',dict(r,status='completed'),r['id'])
+        self.store.delivery(self.tenant,'wamid.receipt','failed')
+        self.assertEqual(self.store.state(self.ctx)['growth']['form_sends'][0]['status'],'completed')

@@ -964,6 +964,7 @@ class Store:
         ranks={'accepted':0,'sent':1,'delivered':2,'read':3,'failed':4}
         if status not in ranks: return
         with self.db() as db:
+            whatsapp_forms.delivery(self,db,tenant,external,status)
             row=db.execute('SELECT id,status FROM messages WHERE tenant=? AND external_id=?',(tenant,external)).fetchone()
             if row and ranks.get(row['status'],-1)<=ranks[status]: db.execute('UPDATE messages SET status=? WHERE id=?',(status,row['id']))
             job=db.execute('SELECT id,status FROM outbound WHERE tenant=? AND external_id=?',(tenant,external)).fetchone()
