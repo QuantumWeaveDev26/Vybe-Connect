@@ -28,3 +28,7 @@ Sources downloaded for read-only review under `C:/Users/pavan/OneDrive/Documents
 * Routerly: d605c0a81a814264ecf64cd5011030d17c065f6b
 
 No repository runtime was installed or executed, no new transport activated, and no licensed gateway source silently merged. The existing original gateway adapter remains available when an operator configures a compatible endpoint.
+
+## Deployment evidence
+
+Hostinger action 124018358 succeeded. Runtime source df9183184baa68dac259dc0f40ef0d5fa54e242e: app healthy, initializer exited zero, all 45 JS/CSS assets matched Git byte for byte, five health/authentication/private-file checks passed. Compose readback matched the candidate and the private environment was unchanged. Live authenticated browser readback confirmed the new Setup needed labels; real billing remains unconfigured rather than falsely enabled. Proposed INR subscription prices are documented separately in india-pricing-proposal.md and were not activated as chargeable subscriptions.
