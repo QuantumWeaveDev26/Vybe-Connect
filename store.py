@@ -45,6 +45,7 @@ import growth_services
 import business_hours
 import google_connections
 import semantic_knowledge
+import ai_gateway
 import whatsapp_forms
 from chat_jobs import ChatError, chat_action, public_job, process_chat_job_once as run_chat_job
 from agents import configure_agent, claim_lease, lease_valid, scheduled_context
@@ -128,6 +129,7 @@ class Store:
             embedded_signup.initialize(db)
             api_tokens.initialize(db)
             semantic_knowledge.initialize(db)
+            ai_gateway.initialize(db)
 
     @contextmanager
     def db(self):
@@ -305,6 +307,7 @@ class Store:
             data['business_hours']=business_hours.state(self,db,tenant)
             data['google_connections']=google_connections.state(self,db,tenant)
             data['semantic_knowledge']=semantic_knowledge.state(self,db,tenant)
+            data['gateway_usage']=ai_gateway.usage(self,db,tenant)
             data['api_tokens']=api_tokens.listing(self,ctx,strict=False)
             data['members']=[dict(x) for x in db.execute('SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON m.user=u.id WHERE m.tenant=?',(tenant,))]
             data['product_feedback']=product_feedback.state(db,ctx)
@@ -649,6 +652,7 @@ class Store:
         else:agent=None
         context={'business':ctx['workspace']['name'],'page':str(d.get('page',''))[:100],'role':ctx['role'],'contacts':len(state['contacts']),'opted_in':sum(c['optin'] for c in state['contacts']),'tickets':{s:sum(c['status']==s for c in state['contacts']) for s in ['open','pending','solved']},'campaigns':[{'name':c['name'],'status':c['status'],'audience':c['audience']} for c in state['campaigns'][:30]],'templates':[{'name':t['name'],'body':t['body'],'status':t['status']} for t in state['templates'][:20]],'messages_by_status':{s:sum(m['status']==s for m in state['messages']) for s in ['accepted','sent','delivered','read','failed','unknown']}}
         question=d.get('question') or (agent or {}).get('instructions','')
+        context['_gateway_path']=str(self.path)
         # Optional semantic calls happen outside database transactions; lexical fallback remains available.
         try:semantic_knowledge.prepare_query(self,ctx['tenant_id'],question)
         except Problem:pass

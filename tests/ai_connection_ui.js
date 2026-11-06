@@ -15,6 +15,13 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
  assert.match(effects.form.html,/type="password"/);assert.match(effects.form.html,/name="enabled"/);assert.doesNotMatch(effects.form.html,/<input[^>]*name="enabled"[^>]*\schecked(?:[\s=>])/,'spending must not be pre-enabled');
  const data={key:'sk-'+'x'.repeat(40),model:'model-id',enabled:false};await effects.form.handler(data);
  assert.equal(effects.calls[0].operation,'ai.connection.save');assert.equal(effects.calls[0].data.enabled,false);assert.equal(data.key,'');assert.equal(input.value,'');
+ ctx.field=(name,label,value)=>`<label>${label}<input name="${name}" value="${value}"></label>`;
+ vm.runInContext('S.data.ai.gateway_options=[{id:"budget",label:"<unsafe>",models:["approved-model"],requests_per_day:2}]',ctx);
+ assert.match(vm.runInContext('aiConnectionCard()',ctx),/Use an AI gateway/);
+ el.dataset.aiConnection='gateway';for(const fn of listeners.click)await fn({target:{closest(selector){return selector==='[data-ai-connection]'?el:null}}});
+ assert.match(effects.form.html,/type="password"/);assert.doesNotMatch(effects.form.html,/<unsafe>/);assert.doesNotMatch(effects.form.html,/<input[^>]*name="enabled"[^>]*\schecked(?:[\s=>])/);
+ const gatewayData={key:'sk-gateway-private-1234567890',gateway_id:'budget',model:'approved-model',enabled:false};await effects.form.handler(gatewayData);
+ assert.equal(effects.calls[1].data.provider,'gateway');assert.equal(gatewayData.key,'');assert.equal(input.value,'');
  vm.runInContext('S.data.context.role="agent"',ctx);assert.doesNotMatch(vm.runInContext('aiConnectionCard()',ctx),/data-ai-connection/);
  vm.runInContext('S.data.context.role="admin";S.workspace="other";clearAIConnectionDialog()',ctx);assert.equal(modal.innerHTML,'');assert.equal(modal.open,false);
  console.log('AI connection UI: admin-only controls, spending off by default, masked key input and workspace-change cleanup passed.');

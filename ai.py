@@ -10,7 +10,7 @@ from openai_adapter import request_openai
 def openai_key(tenant):
     from ai_connection import settings
     saved=settings(tenant)
-    if saved is not None:return '' if saved.get('disconnected') else saved.get('key','')
+    if saved is not None:return '' if saved.get('disconnected') or saved.get('provider')=='gateway' else saved.get('key','')
     scoped=os.environ.get('TW_AI_'+str(tenant).upper()+'_OPENAI_API_KEY','') if tenant else ''
     return scoped or os.environ.get('TW_OPENAI_API_KEY','')
 
@@ -18,6 +18,10 @@ def openai_key(tenant):
 def ai_status(tenant=None):
     from ai_connection import settings
     saved=settings(tenant)
+    if saved and saved.get('provider')=='gateway':
+        from ai_gateway import catalog,options
+        gateway=catalog().get(saved.get('gateway_id'));paid=saved.get('enabled') is True and not saved.get('disconnected');requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true'
+        return {'enabled':bool(requested and paid and gateway),'requested_enabled':requested,'model':saved.get('model',''),'models':gateway['models'] if gateway else [],'provider':gateway['label'] if gateway else 'AI gateway unavailable','provider_id':'gateway','configured':bool(gateway and saved.get('key') and saved.get('model') in gateway['models'] and not saved.get('disconnected')),'paid_allowed':paid,'credential_source':'workspace','gateway_id':saved.get('gateway_id',''),'gateway_options':options()}
     provider=os.environ.get('TW_AI_PROVIDER','ollama').lower()
     if saved is not None:provider='openai'
     model=os.environ.get('TW_AI_MODEL','') or ('gpt-6-luna' if provider=='openai' else '')
@@ -31,7 +35,8 @@ def ai_status(tenant=None):
     paid=bool(tenant and os.environ.get('TW_AI_'+str(tenant).upper()+'_ALLOW_PAID','false').lower()=='true')
     if saved is not None:paid=saved.get('enabled') is True and not saved.get('disconnected')
     configured=bool(model and (openai_key(tenant) if provider=='openai' else provider=='ollama'))
-    return {'enabled':requested and (provider=='ollama' or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'local Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment'}
+    from ai_gateway import options
+    return {'enabled':requested and (provider=='ollama' or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'local Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options()}
 
 
 def clean_history(history):
@@ -60,6 +65,16 @@ def ask_local(question,context,history):
         from agent_builder import builder_system
         system=builder_system(context['business'])
     else:system=build_system(context)
+    if status['provider_id']=='gateway':
+        from ai_gateway import request as gateway_request
+        schema=None
+        if context.get('_customer_reply'):
+            from customer_reply_contract import customer_schema
+            schema=customer_schema()
+        if context.get('_agent_builder'):
+            from agent_builder import agent_schema
+            schema=agent_schema()
+        return gateway_request(tenant,context.get('_gateway_path'),selected,system,question,clean_history(history),bool(context.get('analysis_contract')) and schema is None,schema)
     if status['provider_id']=='openai':
         if context.get('_customer_reply'):
             from customer_reply_contract import customer_schema

@@ -153,7 +153,7 @@ def process_once(store):
             token=secrets.token_hex(16);job=store._put(db,tenant,'customerreplyjob',dict(job,status='generating',phase='Drafting a grounded reply' if has_knowledge else 'Requesting human review',fingerprint=fingerprint(store,db,tenant,contact['id'],assistant['source_ids'],assistant.get('order_access',False)),model_submitted=has_knowledge,model_started=stamp if has_knowledge else 0,lease=token,lease_until=stamp+120,updated=stamp),job['id'])
             chosen=tenant,job,token,question,context;break
     if not chosen:return False
-    tenant,job,token,question,context=chosen;stage='model'
+    tenant,job,token,question,context=chosen;stage='model';context['_gateway_path']=str(store.path)
     try:
         if context['knowledge_sources'] or context['knowledge_passages'] or context['customer_orders']:raw=ask_local(question,context,[])
         else:raw=json.dumps({'reply':'','needs_human':True,'reason':'Daily generation limit reached.' if context.get('_limit_reached') else 'No approved customer knowledge supports this question.','knowledge_references':[]})

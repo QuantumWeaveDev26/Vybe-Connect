@@ -14,16 +14,18 @@ def findings_schema():
     return obj({'summary':string,'findings':{'type':'array','items':finding}})
 
 
-def request_openai(key,model,system,question,history,structured=False,schema=None):
+def request_openai(key,model,system,question,history,structured=False,schema=None,transport=None):
     payload={'model':model,'instructions':system,'input':history[-12:]+[{'role':'user','content':question}],'store':False,'max_output_tokens':4000 if structured else 1600}
     if model.startswith(('gpt-6','gpt-5')):payload['reasoning']={'effort':'none' if model=='gpt-6-luna' else 'low'}
     if structured:payload['text']={'format':{'type':'json_schema','name':'workspace_findings','strict':True,'schema':findings_schema()}}
     if schema is not None:payload.update(max_output_tokens=2400,text={'format':{'type':'json_schema','name':'customer_reply','strict':True,'schema':schema}})
-    request=urllib.request.Request('https://api.openai.com/v1/responses',data=json.dumps(payload).encode(),headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'},method='POST')
-    try:
-        with urllib.request.urlopen(request,timeout=90) as response:result=json.load(response)
-    except urllib.error.HTTPError as e:raise ValueError('OpenAI returned HTTP '+str(e.code)+'. Verify server credentials, model access and API billing. No automatic retry was attempted.') from None
-    except Exception:raise ValueError('OpenAI did not return a usable response. Check connectivity and API status. No automatic retry was attempted.') from None
+    if transport:result=transport(payload)
+    else:
+        request=urllib.request.Request('https://api.openai.com/v1/responses',data=json.dumps(payload).encode(),headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'},method='POST')
+        try:
+            with urllib.request.urlopen(request,timeout=90) as response:result=json.load(response)
+        except urllib.error.HTTPError as e:raise ValueError('OpenAI returned HTTP '+str(e.code)+'. Verify server credentials, model access and API billing. No automatic retry was attempted.') from None
+        except Exception:raise ValueError('OpenAI did not return a usable response. Check connectivity and API status. No automatic retry was attempted.') from None
     if not isinstance(result,dict) or result.get('status')!='completed':raise ValueError('OpenAI did not complete this response. No findings were generated from partial output.')
     content=[]
     output=result.get('output',[])

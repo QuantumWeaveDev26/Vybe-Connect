@@ -202,8 +202,8 @@ def process_chat_job_once(store):
             job=commit_job(store,tenant,job['id'],lease,{'history_hash':history_hash(chat['messages']),'reference_scope':scope,'knowledge_scope':knowledge_scope,'phase':'Requesting model','submitted':True})
             if job['cancel_requested']:
                 commit_job(store,tenant,job['id'],lease,{'status':'cancelled','phase':'Cancelled before submission','cancel_outcome':'not_submitted','lease':'','lease_until':0});return True
-            if job['provider']=='ollama':
-                if job.get('purpose')=='agent_builder':context={'_workspace_id':tenant,'_model':job['model'],'_agent_builder':True,'business':ctx['workspace']['name'],'analysis_contract':agent_schema()}
+            if job['provider'] in ('ollama','gateway'):
+                if job.get('purpose')=='agent_builder':context={'_workspace_id':tenant,'_gateway_path':str(store.path),'_model':job['model'],'_agent_builder':True,'business':ctx['workspace']['name'],'analysis_contract':agent_schema()}
                 answer=ask_local(job['question'],context,history);finish_answer(store,tenant,job,lease,{},local_answer=answer);return True
             stage='create'
             if job.get('purpose')=='agent_builder':result=openai_create_agent(openai_key(tenant),job['model'],builder_system(ctx['workspace']['name']),job['question'],history)
