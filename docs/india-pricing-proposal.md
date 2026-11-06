@@ -26,3 +26,7 @@ AI allowance means a rupee-denominated provider cost budget, not a number of mes
 4. Complete real subscription authorization/renewal/cancellation acceptance, backups and support arrangements before turning on paid-client enforcement.
 
 No merchant account, subscription, checkout or billing enforcement was activated by this proposal.
+
+## Implementation update, 6 November 2026
+
+The subscription-funded AI release now enforces verified paid access for customer CRM mutations and atomically limits included AI by requests per billing cycle. Suggested request allowances are 50/150/300 for Starter/Growth/Scale. These are not the monetary cost allowances proposed above; no rupee wallet or automatic overage charge is implemented. Real Razorpay credentials, live approval and matching provider plan IDs remain required before checkout can be offered. See platform-subscription-ai.md.

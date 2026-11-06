@@ -13,3 +13,17 @@ This is a per-cycle request allowance, not a rupee wallet or actual-cost ledger.
 Activate Razorpay by setting TW_BILLING_KEY_ID, TW_BILLING_KEY_SECRET, TW_BILLING_WEBHOOK_SECRET, TW_BILLING_ACCOUNT_ID, real TW_BILLING_PLANS, TW_BILLING_ENABLED and explicit live approval privately. Create real monthly INR plans at 49900, 99900 and 149900 minor units, with ai_requests 50, 150 and 300 respectively. Real plan prices are checked against Razorpay before checkout creation. No plan IDs or paid subscriptions were invented. Until merchant setup is complete, customers see a preparation message and cannot purchase or obtain paid CRM/AI access.
 
 An active subscription does not bypass Meta approval, register a customer's number automatically or prove live messaging delivery. Customers still connect their own Meta business through the existing official onboarding flow.
+
+## Customer-facing page cleanup
+
+Templates now use concise approval guidance and show saved headers, body, footer and button labels in a larger message preview. This does not add media/carousel or OTP delivery support. Template rows adapt to narrow phones instead of hiding actions in a wide table. Inbox filters have comfortable targets and spacing. Workspace connections show VYBE AI as platform-provided; technical operator controls are folded. Customer billing excludes platform credential diagnostics entirely. Tablet section navigation no longer inherits full-height desktop sizing.
+
+No new paid test prompt, Meta message, subscription authorization or transaction was submitted during this deployment. The earlier single synthetic OpenAI agent acceptance succeeded; it does not establish every live service or Meta onboarding flow.
+
+## Deployment verification
+
+Runtime source: f9e9041bebd4856b9a086612bcbac052145da08d. Hostinger VPS 1871828, project vybe-connect, deployment action 124026120 succeeded on 6 November 2026. App container healthy; source initializer exited 0. Live index and all 45 referenced JS/CSS assets matched the pinned commit byte for byte. Health/readiness returned 200, unauthenticated state 401, and private environment/source/database paths 404. Deployed Compose and environment exactly matched the intended candidate. Existing settings were preserved; platform AI managed mode, its authoritative database path and the already-authorized platform OpenAI key were added privately.
+
+Validation: full Python discovery ran 680 tests with one skipped before final UI work; 28 focused platform-AI/business-service checks passed after the additional concurrency and plan-gate checks. All 29 JavaScript suites passed after the AI UI changes; all-route rendering passed after the final tablet CSS adjustment. These are local contract checks, not live payment or Meta acceptance.
+
+Authenticated browser checks covered the four marked pages at a 390-pixel requested phone viewport, template rows at 320, connections at 768, and desktop inbox/templates/connections at 1531. Narrow rows and tablet navigation were visually checked after deployment. No page-wide horizontal overflow was observed on the four phone pages. No browser errors were captured in the final pass; temporary viewport overrides were restored. Physical-device acceptance and real customer checkout remain unverified. Local screenshots are in the current task workspace outputs/verification directory, outside the public application repository.
