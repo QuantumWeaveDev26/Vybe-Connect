@@ -47,3 +47,12 @@ vm.runInContext('S.data.contacts=[];S.data.meta.configured=true;S.chat=null',con
 let inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/Check your webhook subscription/);assert.doesNotMatch(inboxEmpty,/Connect Meta for real incoming/);
 vm.runInContext('S.data.meta.configured=false',context);inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/Connect your WhatsApp account/);
 console.log('Inbox setup guidance reflects the actual connection configuration.');
+
+vm.runInContext('S.data.sandbox=false;S.data.meta.live=false;S.data.templates=[{id:"qa-draft",status:"local_draft"}];S.data.campaigns=[{id:"qa-campaign",name:"QA draft",template_id:"qa-draft",audience:0,status:"draft"}]',context);
+assert.match(vm.runInContext('campaignTable()',context),/disabled title="Connect WhatsApp and enable sending first/);
+assert.match(vm.runInContext('templatePageBase()',context),/data-do="submit-template"[^>]+disabled/);
+vm.runInContext('S.data.meta.live=true;S.data.meta.configured=true',context);
+assert.match(vm.runInContext('campaignTable()',context),/disabled title="Wait for Meta template approval/);
+vm.runInContext('S.data.templates[0].status="APPROVED";S.data.templates[0].meta_id="provider-real-id"',context);
+assert.doesNotMatch(vm.runInContext('campaignTable()',context),/data-do="run-campaign"[^>]+disabled/);
+console.log('Campaign launch and template submission reflect live connection and provider approval prerequisites.');
