@@ -10,3 +10,13 @@ c.fixture={stream:{getTracks:()=>[{stop:()=>stops++}]},pc:{close:()=>closes++},a
 vm.runInContext('Object.assign(VOICE,fixture);checkVoiceScope()',c);
 assert.equal(cleared,1);assert.equal(stops,1);assert.equal(closes,1);assert.equal(removes,1);assert.equal(vm.runInContext('VOICE.id',c),null);
 console.log('Client invitation scope cleanup and microphone/peer teardown passed.');
+let resolveRequest,closed=0,refreshed=0;
+c.S.data.services={connections:{},jobs:[],plans:[],clients:[]};c.S.data.context.role='admin';
+c.showModal=(title,body,submit)=>{c.submitService=submit};c.$=()=>({close(){closed++}});c.refresh=async()=>{refreshed++};
+c.act=()=>new Promise(resolve=>{resolveRequest=resolve});
+(async()=>{
+ await vm.runInContext("serviceAction('service-release-failed',{dataset:{id:'failed-operation'}})",c);
+ const pending=c.submitService();c.S.workspace='switched';resolveRequest({released:true});
+ await assert.rejects(()=>pending,/Workspace changed/);assert.equal(closed,0);assert.equal(refreshed,0);
+ console.log('Services rejects stale provider responses before closing dialogs or refreshing another workspace.');
+})().catch(e=>{console.error(e);process.exitCode=1});

@@ -102,7 +102,18 @@ def action(store,ctx,operation,data):
     raise ServiceError('Unknown payment or billing operation.',404)
 
 
+def validate_resource_identity(job,resource,scope):
+    pattern=r'plink_[A-Za-z0-9]+' if scope=='payments' else r'sub_[A-Za-z0-9]+'
+    if not isinstance(resource,dict) or not re.fullmatch(pattern,str(resource.get('id',''))):raise ServiceError('Invalid provider resource identity.',409)
+    known=job.get('result',{}).get('provider_id')
+    if known and resource['id']!=known:raise ServiceError('Provider resource differs from the recorded operation.',409)
+    statuses=('created','partially_paid','paid','cancelled','expired') if scope=='payments' else ('created','authenticated','active','pending','halted','paused','cancelled','completed','expired')
+    if resource.get('status') not in statuses:raise ServiceError('Unrecognized provider resource status.',409)
+    if scope=='billing' and resource.get('current_end') is not None and (type(resource['current_end']) is not int or resource['current_end']<0):raise ServiceError('Invalid subscription period.',409)
+
+
 def apply_resource(store,tenant,job,resource,scope):
+    validate_resource_identity(job,resource,scope)
     if scope=='payments':
         expected=job['payload']
         if resource.get('reference_id')!=job['id'] or resource.get('amount')!=expected['amount'] or resource.get('currency')!=expected['currency']:raise ServiceError('Provider identity or amount does not match this workspace order.',409)
@@ -168,6 +179,7 @@ def webhook(store,tenant,scope,raw,headers):
             return {'received':True,'duplicate':True}
         current=store._get(db,tenant,'servicejob',job['id'])
         # Validate without network; never grant access from a redirect callback.
+        validate_resource_identity(current,resource,scope)
         if scope=='payments':
             expected=current['payload']
             if resource.get('reference_id')!=job['id'] or resource.get('amount')!=expected['amount'] or resource.get('currency')!=expected['currency']:raise ServiceError('Payment amount or reference mismatch.',409)

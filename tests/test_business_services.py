@@ -211,3 +211,21 @@ class BusinessServiceTests(unittest.TestCase):
         with self.s.db() as db:
             unknown=self.s._put(db,self.t,'servicejob',{'kind':'shipping.order','reference':'other','status':'unknown','created':1})
         with self.assertRaises(Problem):self.act('services.release-failed',id=unknown['id'])
+
+    def test_reconciliation_rejects_a_different_recorded_payment_id(self):
+        job=self.link()
+        with self.s.db() as db:private=self.s._get(db,self.t,'servicejob',job['id'])
+        resource={'id':'plink_other','reference_id':job['id'],'amount':1000,'currency':'INR','status':'paid','amount_paid':1000}
+        with self.assertRaises(Exception):payment_services.apply_resource(self.s,self.t,private,resource,'payments')
+        self.assertEqual(self.s.state(self.ctx)['services']['jobs'][0]['result']['provider_id'],'plink_fixture')
+
+    def test_signed_event_cannot_replace_the_recorded_resource(self):
+        job=self.link();raw,headers=self.event(job);body=json.loads(raw);body['payload']['payment_link']['entity']['id']='plink_other';raw=json.dumps(body).encode()
+        headers['X-Razorpay-Signature']=hmac.new(b'webhook-test-secret',raw,hashlib.sha256).hexdigest()
+        with self.assertRaises(Exception):payment_services.webhook(self.s,self.t,'payments',raw,headers)
+        self.assertNotEqual(self.s.state(self.ctx)['services']['jobs'][0]['status'],'paid')
+
+    def test_subscription_rejects_invalid_period_or_unknown_status(self):
+        job={'result':{'provider_id':'sub_recorded'}}
+        for resource in [{'id':'sub_other','status':'active','current_end':1},{'id':'sub_recorded','status':'unexpected','current_end':1},{'id':'sub_recorded','status':'active','current_end':'tomorrow'},{'id':'sub_recorded','status':'active','current_end':True}]:
+            with self.subTest(resource=resource),self.assertRaises(Exception):payment_services.validate_resource_identity(job,resource,'billing')
