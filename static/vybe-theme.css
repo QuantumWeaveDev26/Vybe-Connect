@@ -271,3 +271,21 @@ button:focus-visible,a:focus-visible{outline:2px solid #238653;outline-offset:3p
 .provider-check-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #edf2ef}.provider-check-row>div{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0}.provider-check-row button{flex-shrink:0}@media(max-width:480px){.provider-check-row{align-items:flex-start}.provider-check-row>div{align-items:flex-start;flex-direction:column}}
 
 .provider-check-hint{flex-basis:100%;margin:0;max-width:620px}.provider-check-row{align-items:flex-start}
+
+/* Team Inbox Collision Prevention, Typing Indicators, Mentions & Simulator */
+.collision-banner{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:6px;font-size:13px;margin:8px 16px}
+.typing-indicator{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#f1f5f9;color:#475569;border-radius:14px;font-size:12px;margin:8px 0;width:fit-content}
+.typing-dots span{display:inline-block;animation:typing-blink 1.4s infinite both;font-weight:bold}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typing-blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.mention-popup{position:absolute;bottom:100%;left:16px;background:#ffffff;border:1px solid #cbd5e1;box-shadow:0 8px 24px rgba(0,0,0,0.12);border-radius:8px;padding:6px;max-height:180px;overflow-y:auto;z-index:40;min-width:220px}
+.mention-item{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border-radius:4px;font-size:13px;transition:background .12s}
+.mention-item:hover{background:#f1f5f9;color:#0f172a}
+.sandbox-card{border:1px solid #c7d2fe;background:#f8faff;border-radius:8px;padding:16px;margin-bottom:16px}
+.sandbox-pills{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.sandbox-pill{background:#e0e7ff;color:#3730a3;border:none;padding:4px 10px;border-radius:12px;font-size:12px;cursor:pointer}
+.sandbox-pill:hover{background:#c7d2fe}
+.csv-mapping-table{width:100%;border-collapse:collapse;margin:12px 0}
+.csv-mapping-table th,.csv-mapping-table td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px}
+

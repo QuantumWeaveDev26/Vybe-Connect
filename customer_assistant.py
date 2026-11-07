@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 import secrets
 import time
 from ai import ai_status,ask_local
@@ -155,7 +156,9 @@ def process_once(store):
     if not chosen:return False
     tenant,job,token,question,context=chosen;stage='model';context['_gateway_path']=str(store.path)
     try:
-        if context['knowledge_sources'] or context['knowledge_passages'] or context['customer_orders']:raw=ask_local(question,context,[])
+        if re.search(r'\b(talk to (?:an? )?(?:human|agent)|speak (?:to|with) (?:an? )?(?:human|agent)|human agent|real person|representative|executive|complaint|cheated|scam|fraud|terrible service|worst service|useless service|escalate to manager)\b',question,re.IGNORECASE):
+            raw=json.dumps({'reply':'','needs_human':True,'reason':'Customer requested a human agent or expressed negative sentiment.','knowledge_references':[]})
+        elif context['knowledge_sources'] or context['knowledge_passages'] or context['customer_orders']:raw=ask_local(question,context,[])
         else:raw=json.dumps({'reply':'','needs_human':True,'reason':'Daily generation limit reached.' if context.get('_limit_reached') else 'No approved customer knowledge supports this question.','knowledge_references':[]})
         stage='validate';answer=parse_reply(raw,context['knowledge_passages']);send=None
         with store.db() as db:

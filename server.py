@@ -153,10 +153,10 @@ class Handler(BaseHTTPRequestHandler):
             path=urlsplit(self.path).path
             if path.startswith('/api/review/'):raise Problem('Public review is read-only. Owner setup is required to make changes.',403)
             expected_origin=self.server.deployment.public_origin if self.server.deployment.production else 'http://'+self.headers.get('Host','')
-            if not path.startswith(('/webhook/','/shopify-webhook/','/agent-callback/','/razorpay-webhook/','/recipe-hook/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
+            if not path.startswith(('/webhook/','/shopify-webhook/','/woocommerce-webhook/','/agent-callback/','/razorpay-webhook/','/recipe-hook/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
             try: length=int(self.headers.get('Content-Length','0'))
             except ValueError: raise Problem('Invalid body length.')
-            limit=5*1024*1024 if path=='/api/media-upload' else 2*1024*1024 if path.startswith('/shopify-webhook/') else 1500000
+            limit=5*1024*1024 if path=='/api/media-upload' else 2*1024*1024 if path.startswith(('/shopify-webhook/','/woocommerce-webhook/')) else 1500000
             if not 0<length<=limit: raise Problem('Request body exceeds this endpoint’s size limit.',413)
             raw=self.rfile.read(length)
             if path.startswith('/recipe-hook/'):
@@ -186,6 +186,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.respond(200,self.server.store.upload_media_asset(self.context(),query.get('name',[''])[0],self.headers.get('Content-Type','').split(';')[0],raw));return
             if path.startswith('/shopify-webhook/'):
                 self.respond(200,self.server.store.shopify_webhook(path.rsplit('/',1)[-1],raw,dict(self.headers)));return
+            if path.startswith('/woocommerce-webhook/'):
+                self.respond(200,self.server.store.woocommerce_webhook(path.rsplit('/',1)[-1],raw,dict(self.headers)));return
             if path.startswith('/webhook/'):
                 tenant=path.rsplit('/',1)[-1]
                 if not signature_ok(raw,self.headers.get('X-Hub-Signature-256',''),settings(tenant)['APP_SECRET']): raise Problem('Invalid webhook signature.',403)

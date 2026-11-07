@@ -4,7 +4,7 @@ import re
 import time
 import json
 
-TYPES={'message','question','condition','tag','status','handoff','wait','attribute','untag','assign','media','template'}
+TYPES={'message','question','condition','tag','status','handoff','wait','attribute','untag','assign','media','template','webhook'}
 
 
 class FlowExecutionError(ValueError):pass
@@ -36,6 +36,7 @@ def validate_graph(graph):
             if not isinstance(n.get(key),str) or not 1<=len(n[key])<=64:raise ValueError('Select a workspace attachment or template.')
         if n['type']=='media' and (not isinstance(n.get('caption',''),str) or len(n.get('caption',''))>1024):raise ValueError('Use a chatbot caption up to 1,024 characters.')
         if n['type']=='status' and n.get('status') not in ['open','pending','solved']: raise ValueError('Invalid node status.')
+        if n['type']=='webhook' and (not isinstance(n.get('url'),str) or not n['url'].startswith(('http://','https://')) or len(n['url'])>2048):raise ValueError('Webhook nodes need an HTTP or HTTPS URL (up to 2,048 characters).')
         if n['type']=='wait' and (type(n.get('seconds')) is not int or not 1<=n['seconds']<=604800):raise ValueError('Wait duration must be 1–604,800 whole seconds.')
         for key in ['next','yes','no']:
             if n.get(key) and n[key] not in ids: raise ValueError('A connection points to a missing node.')
@@ -112,6 +113,8 @@ def run_graph(flow,contact,incoming,resume=False,timer=False,timestamp=None,memb
             if len(value)>1000:raise FlowExecutionError('Expanded attribute value exceeds the supported size.')
             c['attributes'][n['field']]=value
         elif kind=='assign':c['assignee']=n['member_id']
+        elif kind=='webhook':
+            if n.get('save_to'):c['attributes'][n['save_to']]='ok'
         elif kind=='status': c['status']=n['status']
         elif kind=='handoff': c['status']='pending';c['automation_hold']=True;c.pop('outgoing_watch',None);break
         id=n.get('next')

@@ -17,7 +17,7 @@ MAX_PAYLOAD_BYTES = 2 * 1024 * 1024
 _SHOP = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com", re.ASCII)
 _TENANT = re.compile(r"[A-Za-z0-9_]{1,64}", re.ASCII)
 _VERSION = re.compile(r"20[0-9]{2}-(?:01|04|07|10)", re.ASCII)
-WEBHOOK_TOPICS = frozenset({"products/create", "products/update", "products/delete", "orders/create", "orders/updated", "orders/cancelled", "orders/paid", "orders/fulfilled", "orders/partially_fulfilled", "orders/delete"})
+WEBHOOK_TOPICS = frozenset({"products/create", "products/update", "products/delete", "orders/create", "orders/updated", "orders/cancelled", "orders/paid", "orders/fulfilled", "orders/partially_fulfilled", "orders/delete", "checkouts/create", "checkouts/update", "carts/create", "carts/update"})
 _PRODUCT_FIELDS = "id title handle status updatedAt"
 _ORDER_FIELDS = "id name createdAt displayFinancialStatus displayFulfillmentStatus totalPriceSet { shopMoney { amount currencyCode } }"
 

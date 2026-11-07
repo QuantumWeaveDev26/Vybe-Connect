@@ -16,8 +16,39 @@ const names={'working-hours':'Working hours & SLA','google-connections':'Google 
 const S={review:false,reviewAvailable:false,passwordRecoveryAvailable:false,signupAvailable:false,data:null,initialized:true,setupTokenRequired:false,deployment:'local',workspace:localStorage.getItem('tw_workspace')||'',route:location.hash.startsWith('#invite=')?'inbox':location.hash.slice(1)||'campaigns',chat:null,search:'',filter:'all',campaignView:'list',preview:null,draft:'',mode:'reply'};
 let formSubmit=null,toastTimer;
 function toast(message){$('#toast').textContent=message;$('#toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').style.display='none',6000)}
-async function api(path,options={}){if(S.review&&path.startsWith('/api/')){const name=path.split('?')[0];if((options.method||'GET')!=='GET'||!['/api/state','/api/analytics','/api/chat-source','/api/knowledge-source','/api/export'].includes(name))throw new Error('Live review is read-only. Complete owner setup to save changes or connect providers.');path='/api/review/'+path.slice(5)}const r=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(S.workspace?{'X-Workspace':S.workspace}:{}),...(options.headers||{})}});let data;try{data=await r.json()}catch{const e=new Error([502,503,504].includes(r.status)?'The service is restarting. Try again in a moment.':'The server returned an unreadable response. Refresh and try again.');e.status=r.status;throw e}if(!r.ok){const e=new Error(data.error||'Request failed');e.status=r.status;throw e}return data}
-async function refresh(){try{const next=await api('/api/state');const changed=JSON.stringify(next)!==JSON.stringify(S.data);S.data=next;S.workspace=S.data.context.tenant_id;localStorage.setItem('tw_workspace',S.workspace);if(changed)render();return true}catch(e){if(e.status===401){S.data=null;if(S.reviewAvailable&&location.pathname!=='/owner'){await openPublicReview()}else renderAuth()}else if(e.status===403){const hadWorkspace=!!S.workspace;S.data=null;S.workspace='';clearAnalyticsReport();localStorage.removeItem('tw_workspace');$('#workspace-ai')?.remove();if(hadWorkspace)await refresh();else{renderAuth();toast('Workspace access is unavailable. Sign in with an authorized account.')}}else toast(e.message);return false}}
+async function api(path,options={}){if(S.review&&path.startsWith('/api/')){const name=path.split('?')[0];if((options.method||'GET')!=='GET'||!['/api/state','/api/analytics','/api/chat-source','/api/knowledge-source','/api/export'].includes(name))throw new Error('Live review is read-only. Complete owner setup to save changes or connect providers.');path='/api/review/'+path.slice(5)}const r=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(S.workspace?{'X-Workspace':S.workspace}:{}),...(options.headers||{})}});let data;try{data=await r.json()}catch(error){if(options.signal?.aborted)throw options.signal.reason||error;const e=new Error([502,503,504].includes(r.status)?'The service is restarting. Try again in a moment.':'The server returned an unreadable response. Refresh and try again.');e.status=r.status;throw e}if(!r.ok){const e=new Error(data.error||'Request failed');e.status=r.status;throw e}return data}
+async function refresh({starting=false, signal}={}) {
+  try {
+    const next=await api('/api/state',{signal});
+    const changed=JSON.stringify(next)!==JSON.stringify(S.data);
+    S.data=next;
+    S.workspace=next.context.tenant_id;
+    localStorage.setItem('tw_workspace',S.workspace);
+    if (starting||changed) render();
+    return true;
+  } catch (error) {
+    if (error.status===401) {
+      S.data=null;
+      if (S.reviewAvailable&&location.pathname!=='/owner') await openPublicReview();
+      else renderAuth();
+    } else if (error.status===403) {
+      const hadWorkspace=!!S.workspace;
+      S.data=null;
+      S.workspace='';
+      clearAnalyticsReport();
+      localStorage.removeItem('tw_workspace');
+      $('#workspace-ai')?.remove();
+      if (hadWorkspace) return refresh({starting,signal});
+      renderAuth();
+      toast('Workspace access is unavailable. Sign in with an authorized account.');
+    } else if (starting) {
+      throw error;
+    } else {
+      toast(error.message);
+    }
+    return false;
+  }
+}
 async function act(action,data){return api('/api/action',{method:'POST',body:JSON.stringify({action,data})})}
 function pagehead(title,description,buttons=''){return `<div class="pagehead"><div><h1>${title}</h1><p>${description}</p></div><div class="buttons">${buttons}</div></div>`}
 function tabs(items){return `<div class="tabs">${items.map(([route,label])=>`<a href="#${route}" class="${S.route===route?'active':''}">${label}</a>`).join('')}</div>`}
@@ -34,7 +65,7 @@ function campaignLaunchBlock(c){if(S.review)return 'Sign in to manage campaigns.
 function campaignTable(){return S.data.campaigns.length?`<div class="tablewrap"><table><thead><tr><th>Campaign name</th><th>Audience</th><th>Status</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>${S.data.campaigns.map(c=>`<tr><td><strong>${esc(c.name)}</strong><div class="sub">${esc(S.data.templates.find(t=>t.id===c.template_id)?.name||'Template')}</div></td><td>${c.audience} contacts ${c.tag?tags([c.tag]):''}</td><td>${badge(c.status==='draft'?'Draft':c.status==='demo_complete'?'Sandbox complete':c.status,c.status==='draft'?'amber':'')}</td><td>${c.schedule?esc(c.schedule.replace('T',' ')):'Not scheduled'}</td><td>${c.status==='draft'?btn(S.data.sandbox?'Run sandbox':'Launch campaign','run-campaign',`data-id="${c.id}" ${campaignLaunchBlock(c)?`disabled title="${esc(campaignLaunchBlock(c))}"`:``}`,'small'):(badge(c.mode==='live'?'Live campaign':c.simulated+' simulated','gray')+(c.status==='queued'?btn('Cancel queued','cancel-campaign',`data-id="${c.id}"`,'small'):''))}</td></tr>`).join('')}</tbody></table></div>`:empty('Your first campaign starts here','Create a template, choose an opted-in audience, and preview a campaign.',btn('Create campaign','new-campaign','','primary small'))}
 function calendar(){const today=new Date(),start=new Date(today.getFullYear(),today.getMonth(),1),offset=(start.getDay()+6)%7;const total=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();return `<div class="cardbody"><h3>${today.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</h3><div class="calendar">${['MON','TUE','WED','THU','FRI','SAT','SUN'].map(day=>`<div class="day header">${day}</div>`).join('')}${Array.from({length:Math.ceil((offset+total)/7)*7},(_,i)=>{const n=i-offset+1;return `<div class="day ${n===today.getDate()?'today':''}">${n>0&&n<=total?n:''}${S.data.campaigns.filter(c=>c.schedule&&new Date(c.schedule).getDate()===n&&new Date(c.schedule).getMonth()===today.getMonth()&&new Date(c.schedule).getFullYear()===today.getFullYear()).map(c=>`<div class="calitem">${esc(c.name)} · ${esc(c.status==='draft'?'Draft':c.status)}</div>`).join('')}</div>`}).join('')}</div></div>`}
 function contactsPage(){const list=S.data.contacts.filter(c=>(c.name+' '+c.phone+' '+c.tags.join(' ')).toLowerCase().includes(S.search.toLowerCase()));return pagehead('Contacts','Your customer relationships, organized in one place.',btn('Import CSV','import-contacts')+btn('Export CSV','export-contacts')+btn('+ Add contact','new-contact','','primary'))+`<div class="toolbar"><input class="search" data-search placeholder="Search name, number or tag…" aria-label="Search contacts" value="${esc(S.search)}">${badge(list.length+' contacts','gray')}</div><section class="card">${list.length?`<div class="tablewrap"><table><thead><tr><th>Contact</th><th>Phone number</th><th>Tags / segment</th><th>Consent</th><th>Actions</th></tr></thead><tbody>${list.map(c=>`<tr><td><div class="person"><div class="avatar green">${initials(c.name)}</div><div><strong>${esc(c.name)}</strong><small>${esc(c.source)}</small></div></div></td><td>+${esc(c.phone)}</td><td>${tags(c.tags)||'<span class="muted">No tags</span>'}</td><td>${badge(c.optin?'Opted in':'No consent',c.optin?'':'gray')}</td><td>${btn('Edit','edit-contact',`data-id="${c.id}"`,'small')}${btn('Open chat','open-chat',`data-id="${c.id}"`,'small ghost')}</td></tr>`).join('')}</tbody></table></div>`:empty('No contacts found','Add a contact or import a CSV to start your workspace.',btn('Add contact','new-contact','','primary small'))}</section><div class="notice">${icon('contacts')}<span>Tags act as dynamic audience segments. Custom contact attributes are stored with each profile. A phone number alone does not establish marketing consent.</span></div>`}
-function inboxPage(){const d=S.data;const all=d.contacts;const view=ensureInboxView(),list=selectInboxContacts(d,view,S.filter,S.search);if(!d.sandbox&&S.mode==='reply')S.mode='live';if(!all.some(c=>c.id===S.chat))S.chat=list[0]?.id;const c=all.find(c=>c.id===S.chat);const messages=d.messages.filter(m=>m.contact===c?.id);return pagehead('Team Inbox','One place for every conversation and every teammate.','<a class="button" href="#support-tools">Support tools</a>'+btn('New contact','new-contact','','small'))+`<div class="inbox"><section class="chatlist"><div class="listhead"><input data-search placeholder="Search conversations…" aria-label="Search conversations" value="${esc(S.search)}"><div class="chatfilters">${['all','open','pending','mine'].map(v=>btn(v[0].toUpperCase()+v.slice(1),'filter',`data-filter="${v}"`,S.filter===v?'primary':'')).join('')}</div>${inboxAdvancedFilters(list,all.length)}</div>${list.map(p=>{const last=d.messages.filter(m=>m.contact===p.id).at(-1);return `<button class="chatrow ${S.chat===p.id?'selected':''}" data-do="select-chat" data-id="${p.id}"><span class="avatar green">${initials(p.name)}</span><span><strong>${esc(p.name)}</strong><div class="snippet">${esc(last?.body||'Start a conversation')}</div><div class="sub">${esc(p.status)} · ${last?clock(last.ts):'New'}</div></span></button>`}).join('')||empty('No conversations','Add a contact to begin.')}</section>${c?`<section class="conversation">${inboxSelectionNote(list,S.chat)}<div class="conversationhead"><div class="person"><div class="avatar green">${initials(c.name)}</div><div><strong>${esc(c.name)}</strong><div class="sub">+${esc(c.phone)} · WhatsApp</div></div></div><select data-chat-status="${c.id}" aria-label="Conversation status">${['open','pending','solved'].map(v=>`<option ${v===c.status?'selected':''}>${v}</option>`).join('')}</select></div><div class="messages">${messages.length?messages.map(m=>`<div class="bubble ${m.direction==='out'?'out':''} ${m.direction==='note'?'note':''} ${m.status==='draft'?'draft':''}">${commentAttribution(m)}${esc(m.body)}${receivedAttachment(m)}<small>${clock(m.ts)} · ${esc(m.direction==='note'?'Private note':m.status)}${m.status==='draft'?` · ${btn('Use draft','use-message',`data-id="${m.id}"`,'small ghost')}`:''}</small></div>`).join(''):'<div class="hint">No recorded messages yet.</div>'}</div><form class="composer" id="composer"><div class="buttons">${btn('Attachment','media-open','','small ghost')}${btn('Quick reply','choose-reply','','small ghost')}${btn('Template','choose-template','','small ghost')}${d.sandbox?btn('Simulate inbound','simulate-inbound','','small ghost'):''}</div><textarea id="compose" aria-label="Message" placeholder="Type a reply or internal note…" required>${esc(S.draft)}</textarea><div class="composerfoot"><select id="message-mode" aria-label="Message mode">${d.sandbox?`<option value="reply" ${S.mode==='reply'?'selected':''}>Sandbox reply</option>`:''}<option value="note" ${S.mode==='note'?'selected':''}>Private note</option><option value="live" ${S.mode==='live'?'selected':''}>${d.meta.live?'LIVE WhatsApp':'WhatsApp · not connected'}</option></select><button class="primary" type="submit" ${S.mode==='live'&&!d.meta.live?'disabled':''}>${S.mode==='note'?'Add note':S.mode==='live'?'Send live message':'Send sandbox reply'} →</button></div></form></section><aside class="contactpanel"><div class="avatar green">${initials(c.name)}</div><h3>${esc(c.name)}</h3><div style="text-align:center">${badge(c.status)}</div><div class="sectionlabel">CONTACT INFO</div><div class="profileline"><b>Phone number</b>+${esc(c.phone)}</div><div class="profileline"><b>Source</b>${esc(c.source)}</div><div class="profileline"><b>Marketing consent</b>${c.optin?'Opted in':'Not opted in'}</div><div class="sectionlabel">ASSIGNED OPERATOR</div><select data-chat-assignee="${c.id}" aria-label="Assigned operator"><option value="">Unassigned</option>${d.members.map(m=>`<option value="${m.id}" ${m.id===c.assignee?'selected':''}>${esc(m.name)}</option>`).join('')}</select><div class="sectionlabel">TAGS</div>${tags(c.tags)||'<p class="sub">No tags</p>'}<div class="sectionlabel">CONTACT ATTRIBUTES</div>${Object.entries(c.attributes||{}).map(([k,v])=>`<div class="profileline"><b>${esc(k)}</b>${esc(typeof v==='object'?JSON.stringify(v):v)}</div>`).join('')||'<p class="sub">No custom attributes</p>'}${btn('Edit profile','edit-contact',`data-id="${c.id}"`,'small')}<div class="sectionlabel">CONVERSATION CONTROL</div>${badge(c.automation_hold?'Human handling':'Automation available',c.automation_hold?'amber':'gray')}<div class="handoff-controls">${btn(c.automation_hold?'Resume automation':'Take over',c.automation_hold?'handoff-resume':'handoff-takeover',`data-id="${c.id}"`,'small')}${btn('Follow-up task','crm-contact-task',`data-id="${c.id}"`,'small')}</div>${customerHandoffInfo(c)}${teamOperationsContact(c)}${flowWaitInfo(c)}<div class="sectionlabel">SERVICE WINDOW</div><p class="hint">${c.last_real_inbound&&Date.now()/1000-c.last_real_inbound<86400?'Real inbound event received within 24 hours.':'No active live service window. Use an approved template to start a conversation.'}</p></aside>`:`<div>${empty('Your inbox is ready',d.meta.configured?'No messages received yet. Check your webhook subscription if expected messages are missing.':'Connect your WhatsApp account to receive messages.',d.sandbox?btn('Load sandbox samples','seed','','primary small'):btn('Add contact','new-contact','','primary small'))}</div>`}</div>`}
+function inboxPage(){const d=S.data;const all=d.contacts;const view=ensureInboxView(),list=selectInboxContacts(d,view,S.filter,S.search);if(!d.sandbox&&S.mode==='reply')S.mode='live';if(!all.some(c=>c.id===S.chat))S.chat=list[0]?.id;const c=all.find(c=>c.id===S.chat);const messages=d.messages.filter(m=>m.contact===c?.id);const collisions=(d.active_presences||[]).filter(p=>p.contact_id===c?.id);const typingMembers=collisions.filter(p=>p.status==='typing');return pagehead('Team Inbox','One place for every conversation and every teammate.','<a class="button" href="#support-tools">Support tools</a>'+btn('New contact','new-contact','','small')+btn('Import CSV','open-csv-importer','','small')+btn('⚡ Sandbox','open-sandbox-modal','','small'))+`<div class="inbox"><section class="chatlist"><div class="listhead"><input data-search placeholder="Search conversations…" aria-label="Search conversations" value="${esc(S.search)}"><div class="chatfilters">${['all','open','pending','mine'].map(v=>btn(v[0].toUpperCase()+v.slice(1),'filter',`data-filter="${v}"`,S.filter===v?'primary':'')).join('')}</div>${inboxAdvancedFilters(list,all.length)}</div>${list.map(p=>{const last=d.messages.filter(m=>m.contact===p.id).at(-1);return `<button class="chatrow ${S.chat===p.id?'selected':''}" data-do="select-chat" data-id="${p.id}"><span class="avatar green">${initials(p.name)}</span><span><strong>${esc(p.name)}</strong><div class="snippet">${esc(last?.body||'Start a conversation')}</div><div class="sub">${esc(p.status)} · ${last?clock(last.ts):'New'}</div></span></button>`}).join('')||empty('No conversations','Add a contact to begin.')}</section>${c?`<section class="conversation">${inboxSelectionNote(list,S.chat)}<div class="conversationhead"><div class="person"><div class="avatar green">${initials(c.name)}</div><div><strong>${esc(c.name)}</strong><div class="sub">+${esc(c.phone)} · WhatsApp</div></div></div><select data-chat-status="${c.id}" aria-label="Conversation status">${['open','pending','solved'].map(v=>`<option ${v===c.status?'selected':''}>${v}</option>`).join('')}</select></div>${collisions.length?`<div class="collision-banner">⚠️ <strong>Collision warning:</strong> ${collisions.map(a=>`<span>${esc(a.user_name)} (${esc(a.status)})</span>`).join(', ')}</div>`:''}<div class="messages">${messages.length?messages.map(m=>`<div class="bubble ${m.direction==='out'?'out':''} ${m.direction==='note'?'note':''} ${m.status==='draft'?'draft':''}">${commentAttribution(m)}${esc(m.body)}${receivedAttachment(m)}<small>${clock(m.ts)} · ${esc(m.direction==='note'?'Private note':m.status)}${m.status==='draft'?` · ${btn('Use draft','use-message',`data-id="${m.id}"`,'small ghost')}`:''}</small></div>`).join(''):'<div class="hint">No recorded messages yet.</div>'}${typingMembers.length?`<div class="typing-indicator"><span>${typingMembers.map(a=>esc(a.user_name)).join(', ')} is typing</span><span class="typing-dots"><span>.</span><span>.</span><span>.</span></span></div>`:''}</div><form class="composer" id="composer"><div class="buttons">${btn('Attachment','media-open','','small ghost')}${btn('Quick reply','choose-reply','','small ghost')}${btn('Template','choose-template','','small ghost')}${btn('⚡ Sandbox simulator','open-sandbox-modal','','small ghost')}${d.sandbox?btn('Simulate inbound','simulate-inbound','','small ghost'):''}</div><textarea id="compose" aria-label="Message" placeholder="Type a reply or internal note… Type @ to mention a teammate." required>${esc(S.draft)}</textarea><div class="composerfoot"><select id="message-mode" aria-label="Message mode">${d.sandbox?`<option value="reply" ${S.mode==='reply'?'selected':''}>Sandbox reply</option>`:''}<option value="note" ${S.mode==='note'?'selected':''}>Private note</option><option value="live" ${S.mode==='live'?'selected':''}>${d.meta.live?'LIVE WhatsApp':'WhatsApp · not connected'}</option></select><button class="primary" type="submit" ${S.mode==='live'&&!d.meta.live?'disabled':''}>${S.mode==='note'?'Add note':S.mode==='live'?'Send live message':'Send sandbox reply'} →</button></div></form></section><aside class="contactpanel"><div class="avatar green">${initials(c.name)}</div><h3>${esc(c.name)}</h3><div style="text-align:center">${badge(c.status)}</div><div class="sectionlabel">CONTACT INFO</div><div class="profileline"><b>Phone number</b>+${esc(c.phone)}</div><div class="profileline"><b>Source</b>${esc(c.source)}</div><div class="profileline"><b>Marketing consent</b>${c.optin?'Opted in':'Not opted in'}</div><div class="sectionlabel">ASSIGNED OPERATOR</div><select data-chat-assignee="${c.id}" aria-label="Assigned operator"><option value="">Unassigned</option>${d.members.map(m=>`<option value="${m.id}" ${m.id===c.assignee?'selected':''}>${esc(m.name)}</option>`).join('')}</select><div class="sectionlabel">TAGS</div>${tags(c.tags)||'<p class="sub">No tags</p>'}<div class="sectionlabel">CONTACT ATTRIBUTES</div>${Object.entries(c.attributes||{}).map(([k,v])=>`<div class="profileline"><b>${esc(k)}</b>${esc(typeof v==='object'?JSON.stringify(v):v)}</div>`).join('')||'<p class="sub">No custom attributes</p>'}${btn('Edit profile','edit-contact',`data-id="${c.id}"`,'small')}<div class="sectionlabel">CONVERSATION CONTROL</div>${badge(c.automation_hold?'Human handling':'Automation available',c.automation_hold?'amber':'gray')}<div class="handoff-controls">${btn(c.automation_hold?'Resume automation':'Take over',c.automation_hold?'handoff-resume':'handoff-takeover',`data-id="${c.id}"`,'small')}${btn('Follow-up task','crm-contact-task',`data-id="${c.id}"`,'small')}</div>${customerHandoffInfo(c)}${teamOperationsContact(c)}${flowWaitInfo(c)}<div class="sectionlabel">SERVICE WINDOW</div><p class="hint">${c.last_real_inbound&&Date.now()/1000-c.last_real_inbound<86400?'Real inbound event received within 24 hours.':'No active live service window. Use an approved template to start a conversation.'}</p></aside>`:`<div>${empty('Your inbox is ready',d.meta.configured?'No messages received yet. Check your webhook subscription if expected messages are missing.':'Connect your WhatsApp account to receive messages.',d.sandbox?btn('Load sandbox samples','seed','','primary small'):btn('Add contact','new-contact','','primary small'))}</div>`}</div>`}
 function templatePageBase(){const list=S.data.templates;const t=list.find(t=>t.id===S.preview)||list[0];return pagehead('Template messages','Create, organize and preview your message templates.',btn('Sync from Meta','sync-templates',S.data.meta.configured&&!S.review?'':'disabled title="Connect Meta in an owner workspace before syncing"')+btn('+ New template','new-template','','primary'))+campaignTabs()+`<div class="notice template-guidance">${icon('templates')}<span>Templates need Meta approval before you can send them.</span></div><div class="split"><section class="card template-list-card"><div class="cardhead"><h2>Your templates</h2>${badge(list.length+(list.length===1?' template':' templates'),'gray')}</div>${list.length?`<div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Actions</th></tr></thead><tbody>${list.map(t=>`<tr><td><strong>${esc(t.name)}</strong><div class="sub">${esc(t.language)} · ${esc(t.status)}</div></td><td>${badge(t.category,'blue')}</td><td>${btn('Preview','preview-template',`data-id="${t.id}"`,'small ghost')}${t.meta_id?'':btn('Edit','edit-template',`data-id="${t.id}"`,'small')+btn('Submit to Meta','submit-template',`data-id="${t.id}" ${!S.data.meta.configured||S.review?'disabled title="Connect WhatsApp before submitting"':''}`,'small')}</td></tr>`).join('')}</tbody></table></div>`:empty('Start with a template','Write your first reusable customer message.')}</section><section class="template-preview-card card"><div class="cardhead"><h2>Message preview</h2>${t?badge(t.status,'gray'):''}</div><div class="templatepreview"><div class="phone"><div class="phonehead"><span class="preview-business-mark">${icon('contacts')}</span><span>${esc(S.data.context.workspace.name)}<small>Business account</small></span></div><div class="phonebody"><div class="phonebubble">${t?.header?`<strong class="preview-header">${esc(t.header)}</strong>`:''}<div>${esc(t?.body||'Choose a template to see your message.')}</div>${t?.footer?`<p class="preview-footer">${esc(t.footer)}</p>`:''}<small>Message preview</small></div>${(t?.buttons||[]).map(b=>`<div class="template-preview-button">${esc(b.text)}</div>`).join('')}</div></div></div><p class="preview-caption">${t?.body?.includes('{{')?'Variables are filled with contact details when sent.':'How your message will appear to customers.'}</p></section></div>`}
 function automationPage(kind){const list=[...S.data[kind+'s']].sort((a,b)=>(a.priority??100)-(b.priority??100));return pagehead('Automation rules','Run local actions after message, contact, attribute or conversation events.',btn('+ Create rule','new-rule','','primary'))+automationTabs()+`<div class="notice">${icon('rules')}<span>Enabled rules can update contacts, create tasks and drafts, assign chats or hand off to a human. Nothing is automatically sent to WhatsApp. STOP and unsubscribe messages suppress automation and remove campaign consent.</span></div><section class="card">${list.length?`<div class="tablewrap"><table><thead><tr><th>Rule name</th><th>Trigger</th><th>Action</th><th>Status</th><th>Executed</th><th>Actions</th></tr></thead><tbody>${list.map(r=>`<tr><td><strong>${esc(r.name)}</strong></td><td>${ruleTriggerSummary(r)}<div class="sub">Priority ${r.priority??100}${r.segment_id?' · '+esc((S.data.segments||[]).find(s=>s.id===r.segment_id)?.name||'Missing segment · blocked'):''}</div></td><td>${ruleActionSummary(r)}</td><td>${badge(r.enabled?'Enabled':'Disabled',r.enabled?'':'gray')}</td><td>${r.executions||0}</td><td>${btn('Edit','edit-rule',`data-id="${r.id}"`,'small')}${btn('Delete','delete',`data-kind="rule" data-id="${r.id}"`,'small ghost danger')}</td></tr>`).join('')}</tbody></table></div>`:empty('Automate the first response',S.data.sandbox?'Create a rule, then simulate an inbound message from the inbox.':'Create a rule to act on incoming WhatsApp events.')}</section>`+ruleExecutionPanel()+noResponseHistoryPanel()}
 function flowPage(){return graphPage()}
@@ -68,7 +99,110 @@ function contactForm(c={}){entityForm(c.id?'Edit contact':'Add a contact','conta
 function templateForm(t={}){return startTemplateEditor(t)}
 function campaignForm(){if(!S.data.templates.length){toast('Create a local template first.');location.hash='templates';return}const options=S.data.templates.map(t=>[t.id,t.name]);entityForm('Create campaign','campaign.save',[['name','Campaign name'],['template_id','Message template','select',options],['segment_id','Saved audience','select',[['','All opted-in contacts'],...(S.data.segments||[]).map(s=>[s.id,s.name])]],['tag','Also require tag (optional)'],['schedule','Scheduled date and local time','datetime-local']],{})}
 function ruleForm(kind,r={}){if(kind==='rule')return richRuleForm(r);if(kind==='flow')return flowSettingsForm(r);entityForm(r.id?'Edit '+kind:'Create '+kind,kind+'.save',[['name','Name'],['keyword','Incoming message contains'],['reply','Suggested reply','textarea'],['enabled','Enable suggested reply drafts','checkbox']],{enabled:true,...r})}
+function openSandboxModal(){
+  const contact=S.data.contacts.find(c=>c.id===S.chat)||S.data.contacts[0]||{phone:'15550100',name:'Test Customer',id:''};
+  showModal('⚡ WhatsApp Sandbox Simulator',`
+    <div class="sandbox-card">
+      <p><strong>Simulate Real Inbound & Outbound Events</strong> without Meta approval.</p>
+      <div class="field"><label for="sb-phone">Customer Phone Number</label><input id="sb-phone" value="${esc(contact.phone||'15550100')}"></div>
+      <div class="field"><label for="sb-body">Customer Message Body</label><textarea id="sb-body" placeholder="e.g. Hi, I need help with my order.">Hi</textarea></div>
+      <div class="sandbox-pills">
+        <button type="button" class="sandbox-pill" onclick="$('#sb-body').value='Hi'">Greeting</button>
+        <button type="button" class="sandbox-pill" onclick="$('#sb-body').value='Where is my order?'">Order status</button>
+        <button type="button" class="sandbox-pill" onclick="$('#sb-body').value='Talk to human'">Talk to human</button>
+        <button type="button" class="sandbox-pill" onclick="$('#sb-body').value='I have a complaint, connect me to agent'">Complaint</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Delivery Status Webhooks</label>
+      <div class="buttons">
+        <button type="button" class="button small ghost" id="sb-btn-delivered">Simulate 'Delivered'</button>
+        <button type="button" class="button small ghost" id="sb-btn-read">Simulate 'Read'</button>
+      </div>
+    </div>
+  `,async()=>{
+    const phone=$('#sb-phone').value.trim();
+    const body=$('#sb-body').value.trim();
+    if(!phone||!body)throw new Error('Phone and message text are required.');
+    await act('sandbox.simulate_inbound',{phone,body});
+    $('#modal').close();
+    await refresh();
+    toast('Simulated WhatsApp message received and processed.');
+  },'Send Inbound Message');
+  $('#sb-btn-delivered')?.addEventListener('click',async()=>{
+    const lastOut=S.data.messages.filter(m=>m.contact===contact.id&&m.direction==='out').at(-1);
+    if(!lastOut)return toast('No outbound message found for this contact.');
+    await act('sandbox.simulate_status',{message_id:lastOut.id,status:'delivered'});
+    await refresh();
+    toast('Status updated to Delivered.');
+  });
+  $('#sb-btn-read')?.addEventListener('click',async()=>{
+    const lastOut=S.data.messages.filter(m=>m.contact===contact.id&&m.direction==='out').at(-1);
+    if(!lastOut)return toast('No outbound message found for this contact.');
+    await act('sandbox.simulate_status',{message_id:lastOut.id,status:'read'});
+    await refresh();
+    toast('Status updated to Read.');
+  });
+}
+
+function openCsvImporterModal(){
+  let previewData=null;
+  showModal('Dynamic CSV Contact Importer',`
+    <p>Upload a CSV file or paste CSV text with dynamic column mappings.</p>
+    <div class="field"><label for="csv-file-input">Choose CSV File</label><input type="file" id="csv-file-input" accept=".csv,text/csv"></div>
+    <div class="field"><label for="csv-raw">Or Paste CSV Text</label><textarea id="csv-raw" placeholder="name,phone,City,Plan&#10;Alice,+15550101,New York,Pro&#10;Bob,+15550102,London,Starter" style="height:90px"></textarea></div>
+    <div class="buttons" style="margin-bottom:12px"><button type="button" class="button small primary" id="btn-parse-csv">Analyze Columns</button></div>
+    <div id="csv-mapping-area" style="display:none">
+      <div class="sectionlabel">COLUMN MAPPINGS</div>
+      <div class="field"><label for="map-phone">Phone Column (Required)</label><select id="map-phone"></select></div>
+      <div class="field"><label for="map-name">Name Column</label><select id="map-name"></select></div>
+      <div class="field"><label for="batch-tag">Batch Tag (Optional)</label><input id="batch-tag" placeholder="e.g. Nov-Campaign"></div>
+      <div class="sectionlabel">PREVIEW (FIRST 3 ROWS)</div>
+      <div id="csv-preview-table" class="tablewrap" style="max-height:160px;overflow:auto"></div>
+    </div>
+  `,async()=>{
+    const raw=$('#csv-raw').value.trim();
+    if(!raw)throw new Error('Please provide CSV content.');
+    const phoneCol=$('#map-phone').value;
+    const nameCol=$('#map-name').value;
+    const tag=$('#batch-tag').value.trim();
+    const mapping={phone:phoneCol,name:nameCol,attributes:{}};
+    if(previewData?.headers){
+      for(const h of previewData.headers){
+        if(h!==phoneCol&&h!==nameCol){
+          mapping.attributes[h.toLowerCase().replace(/[^a-z0-9_]/g,'_')]=h;
+        }
+      }
+    }
+    const res=await act('contacts.import',{csv:raw,mapping,tags:tag?[tag]:[]});
+    $('#modal').close();
+    await refresh();
+    toast('Successfully imported '+res.imported+' contacts! ('+(res.errors?.length||0)+' errors)');
+  },'Import Contacts');
+
+  const parseCsv=async()=>{
+    const raw=$('#csv-raw').value.trim();
+    if(!raw)return toast('Paste CSV content or select a file first.');
+    const res=await act('contacts.import',{csv:raw,preview:true});
+    previewData=res;
+    const mapArea=$('#csv-mapping-area');
+    mapArea.style.display='block';
+    const phoneSel=$('#map-phone'), nameSel=$('#map-name');
+    phoneSel.innerHTML=res.headers.map(h=>`<option value="${esc(h)}" ${['phone','mobile','whatsapp','number','tel'].includes(h.toLowerCase())?'selected':''}>${esc(h)}</option>`).join('');
+    nameSel.innerHTML=res.headers.map(h=>`<option value="${esc(h)}" ${['name','full_name','customer_name','first_name'].includes(h.toLowerCase())?'selected':''}>${esc(h)}</option>`).join('');
+    $('#csv-preview-table').innerHTML=`<table><thead><tr>${res.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${res.preview.map(r=>`<tr>${res.headers.map(h=>`<td>${esc(r[h]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  };
+
+  $('#btn-parse-csv')?.addEventListener('click',parseCsv);
+  $('#csv-file-input')?.addEventListener('change',async e=>{
+    const file=e.target.files[0];
+    if(file){$('#csv-raw').value=await file.text();void parseCsv()}
+  });
+}
+
 async function handleAction(el){const a=el.dataset.do,id=el.dataset.id;try{
+if(a==='open-sandbox-modal')return openSandboxModal();
+if(a==='open-csv-importer')return openCsvImporterModal();
 if(a.startsWith('auth-'))return authEntryAction(a);
 if(a.startsWith('service-'))return await serviceAction(a,el);
 if(a.startsWith('voice-'))return await voiceAction(a,el);
@@ -118,7 +252,7 @@ if(a==='new-workspace')return showModal('Create a business workspace',field('nam
 if(a==='delete')return showModal('Delete local record','<p>This removes the selected record from this local workspace.</p>',async()=>{await act('entity.delete',{kind:el.dataset.kind,id});$('#modal').close();await refresh()},'Delete record');
 if(a==='campaign-view'){S.campaignView=el.dataset.view;return render()}
 if(a==='open-chat'){const searchBox=$('#workspace-search-results');if(searchBox)searchBox.hidden=true;S.chat=id;S.search='';S.filter='all';location.hash='inbox';if(S.route==='inbox')render();return}
-if(a==='select-chat'){S.chat=id;S.draft='';return render()}
+if(a==='select-chat'){S.chat=id;S.draft='';void act('chat.presence',{contact_id:id,status:'viewing'});return render()}
 if(a==='filter'){S.filter=el.dataset.filter;return render()}
 if(a==='simulate-inbound')return showModal('Simulate an incoming message',field('body','Customer message','','textarea')+'<p class="hint">Local simulation only. Keywords may generate a draft. This does not open a real Meta service window.</p>',async data=>{await act('message.simulate',{contact_id:S.chat,body:data.body});$('#modal').close();await refresh()},'Simulate inbound');
 if(a==='use-message'){S.draft=S.data.messages.find(m=>m.id===id).body;S.mode='reply';return render()}
@@ -130,12 +264,51 @@ if(a==='export-contacts'){const r=await fetch('/api/export?workspace='+encodeURI
 document.addEventListener('click',e=>{const el=e.target.closest('[data-do]');if(el){e.preventDefault();handleAction(el)}});
 document.addEventListener('submit',async e=>{if(e.target.id==='dialog-form'){e.preventDefault();const f=e.target;const submit=e.submitter||f.querySelector('button[type=submit]');if(submit)submit.disabled=true;try{const data=Object.fromEntries(new FormData(f));for(const input of f.querySelectorAll('input[type=checkbox]'))data[input.name]=input.checked;for(const input of f.querySelectorAll('[data-json]'))data[input.name]=JSON.parse(input.value);await formSubmit(data)}catch(err){const errorBox=$('#formerror');if(errorBox)errorBox.textContent=err.message;else toast(err.message);if(submit)submit.disabled=false}}
 if(e.target.id==='composer'){e.preventDefault();const body=$('#compose').value.trim();if(!body)return;const send=async()=>{await act('message.send',{contact_id:S.chat,body,note:S.mode==='note',live:S.mode==='live'});S.draft='';$('#modal').close();await refresh()};try{if(S.mode==='live')showModal('Send a real WhatsApp message',`<p>This sends to <strong>${esc(S.data.contacts.find(c=>c.id===S.chat)?.name)}</strong>.</p><div class="code">${esc(body)}</div>`,send,'Send live message');else await send()}catch(err){toast(err.message)}}});
-document.addEventListener('input',e=>{if(e.target.id==='compose')S.draft=e.target.value;if(e.target.matches('[data-search]')){S.search=e.target.value;const caret=e.target.selectionStart;render();const target=$('[data-search]');target.focus();target.setSelectionRange(caret,caret)}});
+let typingPresenceTimer=null;
+document.addEventListener('input',e=>{if(e.target.id==='compose'){S.draft=e.target.value;if(S.chat){clearTimeout(typingPresenceTimer);typingPresenceTimer=setTimeout(()=>{void act('chat.presence',{contact_id:S.chat,status:'typing'})},500)}}if(e.target.matches('[data-search]')){S.search=e.target.value;const caret=e.target.selectionStart;render();const target=$('[data-search]');target.focus();target.setSelectionRange(caret,caret)}});
 document.addEventListener('change',async e=>{try{if(e.target.dataset.chatStatus){await act('chat.update',{id:e.target.dataset.chatStatus,status:e.target.value});await refresh()}if(e.target.dataset.chatAssignee){await act('chat.update',{id:e.target.dataset.chatAssignee,assignee:e.target.value});await refresh()}if(e.target.id==='message-mode'){S.mode=e.target.value;render()}if(e.target.id==='csvfile'){const file=e.target.files[0];if(file){if(file.size>1000000)throw new Error('CSV file is too large (maximum 1 MB).');$('#f-csv').value=await file.text()}}}catch(err){toast(err.message)}});
 window.addEventListener('hashchange',()=>{if(hasPasswordResetHash())return openPasswordReset();if(location.hash==='#signup'&&S.signupAvailable){S.data=null;return renderAuth(true)}if(RECOVERY.mode)return;if(hasInvitationHash())return openInvitation();if(INV.token)return;S.route=location.hash.slice(1)||'campaigns';S.search='';S.preview=null;if(window.innerWidth<=700)localStorage.setItem('vybe-nav-expanded','false');render();window.scrollTo({top:0,behavior:'auto'})});
 $('#modal').addEventListener('cancel',()=>formSubmit=null);
 $('#modal').addEventListener('close',clearSecurityDialog);
-async function boot(){try{if(hasPasswordResetHash())return openPasswordReset();if(hasInvitationHash())return openInvitation();const bootstrap=await api('/api/bootstrap');S.reviewAvailable=bootstrap.review_available===true;S.passwordRecoveryAvailable=bootstrap.password_recovery_available===true;S.signupAvailable=bootstrap.signup_available===true;S.initialized=bootstrap.initialized;S.setupTokenRequired=bootstrap.setup_token_required===true;S.deployment=bootstrap.deployment||'local';if(location.hash==='#signup'&&S.signupAvailable)return renderAuth(true);await refresh()}catch(e){$('#app').innerHTML=empty('Could not open VYBE Connect',e.message)}}
+async function retryStartupRequest(request) {
+  for (let attempt=0; ; attempt++) {
+    try {
+      const signal=typeof AbortSignal!=='undefined'&&AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
+      return await request(signal);
+    } catch (error) {
+      const temporary=error.name==='TypeError'||error.name==='TimeoutError'||[500,502,503,504].includes(error.status);
+      if (!temporary||attempt===2) throw error;
+      await new Promise(resolve=>setTimeout(resolve,400*(attempt+1)));
+    }
+  }
+}
+function showStartupError() {
+  const app=$('#app');
+  app.innerHTML=empty('Could not open VYBE Connect','The workspace could not load. Check your connection and try again.','<button class="primary" type="button" id="startup-retry">Try again</button>');
+  $('#startup-retry').addEventListener('click',()=>{
+    app.innerHTML='<div class="loading" role="status">Opening your workspace…</div>';
+    void boot();
+  });
+}
+async function boot() {
+  try {
+    if (hasPasswordResetHash()) return openPasswordReset();
+    if (hasInvitationHash()) return openInvitation();
+    const bootstrap=await retryStartupRequest(signal=>api('/api/bootstrap',{signal}));
+    S.reviewAvailable=bootstrap.review_available===true;
+    S.passwordRecoveryAvailable=bootstrap.password_recovery_available===true;
+    S.signupAvailable=bootstrap.signup_available===true;
+    S.initialized=bootstrap.initialized;
+    S.setupTokenRequired=bootstrap.setup_token_required===true;
+    S.deployment=bootstrap.deployment||'local';
+    if (location.hash==='#signup'&&S.signupAvailable) return renderAuth(true);
+    await retryStartupRequest(signal=>refresh({starting:true,signal}));
+  } catch {
+    S.data=null;
+    showStartupError();
+  }
+}
+
 boot();
 setInterval(()=>{if(S.data&&!$('#modal').open&&!document.activeElement?.matches('input,textarea,select')&&!S.draft)refresh()},8000);
 

@@ -31,7 +31,7 @@ from knowledge_documents import KnowledgeError,upload as upload_document,documen
 from media_service import MediaError,upload_for_workspace,read_asset,send_stored_media
 from received_media import record as record_received_media,state as received_media_state,download as download_received_media
 from whatsapp_media import media_status
-from commerce_service import CommerceError,sync_shopify,commerce_state,ingest_shopify_webhook
+from commerce_service import CommerceError,sync_shopify,commerce_state,ingest_shopify_webhook,ingest_woocommerce_webhook
 import owned_commerce
 import client_services
 import whatsapp_calls
@@ -96,6 +96,7 @@ class Store:
     def __init__(self,path):
         self.path=Path(path)
         self.path.parent.mkdir(parents=True,exist_ok=True)
+        self._presence={}
         with self.db() as db:
             db.executescript('''
             CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT,email TEXT UNIQUE,salt TEXT,password TEXT);
@@ -294,6 +295,20 @@ class Store:
         if direction=='out' and status=='accepted':track_accepted_reply(self,db,tenant,id,now())
         return dict(id=id,contact=contact,body=body,direction=direction,status=status,ts=ts or now())
 
+    def record_presence(self,tenant,contact_id,user_id,user_name,status):
+        self._presence[(tenant,contact_id,user_id)]={'user_id':user_id,'user_name':user_name,'contact_id':contact_id,'status':status,'ts':time.time()}
+
+    def get_active_presences(self,tenant,contact_id=None,exclude_user=None):
+        cutoff=time.time()-20
+        active=[]
+        for k in list(self._presence.keys()):
+            val=self._presence.get(k)
+            if not val or val['ts']<cutoff:self._presence.pop(k,None)
+            elif k[0]==tenant:
+                if contact_id is None or k[1]==contact_id:
+                    if exclude_user is None or k[2]!=exclude_user:active.append(val)
+        return active
+
     def state(self,ctx):
         tenant=ctx['tenant_id']
         with self.db() as db:
@@ -317,6 +332,7 @@ class Store:
             data['team_operations']=team_operations.state(self,db,tenant)
             data['invitations']=list_invites(self,db,ctx)
             data['audit']=[dict(x) for x in db.execute('SELECT actor,action,ts FROM audit WHERE tenant=? ORDER BY id DESC LIMIT 30',(tenant,))]
+            data['active_presences']=self.get_active_presences(tenant,exclude_user=ctx['user']['id'])
             customer=customer_state(self,db,tenant);data['customer_assistant']=customer['settings'];data['customer_assistant_runtime']=customer['runtime'];data['customer_reply_jobs']=customer['jobs']
             data['external_agents']=[public_agent(tenant,a) for a in self._list(db,tenant,'externalagent')]
             data['webhook_events']=recent_events(db,tenant)
@@ -449,8 +465,18 @@ class Store:
             except ValueError as e:raise Problem(str(e))
         if action=='ai.ask':return self._ai_ask(ctx,d)
         if action=='ai.run':return self._ai_run(ctx,d)
-        agent_actions={'contact.save','contacts.import','chat.update','chat.takeover','chat.resume','message.send','message.simulate','deal.save','task.save','task.complete'}
+        agent_actions={'contact.save','contacts.import','chat.update','chat.takeover','chat.resume','message.send','message.simulate','deal.save','task.save','task.complete','chat.presence','sandbox.simulate_inbound','sandbox.simulate_status'}
         if ctx['role']!='admin' and action not in agent_actions: raise Problem('Administrator access required.',403)
+        if action=='chat.presence':
+            cid=d.get('contact_id'); st=d.get('status','viewing')
+            if cid and st in ['viewing','typing']:
+                self.record_presence(t,cid,user,ctx['user']['name'],st)
+            return {'active':self.get_active_presences(t,cid,user)}
+        if action=='sandbox.simulate_status':
+            mid=d.get('message_id'); st=d.get('status','read')
+            if st in ['sent','delivered','read','failed']:
+                self.delivery(t,mid,st)
+            return {'simulated':True,'status':st}
         if action=='message.send' and d.get('live'):
             return self._live_reply(ctx,d)
         if action in ['templates.sync','template.submit']:
@@ -484,15 +510,37 @@ class Store:
             elif action=='contacts.import':
                 text=required(d.get('csv'),'CSV',1000000)
                 reader=csv.DictReader(io.StringIO(text.lstrip('\ufeff')))
-                if not reader.fieldnames or not {'name','phone'}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
-                imported=0; errors=[]
-                for i,row in enumerate(reader,2):
-                    if i>5001: errors.append('Import limit: 5,000 rows.'); break
-                    try:
-                        self._contact(db,t,dict(name=row.get('name'),phone=row.get('phone'),tags=row.get('tags',''),optin=str(row.get('optin','')).lower() in ['true','1','yes']))
-                        imported+=1
-                    except Problem as e: errors.append('Row '+str(i)+': '+str(e))
-                result={'imported':imported,'errors':errors}
+                if not reader.fieldnames: raise Problem('CSV requires headers.')
+                if d.get('preview'):
+                    preview_rows=[]
+                    for i,row in enumerate(reader):
+                        if i>=5: break
+                        preview_rows.append({k:str(v or '')[:100] for k,v in row.items() if k})
+                    result={'headers':reader.fieldnames,'preview':preview_rows}
+                else:
+                    mapping=d.get('mapping') or {}
+                    phone_col=mapping.get('phone') or next((c for c in reader.fieldnames if c.strip().lower() in ['phone','mobile','whatsapp','number','tel','phone_number']),'phone')
+                    name_col=mapping.get('name') or next((c for c in reader.fieldnames if c.strip().lower() in ['name','full_name','first_name','customer_name']),'name')
+                    attr_mapping=mapping.get('attributes') or {}
+                    batch_tags=d.get('tags') or []
+                    if not {name_col,phone_col}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
+                    imported=0; errors=[]
+                    for i,row in enumerate(reader,2):
+                        if i>5001: errors.append('Import limit: 5,000 rows.'); break
+                        try:
+                            phone_val=row.get(phone_col)
+                            name_val=row.get(name_col)
+                            row_tags=row.get('tags','')
+                            tags_list=[t.strip() for t in str(row_tags).split(',') if t.strip()] if isinstance(row_tags,str) else []
+                            for bt in batch_tags:
+                                if bt and bt not in tags_list: tags_list.append(bt)
+                            custom_attrs={k:str(row.get(v,''))[:500] for k,v in attr_mapping.items() if v in row and row.get(v)}
+                            contact_data=dict(name=name_val,phone=phone_val,tags=','.join(tags_list),optin=str(row.get('optin','')).lower() in ['true','1','yes'])
+                            if custom_attrs: contact_data['attributes']=custom_attrs
+                            self._contact(db,t,contact_data)
+                            imported+=1
+                        except Problem as e: errors.append('Row '+str(i)+': '+str(e))
+                    result={'imported':imported,'errors':errors}
             elif action=='chat.update':
                 c=self._get(db,t,'contact',d.get('id'))
                 status=d.get('status',c['status']); assignee=d.get('assignee',c['assignee'])
@@ -517,6 +565,12 @@ class Store:
             elif action=='message.simulate':
                 c=self._get(db,t,'contact',d.get('contact_id'))
                 result=self._inbound(db,t,{'id':'demo-'+uid(),'from':c['phone'],'text':{'body':required(d.get('body'),'Message')},'timestamp':str(now())},True)
+            elif action=='sandbox.simulate_inbound':
+                ph=phone_number(d.get('phone','+15550100'))
+                b=required(d.get('body'),'Message')
+                mid='mock_in_'+uid()
+                res=self._inbound(db,t,{'id':mid,'from':ph,'text':{'body':b},'timestamp':str(now())},True)
+                result={'simulated':True,'message_id':res['id'],'external_id':mid,'contact_id':res['contact']}
             elif action=='template.save':
                 name=required(d.get('name'),'Template name',512)
                 if not re.fullmatch(r'[a-z0-9_]+',name): raise Problem('Template names use lowercase letters, numbers and underscores.')
@@ -726,6 +780,10 @@ class Store:
 
     def shopify_webhook(self,tenant,raw,headers):
         try:return ingest_shopify_webhook(self,tenant,raw,headers)
+        except CommerceError as e:raise Problem(str(e),e.code)
+
+    def woocommerce_webhook(self,tenant,raw,headers):
+        try:return ingest_woocommerce_webhook(self,tenant,raw,headers)
         except CommerceError as e:raise Problem(str(e),e.code)
 
     def process_chat_job_once(self):return run_chat_job(self)
@@ -990,9 +1048,9 @@ class Store:
         if status not in ranks: return
         with self.db() as db:
             whatsapp_forms.delivery(self,db,tenant,external,status)
-            row=db.execute('SELECT id,status FROM messages WHERE tenant=? AND external_id=?',(tenant,external)).fetchone()
+            row=db.execute('SELECT id,status FROM messages WHERE tenant=? AND (external_id=? OR id=?)',(tenant,external,external)).fetchone()
             if row and ranks.get(row['status'],-1)<=ranks[status]: db.execute('UPDATE messages SET status=? WHERE id=?',(status,row['id']))
-            job=db.execute('SELECT id,status FROM outbound WHERE tenant=? AND external_id=?',(tenant,external)).fetchone()
+            job=db.execute('SELECT id,status FROM outbound WHERE tenant=? AND (external_id=? OR id=?)',(tenant,external,external)).fetchone()
             if job and ranks.get(job['status'],-1)<=ranks[status]:db.execute('UPDATE outbound SET status=? WHERE id=?',(status,job['id']))
             changed=(row and row['status']!=status and ranks.get(row['status'],-1)<=ranks[status]) or (job and job['status']!=status and ranks.get(job['status'],-1)<=ranks[status])
             if changed:enqueue_event(self,db,tenant,'message.status',str(external)+':'+status,{'message_id':row['id'] if row else None,'provider_id':external,'status':status})

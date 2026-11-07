@@ -36,7 +36,11 @@ def status(tenant):
 
 def send_text(tenant, phone, body):
     s=settings(tenant)
-    if s['LIVE'].lower()!='true': raise ValueError('Live sending is disabled in the server environment.')
+    if s['LIVE'].lower()!='true':
+        if os.environ.get('TW_SANDBOX','false').lower()=='true':
+            import secrets
+            return 'mock_wamid_'+secrets.token_hex(12)
+        raise ValueError('Live sending is disabled in the server environment.')
     if not s['TOKEN'] or not re.fullmatch(r'\d+',s['PHONE_ID']) or not re.fullmatch(r'v\d+\.\d+',s['VERSION']):
         raise ValueError('Configure TOKEN, PHONE_ID and VERSION on the server first.')
     payload={'messaging_product':'whatsapp','to':phone,'type':'text','text':{'body':body}}

@@ -1,6 +1,7 @@
 """Read-only Shopify sync; signed webhook bodies never mutate catalog records directly."""
 import hashlib
 import json
+import os
 import re
 import time
 from shopify_connector import connector_status,fetch_products,fetch_orders,verify_shopify_webhook
@@ -56,3 +57,25 @@ def ingest_shopify_webhook(store,tenant,raw,headers):
     # Shopify's HMAC covers the raw body, not delivery headers. Trusted read sync
     # with the configured shop token verifies data before local catalog changes.
     return {'received':True,'duplicate':False,'requires_sync':True}
+
+
+def ingest_woocommerce_webhook(store,tenant,raw,headers):
+    import hmac, base64
+    normalized={str(k).lower():v for k,v in headers.items()}
+    secret=os.environ.get('TW_WOO_'+tenant.upper()+'_SECRET','') or os.environ.get('TW_COMMERCE_'+tenant.upper()+'_SECRET','')
+    sig=normalized.get('x-wc-webhook-signature','')
+    if secret:
+        expected=base64.b64encode(hmac.new(secret.encode('utf-8'),raw,hashlib.sha256).digest()).decode('utf-8')
+        if not hmac.compare_digest(sig,expected):raise CommerceError('Invalid WooCommerce webhook signature.',403)
+    id=normalized.get('x-wc-webhook-id','') or hashlib.sha256(raw).hexdigest()[:20]
+    topic=normalized.get('x-wc-webhook-topic','') or 'order.created'
+    digest=hashlib.sha256(raw).hexdigest();stamp=int(time.time())
+    with store.db() as db:
+        db.execute('BEGIN IMMEDIATE')
+        if not db.execute('SELECT 1 FROM tenants WHERE id=?',(tenant,)).fetchone():raise CommerceError('Unknown workspace.',404)
+        previous=db.execute('SELECT digest,topic FROM integration_events WHERE tenant=? AND provider=? AND event_id=?',(tenant,'woocommerce',id)).fetchone()
+        if previous:
+            if previous['digest']!=digest:raise CommerceError('Webhook identifier was reused with different content.',409)
+            return {'received':True,'duplicate':True}
+        db.execute('INSERT INTO integration_events VALUES(?,?,?,?,?,?)',(tenant,'woocommerce',id,digest,topic,stamp))
+    return {'received':True,'provider':'woocommerce','topic':topic}
