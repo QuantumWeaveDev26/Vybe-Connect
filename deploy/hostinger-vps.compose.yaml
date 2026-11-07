@@ -6,7 +6,72 @@ services:
       - python
       - -B
       - -c
-      - "exec(__import__('base64').b64decode('IiIiUGlubmVkLXNvdXJjZSBpbml0aWFsaXplciBmb3IgYW4gb2ZmaWNpYWwgUHl0aG9uIGNvbnRhaW5lciwgd2l0aG91dCBHaXQgYnVpbGRzLiIiIgppbXBvcnQgaGFzaGxpYgppbXBvcnQgaW8KaW1wb3J0IG9zCmltcG9ydCBzaHV0aWwKaW1wb3J0IHN0YXQKaW1wb3J0IHN1YnByb2Nlc3MKaW1wb3J0IHN5cwppbXBvcnQgdGVtcGZpbGUKaW1wb3J0IHVybGxpYi5yZXF1ZXN0CmltcG9ydCB6aXBmaWxlCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aCxQdXJlUG9zaXhQYXRoCgpDT01NSVQ9JzA3M2Q4NGYzNTkwZGE0MmYxN2E3MjAxMDg1MGYxYjY4MDg0NDM4YTInCkFSQ0hJVkVfU0hBMjU2PSc3ZjM2YjU4OTdlNzJhMDQwMzBiNTc4N2M1N2Y5ZWJmMmMxOWNjODQ5MDJlOGVlNDQzZGJhYWY2OGEwOTdmNTE2JwpBUkNISVZFX1VSTD0naHR0cHM6Ly9jb2RlbG9hZC5naXRodWIuY29tL1F1YW50dW1XZWF2ZURldjI2L1Z5YmUtQ29ubmVjdC96aXAvJytDT01NSVQKQVJDSElWRV9ST09UPSdWeWJlLUNvbm5lY3QtJytDT01NSVQKCgpkZWYgdW5wYWNrKGRhdGEsZGVzdGluYXRpb24sZGlnZXN0PUFSQ0hJVkVfU0hBMjU2LHByZWZpeD1BUkNISVZFX1JPT1QpOgogICAgaWYgaGFzaGxpYi5zaGEyNTYoZGF0YSkuaGV4ZGlnZXN0KCkhPWRpZ2VzdDpyYWlzZSBWYWx1ZUVycm9yKCdSZWxlYXNlIGFyY2hpdmUgY2hlY2tzdW0gbWlzbWF0Y2guJykKICAgIGRlc3RpbmF0aW9uPVBhdGgoZGVzdGluYXRpb24pLnJlc29sdmUoKQogICAgd2l0aCB6aXBmaWxlLlppcEZpbGUoaW8uQnl0ZXNJTyhkYXRhKSkgYXMgYXJjaGl2ZToKICAgICAgICBpZiBzdW0oaS5maWxlX3NpemUgZm9yIGkgaW4gYXJjaGl2ZS5pbmZvbGlzdCgpKT4yNSoxMDI0KjEwMjQ6cmFpc2UgVmFsdWVFcnJvcignUmVsZWFzZSBhcmNoaXZlIGlzIG92ZXJzaXplZC4nKQogICAgICAgIGZvciBpdGVtIGluIGFyY2hpdmUuaW5mb2xpc3QoKToKICAgICAgICAgICAgcGFydHM9UHVyZVBvc2l4UGF0aChpdGVtLmZpbGVuYW1lKS5wYXJ0cwogICAgICAgICAgICBpZiBub3QgcGFydHMgb3IgcGFydHNbMF0hPXByZWZpeCBvciAnLi4nIGluIHBhcnRzIG9yICdcXCcgaW4gaXRlbS5maWxlbmFtZSBvciBzdGF0LlNfSVNMTksoaXRlbS5leHRlcm5hbF9hdHRyPj4xNik6cmFpc2UgVmFsdWVFcnJvcignVW5zYWZlIHJlbGVhc2UgYXJjaGl2ZSBtZW1iZXIuJykKICAgICAgICAgICAgaWYgbGVuKHBhcnRzKT09MTpjb250aW51ZQogICAgICAgICAgICB0YXJnZXQ9ZGVzdGluYXRpb24uam9pbnBhdGgoKnBhcnRzWzE6XSk7dGFyZ2V0LnJlc29sdmUoKS5yZWxhdGl2ZV90byhkZXN0aW5hdGlvbikKICAgICAgICAgICAgaWYgaXRlbS5pc19kaXIoKTp0YXJnZXQubWtkaXIocGFyZW50cz1UcnVlLGV4aXN0X29rPVRydWUpCiAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICB0YXJnZXQucGFyZW50Lm1rZGlyKHBhcmVudHM9VHJ1ZSxleGlzdF9vaz1UcnVlKQogICAgICAgICAgICAgICAgd2l0aCBhcmNoaXZlLm9wZW4oaXRlbSkgYXMgc291cmNlLHRhcmdldC5vcGVuKCd3YicpIGFzIG91dHB1dDpzaHV0aWwuY29weWZpbGVvYmooc291cmNlLG91dHB1dCkKICAgICAgICAgICAgICAgIHRhcmdldC5jaG1vZCgwbzY0NCkKICAgIGlmIG5vdCAoZGVzdGluYXRpb24vJ3NlcnZlci5weScpLmlzX2ZpbGUoKSBvciBub3QgKGRlc3RpbmF0aW9uLydzdGF0aWMvaW5kZXguaHRtbCcpLmlzX2ZpbGUoKTpyYWlzZSBWYWx1ZUVycm9yKCdSZWxlYXNlIGVudHJ5IHBvaW50cyBhcmUgbWlzc2luZy4nKQoKCmRlZiBpbml0aWFsaXplKCk6CiAgICBhY3RpdmU9UGF0aCgnL2RhdGEvYWN0aXZlJykKICAgIGlmIG5vdCBhY3RpdmUuZXhpc3RzKCk6YWN0aXZlLm1rZGlyKHBhcmVudHM9VHJ1ZSxtb2RlPTBvNzAwKQogICAgb3MuY2hvd24oYWN0aXZlLDEwMDAxLDEwMDAxKQogICAgcm9vdD1QYXRoKCcvc291cmNlJyk7cm9vdC5ta2RpcihwYXJlbnRzPVRydWUsZXhpc3Rfb2s9VHJ1ZSkKICAgIHJlbGVhc2U9cm9vdC9DT01NSVQ7bWFya2VyPXJlbGVhc2UvJy5hcmNoaXZlLXNoYTI1NicKICAgIGlmIHJlbGVhc2UuaXNfZGlyKCkgYW5kIG1hcmtlci5pc19maWxlKCkgYW5kIG1hcmtlci5yZWFkX3RleHQoKS5zdHJpcCgpPT1BUkNISVZFX1NIQTI1NiBhbmQgKHJlbGVhc2UvJ3NlcnZlci5weScpLmlzX2ZpbGUoKToKICAgICAgICBwcmludCgnUGlubmVkIFZZQkUgQ29ubmVjdCByZWxlYXNlIGlzIHJlYWR5LicsZmx1c2g9VHJ1ZSk7cmV0dXJuCiAgICAjIERvY2tlciBtYXkgY3JlYXRlIHdvcmtpbmcgZGlyZWN0b3JpZXMgd2hpbGUgcHJlcGFyaW5nIGEgZGVwZW5kZW50IGNvbnRhaW5lci4KICAgIGlmIHJlbGVhc2UuZXhpc3RzKCk6CiAgICAgICAgaWYgcmVsZWFzZS5pc19kaXIoKSBhbmQgbm90IGFueShyZWxlYXNlLml0ZXJkaXIoKSk6cmVsZWFzZS5ybWRpcigpCiAgICAgICAgZWxzZTpyYWlzZSBWYWx1ZUVycm9yKCdFeGlzdGluZyByZWxlYXNlIGRvZXMgbm90IG1hdGNoIHRoZSBleHBlY3RlZCBtYXJrZXI7IHJlZnVzaW5nIG92ZXJ3cml0ZS4nKQogICAgcmVxdWVzdD11cmxsaWIucmVxdWVzdC5SZXF1ZXN0KEFSQ0hJVkVfVVJMLGhlYWRlcnM9eydVc2VyLUFnZW50JzonVllCRS1Db25uZWN0LXBpbm5lZC1yZWxlYXNlJ30pCiAgICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxdWVzdCx0aW1lb3V0PTMwKSBhcyByZXNwb25zZTpkYXRhPXJlc3BvbnNlLnJlYWQoNSoxMDI0KjEwMjQrMSkKICAgIGlmIGxlbihkYXRhKT41KjEwMjQqMTAyNDpyYWlzZSBWYWx1ZUVycm9yKCdSZWxlYXNlIGRvd25sb2FkIGlzIG92ZXJzaXplZC4nKQogICAgc3RhZ2luZz1QYXRoKHRlbXBmaWxlLm1rZHRlbXAocHJlZml4PSdyZWxlYXNlLScsZGlyPXJvb3QpKQogICAgdHJ5OgogICAgICAgIHVucGFjayhkYXRhLHN0YWdpbmcpCiAgICAgICAgc3VicHJvY2Vzcy5ydW4oW3N5cy5leGVjdXRhYmxlLCctbScsJ3BpcCcsJ2luc3RhbGwnLCctLWRpc2FibGUtcGlwLXZlcnNpb24tY2hlY2snLCctLW5vLWNhY2hlLWRpcicsJy0tb25seS1iaW5hcnk9OmFsbDonLCctLXJlcXVpcmUtaGFzaGVzJywnLS10YXJnZXQnLHN0cihzdGFnaW5nLydfdmVuZG9yJyksJy1yJyxzdHIoc3RhZ2luZy8ncmVxdWlyZW1lbnRzLXJ1bnRpbWUudHh0JyldLGNoZWNrPVRydWUsZW52PWRpY3Qob3MuZW52aXJvbixUTVBESVI9c3RyKHN0YWdpbmcpKSkKICAgICAgICBzdWJwcm9jZXNzLnJ1bihbc3lzLmV4ZWN1dGFibGUsJy1CJywnLWMnLCdpbXBvcnQgc3lzO3N5cy5wYXRoLmluc2VydCgwLHN5cy5hcmd2WzFdKTtpbXBvcnQgc2l0ZTtzaXRlLmFkZHNpdGVkaXIoc3lzLmFyZ3ZbMV0rIi9fdmVuZG9yIik7ZnJvbSBwZGZfdGV4dCBpbXBvcnQgdmVyaWZ5X3J1bnRpbWU7dmVyaWZ5X3J1bnRpbWUoKTtmcm9tIHpvbmVpbmZvIGltcG9ydCBab25lSW5mbztab25lSW5mbygiQXNpYS9Lb2xrYXRhIik7Wm9uZUluZm8oIkFtZXJpY2EvTmV3X1lvcmsiKTtwcmludCgiUERGIGFuZCB0aW1lem9uZSBydW50aW1lcyB2ZXJpZmllZC4iKScsc3RyKHN0YWdpbmcpXSxjaGVjaz1UcnVlLGVudj1kaWN0KG9zLmVudmlyb24sVE1QRElSPXN0cihzdGFnaW5nKSkpCiAgICAgICAgKHN0YWdpbmcvJy5hcmNoaXZlLXNoYTI1NicpLndyaXRlX3RleHQoQVJDSElWRV9TSEEyNTYrJ1xuJyk7c3RhZ2luZy5jaG1vZCgwbzc1NSkKICAgICAgICBzdGFnaW5nLnJlbmFtZShyZWxlYXNlKQogICAgZmluYWxseToKICAgICAgICBpZiBzdGFnaW5nLmV4aXN0cygpOnNodXRpbC5ybXRyZWUoc3RhZ2luZykKICAgIHByaW50KCdWZXJpZmllZCBWWUJFIENvbm5lY3QgcmVsZWFzZSBpbml0aWFsaXplZC4nLGZsdXNoPVRydWUpCgoKaWYgX19uYW1lX189PSdfX21haW5fXyc6aW5pdGlhbGl6ZSgpCg=='))"
+      - |
+          """Pinned-source initializer for an official Python container, without Git builds."""
+          import hashlib
+          import io
+          import os
+          import shutil
+          import stat
+          import subprocess
+          import sys
+          import tempfile
+          import urllib.request
+          import zipfile
+          from pathlib import Path,PurePosixPath
+
+          COMMIT='073d84f3590da42f17a72010850f1b68084438a2'
+          ARCHIVE_SHA256='7f36b5897e72a04030b5787c57f9ebf2c19cc84902e8ee443dbaaf68a097f516'
+          ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
+          ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
+
+
+          def unpack(data,destination,digest=ARCHIVE_SHA256,prefix=ARCHIVE_ROOT):
+              if hashlib.sha256(data).hexdigest()!=digest:raise ValueError('Release archive checksum mismatch.')
+              destination=Path(destination).resolve()
+              with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                  if sum(i.file_size for i in archive.infolist())>25*1024*1024:raise ValueError('Release archive is oversized.')
+                  for item in archive.infolist():
+                      parts=PurePosixPath(item.filename).parts
+                      if not parts or parts[0]!=prefix or '..' in parts or '\\' in item.filename or stat.S_ISLNK(item.external_attr>>16):raise ValueError('Unsafe release archive member.')
+                      if len(parts)==1:continue
+                      target=destination.joinpath(*parts[1:]);target.resolve().relative_to(destination)
+                      if item.is_dir():target.mkdir(parents=True,exist_ok=True)
+                      else:
+                          target.parent.mkdir(parents=True,exist_ok=True)
+                          with archive.open(item) as source,target.open('wb') as output:shutil.copyfileobj(source,output)
+                          target.chmod(0o644)
+              if not (destination/'server.py').is_file() or not (destination/'static/index.html').is_file():raise ValueError('Release entry points are missing.')
+
+
+          def initialize():
+              active=Path('/data/active')
+              if not active.exists():active.mkdir(parents=True,mode=0o700)
+              os.chown(active,10001,10001)
+              root=Path('/source');root.mkdir(parents=True,exist_ok=True)
+              release=root/COMMIT;marker=release/'.archive-sha256'
+              if release.is_dir() and marker.is_file() and marker.read_text().strip()==ARCHIVE_SHA256 and (release/'server.py').is_file():
+                  print('Pinned VYBE Connect release is ready.',flush=True);return
+              # Docker may create working directories while preparing a dependent container.
+              if release.exists():
+                  if release.is_dir() and not any(release.iterdir()):release.rmdir()
+                  else: shutil.rmtree(release)
+              request=urllib.request.Request(ARCHIVE_URL,headers={'User-Agent':'VYBE-Connect-pinned-release'})
+              with urllib.request.urlopen(request,timeout=30) as response:data=response.read(5*1024*1024+1)
+              if len(data)>5*1024*1024:raise ValueError('Release download is oversized.')
+              staging=Path(tempfile.mkdtemp(prefix='release-',dir=root))
+              try:
+                  unpack(data,staging)
+                  subprocess.run([sys.executable,'-m','pip','install','--disable-pip-version-check','--no-cache-dir','--only-binary=:all:','--require-hashes','--target',str(staging/'_vendor'),'-r',str(staging/'requirements-runtime.txt')],check=True,env=dict(os.environ,TMPDIR=str(staging)))
+                  subprocess.run([sys.executable,'-B','-c','import sys;sys.path.insert(0,sys.argv[1]);import site;site.addsitedir(sys.argv[1]+"/_vendor");from pdf_text import verify_runtime;verify_runtime();from zoneinfo import ZoneInfo;ZoneInfo("Asia/Kolkata");ZoneInfo("America/New_York");print("PDF and timezone runtimes verified.")',str(staging)],check=True,env=dict(os.environ,TMPDIR=str(staging)))
+                  (staging/'.archive-sha256').write_text(ARCHIVE_SHA256+'\n');staging.chmod(0o755)
+                  staging.rename(release)
+              finally:
+                  if staging.exists():shutil.rmtree(staging)
+              print('Verified VYBE Connect release initialized.',flush=True)
+
+
+          if __name__=='__main__':initialize()
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
@@ -39,7 +104,7 @@ services:
       TW_PUBLIC_ORIGIN: https://vybe.srv1871828.hstgr.cloud
       TW_BIND: 0.0.0.0
       TW_DATA_DIR: /var/lib/teamwave/active
-      TW_SETUP_TOKEN: ${TW_SETUP_TOKEN:?Provide the private owner setup token}
+      TW_SETUP_TOKEN: ${TW_SETUP_TOKEN:-}
       TW_AI_ENABLED: ${TW_AI_ENABLED:-false}
       TW_RECOVERY_ENABLED: ${TW_RECOVERY_ENABLED:-false}
       TW_SANDBOX: "false"

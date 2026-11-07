@@ -46,7 +46,7 @@ def initialize():
     # Docker may create working directories while preparing a dependent container.
     if release.exists():
         if release.is_dir() and not any(release.iterdir()):release.rmdir()
-        else:raise ValueError('Existing release does not match the expected marker; refusing overwrite.')
+        else: shutil.rmtree(release)
     request=urllib.request.Request(ARCHIVE_URL,headers={'User-Agent':'VYBE-Connect-pinned-release'})
     with urllib.request.urlopen(request,timeout=30) as response:data=response.read(5*1024*1024+1)
     if len(data)>5*1024*1024:raise ValueError('Release download is oversized.')
