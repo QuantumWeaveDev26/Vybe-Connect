@@ -20,8 +20,10 @@ def openai_key(tenant):
 def ai_status(tenant=None):
     import platform_ai
     if platform_ai.managed(tenant):
-        access=platform_ai.entitlement(tenant);configured=bool(os.environ.get('TW_OPENAI_API_KEY') and os.environ.get('TW_AI_MODEL')=='gpt-6-luna');requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true';paid=bool(access['active'])
-        return {'enabled':requested and configured and paid,'requested_enabled':requested,'configured':configured,'model':'gpt-6-luna','models':['gpt-6-luna'],'provider':'VYBE AI','provider_id':'openai','paid_allowed':paid,'credential_source':'platform','platform_managed':True,'allowance':access,'gateway_options':[]}
+        configured=bool(os.environ.get('TW_OPENAI_API_KEY') and os.environ.get('TW_AI_MODEL')=='gpt-6-luna')
+        if configured:
+            access=platform_ai.entitlement(tenant);requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true';paid=bool(access and access['active'])
+            return {'enabled':requested and configured and paid,'requested_enabled':requested,'configured':configured,'model':'gpt-6-luna','models':['gpt-6-luna'],'provider':'VYBE AI','provider_id':'openai','paid_allowed':paid,'credential_source':'platform','platform_managed':True,'allowance':access,'gateway_options':[]}
     from ai_connection import settings
     saved=settings(tenant)
     if saved and saved.get('provider')=='gateway':
