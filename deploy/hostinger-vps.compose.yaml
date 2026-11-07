@@ -107,6 +107,7 @@ services:
       TW_SETUP_TOKEN: ${TW_SETUP_TOKEN:-}
       TW_AI_ENABLED: ${TW_AI_ENABLED:-true}
       TW_PLATFORM_AI_MANAGED: "false"
+      TW_BILLING_ENFORCE: "false"
       TW_RECOVERY_ENABLED: ${TW_RECOVERY_ENABLED:-false}
       TW_SANDBOX: "false"
       TW_PUBLIC_REVIEW: ${TW_PUBLIC_REVIEW:-true}
