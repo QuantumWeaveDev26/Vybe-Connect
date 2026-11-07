@@ -58,7 +58,7 @@ services:
     cpus: 0.50
     pids_limit: 128
     healthcheck:
-      test: ["CMD", "python", "-B", "/source/ea530109d9766cc917ac6b58725b5dc171726870/healthcheck.py"]
+      test: ["CMD", "python", "-B", "/source/073d84f3590da42f17a72010850f1b68084438a2/healthcheck.py"]
       interval: 30s
       timeout: 10s
       start_period: 20s
