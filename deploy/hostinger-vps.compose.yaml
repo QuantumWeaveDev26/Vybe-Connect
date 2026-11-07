@@ -105,7 +105,7 @@ services:
       TW_BIND: 0.0.0.0
       TW_DATA_DIR: /var/lib/teamwave/active
       TW_SETUP_TOKEN: ${TW_SETUP_TOKEN:-}
-      TW_AI_ENABLED: ${TW_AI_ENABLED:-false}
+      TW_AI_ENABLED: ${TW_AI_ENABLED:-true}
       TW_RECOVERY_ENABLED: ${TW_RECOVERY_ENABLED:-false}
       TW_SANDBOX: "false"
       TW_PUBLIC_REVIEW: ${TW_PUBLIC_REVIEW:-true}

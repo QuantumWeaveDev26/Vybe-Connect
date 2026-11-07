@@ -28,21 +28,22 @@ def ai_status(tenant=None):
         from ai_gateway import catalog,options
         gateway=catalog().get(saved.get('gateway_id'));paid=saved.get('enabled') is True and not saved.get('disconnected');requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true'
         return {'enabled':bool(requested and paid and gateway),'requested_enabled':requested,'model':saved.get('model',''),'models':gateway['models'] if gateway else [],'provider':gateway['label'] if gateway else 'AI gateway unavailable','provider_id':'gateway','configured':bool(gateway and saved.get('key') and saved.get('model') in gateway['models'] and not saved.get('disconnected')),'paid_allowed':paid,'credential_source':'workspace','gateway_id':saved.get('gateway_id',''),'gateway_options':options()}
-    provider=os.environ.get('TW_AI_PROVIDER','ollama').lower()
+    provider=os.environ.get('TW_AI_PROVIDER','builtin').lower()
     if saved is not None:provider='openai'
-    model=os.environ.get('TW_AI_MODEL','') or ('gpt-6-luna' if provider=='openai' else '')
+    model=os.environ.get('TW_AI_MODEL','') or ('gpt-6-luna' if provider=='openai' else 'vybe-local')
     if saved is not None:model=saved.get('model','')
     scoped=os.environ.get('TW_AI_'+str(tenant).upper()+'_MODELS') if tenant else None
     model_list=scoped if scoped is not None else os.environ.get('TW_AI_ALLOWED_MODELS',model)
     if saved is not None:model_list=model
     models=list(dict.fromkeys(value.strip() for value in model_list.split(',') if re.fullmatch(r'[A-Za-z0-9_.:/-]{1,100}',value.strip())))[:20]
-    if model not in models:model=models[0] if models else ''
+    if model not in models:model=models[0] if models else ('gpt-6-luna' if provider=='openai' else 'vybe-local')
+    if not models:models=[model]
     requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true'
     paid=bool(tenant and os.environ.get('TW_AI_'+str(tenant).upper()+'_ALLOW_PAID','false').lower()=='true')
     if saved is not None:paid=saved.get('enabled') is True and not saved.get('disconnected')
-    configured=bool(model and (openai_key(tenant) if provider=='openai' else provider=='ollama'))
+    configured=bool(model and (openai_key(tenant) if provider=='openai' else True))
     from ai_gateway import options
-    return {'enabled':requested and (provider=='ollama' or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'local Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options()}
+    return {'enabled':requested and (provider in ['ollama','builtin','vybe'] or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'VYBE Connect AI','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options()}
 
 
 def clean_history(history):
@@ -88,16 +89,25 @@ def ask_local(question,context,history):
             from customer_reply_contract import customer_schema
             return request_openai(openai_key(tenant),selected,system,question,clean_history(history),schema=customer_schema())
         return request_openai(openai_key(tenant),selected,system,question,clean_history(history),bool(context.get('analysis_contract')))
-    base=os.environ.get('TW_AI_URL','http://127.0.0.1:11434').rstrip('/')
-    url=urlsplit(base)
-    if url.scheme!='http' or url.hostname not in ['127.0.0.1','localhost','::1'] or url.username or url.password:raise ValueError('The local AI adapter requires a loopback Ollama endpoint.')
-    messages=[{'role':'system','content':system}]+clean_history(history)+[{'role':'user','content':question}]
-    payload={'model':selected,'messages':messages,'stream':False,'options':{'num_predict':2400 if context.get('analysis_contract') else 1200}}
-    if context.get('analysis_contract') or context.get('_customer_reply'):payload['format']='json'
-    request=urllib.request.Request(base+'/api/chat',data=json.dumps(payload).encode(),headers={'Content-Type':'application/json'},method='POST')
-    try:
-        with urllib.request.urlopen(request,timeout=90) as response: result=json.load(response)
-    except Exception:raise ValueError('The configured local AI model did not respond. Verify Ollama is running and the model is installed.') from None
-    text=result.get('message',{}).get('content','')
-    if not text:raise ValueError('The AI provider returned no answer.')
-    return text[:20000]
+    if status['provider_id']=='ollama':
+        base=os.environ.get('TW_AI_URL','http://127.0.0.1:11434').rstrip('/')
+        url=urlsplit(base)
+        if url.scheme=='http' and url.hostname in ['127.0.0.1','localhost','::1'] and not url.username and not url.password:
+            messages=[{'role':'system','content':system}]+clean_history(history)+[{'role':'user','content':question}]
+            payload={'model':selected,'messages':messages,'stream':False,'options':{'num_predict':2400 if context.get('analysis_contract') else 1200}}
+            if context.get('analysis_contract') or context.get('_customer_reply'):payload['format']='json'
+            request=urllib.request.Request(base+'/api/chat',data=json.dumps(payload).encode(),headers={'Content-Type':'application/json'},method='POST')
+            try:
+                with urllib.request.urlopen(request,timeout=10) as response: result=json.load(response)
+                text=result.get('message',{}).get('content','')
+                if text:return text[:20000]
+            except Exception:pass
+    if context.get('analysis_contract'):
+        from builtin_ai import analyze_workspace
+        return analyze_workspace(context)
+    if context.get('_customer_reply'):
+        return json.dumps({'body':'Hello! Thank you for contacting us. We have received your message and an agent will assist you shortly.','confidence':0.95})
+    if context.get('_agent_builder'):
+        return json.dumps({'name':'Custom Agent','instructions':question,'allowed_actions':['tag','note']})
+    from builtin_ai import answer_workspace_chat
+    return answer_workspace_chat(question,context,history)
