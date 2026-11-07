@@ -526,12 +526,16 @@ class Store:
                     if not {name_col,phone_col}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
                     imported=0; errors=[]
                     all_contacts=self._list(db,t,'contact')
+                    seen_phones=set()
                     for i,row in enumerate(reader,2):
                         if i>5001: errors.append('Import limit: 5,000 rows.'); break
                         try:
                             phone_val=row.get(phone_col)
                             name_val=row.get(name_col)
                             clean_p=phone_number(phone_val)
+                            if clean_p in seen_phones:
+                                raise Problem('This phone number already exists.',409)
+                            seen_phones.add(clean_p)
                             existing=next((c for c in all_contacts if c['phone']==clean_p),None)
                             row_tags=row.get('tags','')
                             tags_list=[t.strip() for t in str(row_tags).split(',') if t.strip()] if isinstance(row_tags,str) else []
