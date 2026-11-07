@@ -289,3 +289,18 @@ button:focus-visible,a:focus-visible{outline:2px solid #238653;outline-offset:3p
 .csv-mapping-table{width:100%;border-collapse:collapse;margin:12px 0}
 .csv-mapping-table th,.csv-mapping-table td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px}
 
+
+/* WhatsApp Interactive Message Buttons & Voice Notes */
+.msg-btn-bar{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:6px;border-top:1px dashed rgba(0,0,0,0.1)}
+.bubble.out .msg-btn-bar{border-top-color:rgba(255,255,255,0.2)}
+.btn-pill{background:#ffffff;border:1px solid #10b981;color:#047857;font-size:12px;font-weight:600;padding:5px 12px;border-radius:16px;cursor:pointer;transition:all .15s ease}
+.btn-pill:hover{background:#10b981;color:#ffffff;transform:translateY(-1px);box-shadow:0 2px 6px rgba(16,185,129,0.2)}
+.bubble.out .btn-pill{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);color:#ffffff}
+.bubble.out .btn-pill:hover{background:#ffffff;color:#047857}
+.voice-note-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:2px 6px;margin-bottom:6px}
+
+/* AI Copilot Smart Suggested Replies Bar */
+.smart-replies-bar{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:8px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0}
+.smart-label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.smart-chip{background:#ffffff;border:1px solid #cbd5e1;color:#334155;border-radius:14px;padding:4px 10px;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s ease;display:inline-flex;align-items:center}
+.smart-chip:hover{background:#2563eb;border-color:#2563eb;color:#ffffff;transform:translateY(-1px);box-shadow:0 2px 4px rgba(37,99,235,0.2)}

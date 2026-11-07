@@ -564,7 +564,11 @@ class Store:
                 if status not in ['open','pending','solved']: raise Problem('Invalid conversation status.')
                 if assignee and not db.execute('SELECT 1 FROM members WHERE tenant=? AND user=?',(t,assignee)).fetchone(): raise Problem('Choose a member of this workspace.')
                 team_operations.assignment(self,db,t,c['id'],c.get('assignee'),assignee,user,'manual')
-                result=status_rule_change(self,db,t,c,self._put(db,t,'contact',dict(c,status=status,assignee=assignee),c['id']))
+                updated_c=dict(c,status=status,assignee=assignee)
+                if status=='solved' and c.get('status')!='solved' and (now()-c.get('csat_survey_sent',0))>3600:
+                    updated_c['csat_survey_sent']=now()
+                    self._message(db,t,c['id'],'Thank you for contacting us! How would you rate your support experience today?\n\n🔘 ⭐ 5 - Excellent · ⭐ 4 - Good · ⭐ 3 - Fair · ⭐ 2 - Poor · ⭐ 1 - Very Poor','out','simulated')
+                result=status_rule_change(self,db,t,c,self._put(db,t,'contact',updated_c,c['id']))
             elif action in ['chat.takeover','chat.resume']:
                 c=self._get(db,t,'contact',d.get('id'))
                 c.pop('flow_session',None)
@@ -578,7 +582,12 @@ class Store:
             elif action=='message.send':
                 c=self._get(db,t,'contact',d.get('contact_id')); body=required(d.get('body'),'Message')
                 note=d.get('note') is True
+                buttons=[str(b).strip() for b in d.get('buttons',[]) if str(b).strip()][:5] if isinstance(d.get('buttons'),list) else []
+                if buttons and not note:
+                    body=body+'\n\n🔘 '+' · '.join(buttons)
                 result=internal_comments.create(self,db,ctx,c,body,d.get('mentions',[])) if note else self._message(db,t,c['id'],body,'out','simulated')
+                if buttons and not note:
+                    result['buttons']=buttons
             elif action=='message.simulate':
                 c=self._get(db,t,'contact',d.get('contact_id'))
                 result=self._inbound(db,t,{'id':'demo-'+uid(),'from':c['phone'],'text':{'body':required(d.get('body'),'Message')},'timestamp':str(now())},True)
@@ -992,7 +1001,18 @@ class Store:
         external=required(event.get('id'),'Message id',250)
         if db.execute('SELECT 1 FROM messages WHERE tenant=? AND external_id=?',(t,external)).fetchone(): return {'duplicate':True}
         p=phone_number(event.get('from')); text=event.get('text',{}).get('body') or '['+str(event.get('type','unsupported message'))+']'
-        if event.get('type') in ['image','audio','video','document']:
+        if event.get('type')=='interactive':
+            interactive=event.get('interactive',{})
+            if interactive.get('type')=='button_reply':
+                text=interactive.get('button_reply',{}).get('title') or interactive.get('button_reply',{}).get('id') or '[Button reply]'
+            elif interactive.get('type')=='list_reply':
+                text=interactive.get('list_reply',{}).get('title') or interactive.get('list_reply',{}).get('id') or '[List reply]'
+        elif event.get('type')=='audio':
+            audio_p=event.get('audio',{})
+            dur=audio_p.get('duration',5) if isinstance(audio_p,dict) else 5
+            transcription=audio_p.get('transcription') if isinstance(audio_p,dict) else None
+            text='🎙️ [Voice note (' + str(dur) + 's)]: ' + str(transcription or 'Customer audio voice message')
+        elif event.get('type') in ['image','video','document']:
             payload=event.get(event['type'])
             if isinstance(payload,dict) and isinstance(payload.get('caption'),str):text='['+event['type']+'] '+payload['caption'][:4096]
         text=required(text,'Inbound message',10000)
@@ -1003,6 +1023,12 @@ class Store:
         except (TypeError,ValueError): timestamp=now()
         c=dict(c,last_inbound=max(c.get('last_inbound',0),timestamp),status='open')
         c=growth_services.inbound(self,db,t,c,event,simulated)
+        rating_match=re.search(r'\b([1-5])\b',text)
+        if rating_match and c.get('csat_survey_sent') and (timestamp-c.get('csat_survey_sent',0))<86400:
+            score=int(rating_match.group(1))
+            c['csat_score']=score
+            c.pop('csat_survey_sent',None)
+            self._message(db,t,c['id'],f"⭐ Thank you! Recorded your rating of {score}/5 stars.",'out','simulated')
         if not simulated:whatsapp_forms.receive(self,db,t,c,event)
         if not simulated: c['last_real_inbound']=max(c.get('last_real_inbound',0),timestamp)
         stop=text.strip().lower() in ['stop','unsubscribe','cancel','stop all']
@@ -1090,3 +1116,49 @@ class Store:
         self._put(db,t,'reply',{'name':'Business hours','body':'Our team is available Monday–Friday, 9 AM–6 PM. We will get back to you shortly.'})
         self._put(db,t,'campaign',{'name':'Welcome new leads','template_id':template['id'],'tag':'Lead','schedule':'','status':'draft','audience':2,'created':now(),'simulated':0})
         return {'loaded':True}
+
+
+    def widget_message(self,tenant,data):
+        if not tenant:
+            with self.db() as db:
+                row=db.execute('SELECT id FROM tenants ORDER BY rowid LIMIT 1').fetchone()
+                tenant=row['id'] if row else ''
+        if not tenant:raise Problem('Workspace not found.',404)
+        name=str(data.get('name') or 'Website Visitor').strip()[:100]
+        phone_input=str(data.get('phone') or '').strip()
+        if not phone_input or not re.search(r'\d{4,}',phone_input):phone_input='+15550299'
+        clean_p=phone_number(phone_input); msg_text=required(data.get('message'),'Message',10000)
+        with self.db() as db: 
+            db.execute('BEGIN IMMEDIATE')
+            c=next((c for c in self._list(db,tenant,'contact') if c['phone']==clean_p),None)
+            if not c:
+                c=self._contact(db,tenant,{'name':name,'phone':clean_p,'source':'website_widget','optin':True})
+            mid='widget_'+uid()
+            res=self._inbound(db,tenant,{'id':mid,'from':clean_p,'text':{'body':msg_text},'timestamp':str(now())},True)
+            rows=[dict(r) for r in db.execute('SELECT id,direction,body,ts FROM messages WHERE tenant=? AND contact=? ORDER BY ts,rowid LIMIT 50',(tenant,c['id'])).fetchall()]
+            return {'success':True,'contact_id':c['id'],'contact_name':c['name'],'messages':rows}
+
+    def widget_history(self,tenant,contact_id):
+        if not tenant:
+            with self.db() as db:
+                row=db.execute('SELECT id FROM tenants ORDER BY rowid LIMIT 1').fetchone()
+                tenant=row['id'] if row else ''
+        if not tenant or not contact_id:return {'messages':[]}
+        with self.db() as db:
+            rows=[dict(r) for r in db.execute('SELECT id,direction,body,ts FROM messages WHERE tenant=? AND contact=? ORDER BY ts,rowid LIMIT 50',(tenant,contact_id)).fetchall()]
+            return {'contact_id':contact_id,'messages':rows}
+
+    def api_send_message(self,ctx,data):
+        phone=required(data.get('phone'),'Phone number')
+        clean_p=phone_number(phone); body=required(data.get('body'),'Message')
+        buttons=[str(b).strip() for b in data.get('buttons',[]) if str(b).strip()][:5] if isinstance(data.get('buttons'),list) else []
+        t=ctx['tenant_id']
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            c=next((c for c in self._list(db,t,'contact') if c['phone']==clean_p),None)
+            if not c:
+                c=self._contact(db,t,{'name':data.get('name') or clean_p,'phone':clean_p,'optin':True,'source':'api'})
+            if buttons:
+                body=body+'\n\n🔘 '+' · '.join(buttons)
+            msg=self._message(db,t,c['id'],body,'out','simulated',external_id='api_'+uid())
+            return {'id':msg['id'],'contact_id':c['id'],'phone':clean_p,'status':msg['status'],'body':body,'buttons':buttons,'ts':msg['ts']}

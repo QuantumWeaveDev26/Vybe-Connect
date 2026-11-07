@@ -42,10 +42,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self,*args): pass  # Request URLs may contain webhook tokens.
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin','*')
+        self.send_header('Access-Control-Allow-Headers','Content-Type, Authorization, X-Workspace')
+        self.send_header('Access-Control-Allow-Methods','GET, POST, OPTIONS')
+        self.send_header('Content-Length','0')
+        self.end_headers()
+
     def respond(self,code,data,content_type='application/json; charset=utf-8',cookie=None,disposition=None):
         if isinstance(data,(dict,list)): data=json.dumps(data,ensure_ascii=False).encode()
         elif isinstance(data,str): data=data.encode()
         self.send_response(code)
+        self.send_header('Access-Control-Allow-Origin','*')
+        self.send_header('Access-Control-Allow-Headers','Content-Type, Authorization, X-Workspace')
+        self.send_header('Access-Control-Allow-Methods','GET, POST, OPTIONS')
         self.send_header('Content-Type',content_type)
         self.send_header('Content-Length',str(len(data)))
         self.send_header('Cache-Control','no-store')
@@ -98,6 +109,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.respond(200,api_tokens.read(self.server.store,self.headers.get('Authorization',''),path,parse_qs(urlsplit(self.path).query),self.headers.get('X-Workspace')));return
             if path=='/api/developer/tokens':self.respond(200,{'tokens':api_tokens.listing(self.server.store,self.context())});return
             if path=='/healthz':self.respond(200,{'status':'ok'});return
+            if path=='/widget.js':
+                self.respond(200,(ROOT/'static'/'widget.js').read_text(encoding='utf-8'),'application/javascript; charset=utf-8');return
+            if path in ('/widget','/widget-preview','/widget-preview.html'):
+                self.respond(200,(ROOT/'static'/'widget-preview.html').read_text(encoding='utf-8'),'text/html; charset=utf-8');return
+            if path=='/api/widget/history':
+                q=parse_qs(urlsplit(self.path).query)
+                self.respond(200,self.server.store.widget_history(q.get('workspace',[''])[0],q.get('contact_id',[''])[0]));return
             if path=='/readyz':
                 try:
                     with self.server.store.db() as db:db.execute('SELECT 1 FROM tenants LIMIT 1').fetchone()
@@ -153,7 +171,7 @@ class Handler(BaseHTTPRequestHandler):
             path=urlsplit(self.path).path
             if path.startswith('/api/review/'):raise Problem('Public review is read-only. Owner setup is required to make changes.',403)
             expected_origin=self.server.deployment.public_origin if self.server.deployment.production else 'http://'+self.headers.get('Host','')
-            if not path.startswith(('/webhook/','/shopify-webhook/','/woocommerce-webhook/','/agent-callback/','/razorpay-webhook/','/recipe-hook/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
+            if not path.startswith(('/webhook/','/shopify-webhook/','/woocommerce-webhook/','/agent-callback/','/razorpay-webhook/','/recipe-hook/','/api/widget/','/api/v1/')) and self.headers.get('Origin')!=expected_origin: raise Problem('Cross-origin writes are not allowed.',403)
             try: length=int(self.headers.get('Content-Length','0'))
             except ValueError: raise Problem('Invalid body length.')
             limit=5*1024*1024 if path=='/api/media-upload' else 2*1024*1024 if path.startswith(('/shopify-webhook/','/woocommerce-webhook/')) else 1500000
@@ -181,6 +199,14 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/api/knowledge-upload':
                 query=parse_qs(urlsplit(self.path).query)
                 self.respond(200,self.server.store.upload_knowledge_document(self.context(),query.get('name',[''])[0],raw));return
+            if path=='/api/widget/message':
+                data=json.loads(raw)
+                ws=data.get('workspace') or self.headers.get('X-Workspace')
+                self.respond(200,self.server.store.widget_message(ws,data));return
+            if path=='/api/v1/messages/send':
+                ctx=api_tokens.authenticate(self.server.store,self.headers.get('Authorization',''),'messages:read')
+                data=json.loads(raw)
+                self.respond(201,self.server.store.api_send_message(ctx,data));return
             if path=='/api/media-upload':
                 query=parse_qs(urlsplit(self.path).query)
                 self.respond(200,self.server.store.upload_media_asset(self.context(),query.get('name',[''])[0],self.headers.get('Content-Type','').split(';')[0],raw));return
