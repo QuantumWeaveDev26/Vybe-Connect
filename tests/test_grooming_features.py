@@ -111,6 +111,26 @@ class TestGroomingFeatures(unittest.TestCase):
         self.assertIn('Nov-Promo', alice['tags'])
         self.assertEqual(alice['attributes']['city'], 'New York')
 
+        # Test re-importing Alice with updated name, additional tag & new attribute (upsert)
+        csv_reimport = "Customer,Mobile,City,VIP\nAlice Smith,+15550011,Brooklyn,yes\n"
+        res_reimport = self.store.action(self.admin_ctx, 'contacts.import', {
+            'csv': csv_reimport,
+            'mapping': {
+                'name': 'Customer',
+                'phone': 'Mobile',
+                'attributes': {'city': 'City'}
+            },
+            'tags': ['VIP-Batch']
+        })
+        self.assertEqual(res_reimport['imported'], 1)
+        self.assertEqual(len(res_reimport['errors']), 0)
+        state2 = self.store.state(self.admin_ctx)
+        alice2 = next(c for c in state2['contacts'] if c['phone'] == '15550011')
+        self.assertEqual(alice2['name'], 'Alice Smith')
+        self.assertIn('Nov-Promo', alice2['tags'])
+        self.assertIn('VIP-Batch', alice2['tags'])
+        self.assertEqual(alice2['attributes']['city'], 'Brooklyn')
+
     def test_flow_webhook_node(self):
         # Valid flow with a webhook node
         graph = {

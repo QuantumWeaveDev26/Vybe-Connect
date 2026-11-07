@@ -525,19 +525,32 @@ class Store:
                     batch_tags=d.get('tags') or []
                     if not {name_col,phone_col}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
                     imported=0; errors=[]
+                    all_contacts=self._list(db,t,'contact')
                     for i,row in enumerate(reader,2):
                         if i>5001: errors.append('Import limit: 5,000 rows.'); break
                         try:
                             phone_val=row.get(phone_col)
                             name_val=row.get(name_col)
+                            clean_p=phone_number(phone_val)
+                            existing=next((c for c in all_contacts if c['phone']==clean_p),None)
                             row_tags=row.get('tags','')
                             tags_list=[t.strip() for t in str(row_tags).split(',') if t.strip()] if isinstance(row_tags,str) else []
                             for bt in batch_tags:
                                 if bt and bt not in tags_list: tags_list.append(bt)
                             custom_attrs={k:str(row.get(v,''))[:500] for k,v in attr_mapping.items() if v in row and row.get(v)}
-                            contact_data=dict(name=name_val,phone=phone_val,tags=','.join(tags_list),optin=str(row.get('optin','')).lower() in ['true','1','yes'])
-                            if custom_attrs: contact_data['attributes']=custom_attrs
-                            self._contact(db,t,contact_data)
+                            contact_data=dict(name=name_val or (existing['name'] if existing else ''),phone=phone_val,tags=','.join(tags_list),optin=str(row.get('optin','')).lower() in ['true','1','yes'])
+                            if existing:
+                                contact_data['id']=existing['id']
+                                for et in existing.get('tags',[]):
+                                    if et and et not in tags_list: tags_list.append(et)
+                                contact_data['tags']=','.join(tags_list)
+                                merged_attrs=dict(existing.get('attributes') or {})
+                                merged_attrs.update(custom_attrs)
+                                contact_data['attributes']=merged_attrs
+                            elif custom_attrs:
+                                contact_data['attributes']=custom_attrs
+                            saved=self._contact(db,t,contact_data)
+                            if not existing: all_contacts.append(saved)
                             imported+=1
                         except Problem as e: errors.append('Row '+str(i)+': '+str(e))
                     result={'imported':imported,'errors':errors}
