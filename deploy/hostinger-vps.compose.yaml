@@ -20,8 +20,8 @@ services:
           import zipfile
           from pathlib import Path,PurePosixPath
 
-          COMMIT='679c4f7a42db0812e4caf8357d06dfdd755b9144'
-          ARCHIVE_SHA256='4ebc93fee2af6909d2e8b5d7836d92dea09e868387d20226ba2ac10bb846822f'
+          COMMIT='1d46b981496eab3edbf2c07c376c810d472f68ae'
+          ARCHIVE_SHA256='3d0f8e32fb37b7cc4c90b0edc53ab54ce6f288bcbc6b86bdaedc6c593174e11c'
           ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
           ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
 
@@ -92,7 +92,7 @@ services:
     depends_on:
       source-init:
         condition: service_completed_successfully
-    command: ["python", "-B", "/source/679c4f7a42db0812e4caf8357d06dfdd755b9144/server.py", "--port", "8788"]
+    command: ["python", "-B", "/source/1d46b981496eab3edbf2c07c376c810d472f68ae/server.py", "--port", "8788"]
     user: "10001:10001"
     working_dir: /source
     env_file:
@@ -123,7 +123,7 @@ services:
     cpus: 0.50
     pids_limit: 128
     healthcheck:
-      test: ["CMD", "python", "-B", "/source/679c4f7a42db0812e4caf8357d06dfdd755b9144/healthcheck.py"]
+      test: ["CMD", "python", "-B", "/source/1d46b981496eab3edbf2c07c376c810d472f68ae/healthcheck.py"]
       interval: 30s
       timeout: 10s
       start_period: 20s
