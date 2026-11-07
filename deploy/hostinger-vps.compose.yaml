@@ -20,8 +20,8 @@ services:
           import zipfile
           from pathlib import Path,PurePosixPath
 
-          COMMIT='1d46b981496eab3edbf2c07c376c810d472f68ae'
-          ARCHIVE_SHA256='3d0f8e32fb37b7cc4c90b0edc53ab54ce6f288bcbc6b86bdaedc6c593174e11c'
+          COMMIT='c1ce1f606e206e28c8cb122f4e6eec1ccd8aab3a'
+          ARCHIVE_SHA256='e24006c344c8012cf2609e77a2205b4d48d9e3dd6910541c5d66d54e67dc41b6'
           ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
           ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
 
@@ -92,7 +92,7 @@ services:
     depends_on:
       source-init:
         condition: service_completed_successfully
-    command: ["python", "-B", "/source/1d46b981496eab3edbf2c07c376c810d472f68ae/server.py", "--port", "8788"]
+    command: ["python", "-B", "/source/c1ce1f606e206e28c8cb122f4e6eec1ccd8aab3a/server.py", "--port", "8788"]
     user: "10001:10001"
     working_dir: /source
     env_file:
@@ -106,6 +106,7 @@ services:
       TW_DATA_DIR: /var/lib/teamwave/active
       TW_SETUP_TOKEN: ${TW_SETUP_TOKEN:-}
       TW_AI_ENABLED: ${TW_AI_ENABLED:-true}
+      TW_PLATFORM_AI_MANAGED: "false"
       TW_RECOVERY_ENABLED: ${TW_RECOVERY_ENABLED:-false}
       TW_SANDBOX: "false"
       TW_PUBLIC_REVIEW: ${TW_PUBLIC_REVIEW:-true}
@@ -123,7 +124,7 @@ services:
     cpus: 0.50
     pids_limit: 128
     healthcheck:
-      test: ["CMD", "python", "-B", "/source/1d46b981496eab3edbf2c07c376c810d472f68ae/healthcheck.py"]
+      test: ["CMD", "python", "-B", "/source/c1ce1f606e206e28c8cb122f4e6eec1ccd8aab3a/healthcheck.py"]
       interval: 30s
       timeout: 10s
       start_period: 20s
