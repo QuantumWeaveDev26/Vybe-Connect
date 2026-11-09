@@ -27,10 +27,10 @@
     <div class="card">
       <h3>One-Line Embed Code</h3>
       <p>Paste this script tag before the closing <code>&lt;/body&gt;</code> tag on your website:</p>
-      <pre><code>&lt;!-- VYBE Connect Live Chat Widget --&gt;
-&lt;script src="https://vybe.srv1871828.hstgr.cloud/widget.js" data-title="Support Chat" defer&gt;&lt;/script&gt;</code></pre>
+      <p id="widget-preview-notice"></p><pre><code id="widget-embed-code">&lt;!-- VYBE Connect Live Chat Widget --&gt;
+&lt;script src="https://vybe.srv1871828.hstgr.cloud/widget.js" data-workspace="YOUR_WORKSPACE_ID" data-title="Support Chat" defer&gt;&lt;/script&gt;</code></pre>
       <div style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
-        <button class="btn" onclick="window.VybeWidget ? window.VybeWidget.open() : alert('Widget is loading...')">Open Chat Bubble ↘</button>
+        <button class="btn" id="open-widget-preview" type="button">Open Chat Bubble ↘</button>
         <span style="color: #6a8274; font-size: 13px;">Or click the green bubble in the bottom right corner</span>
       </div>
     </div>
@@ -41,6 +41,7 @@
   </div>
 
   <!-- Embed Widget Live on this preview page -->
-  <script src="/widget.js" data-title="VYBE Connect Support"></script>
+  <script src="/widget-preview.js" defer></script>
+  <script src="/widget.js" data-title="VYBE Connect Support" defer></script>
 </body>
 </html>
