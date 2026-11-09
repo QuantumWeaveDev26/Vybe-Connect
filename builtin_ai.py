@@ -40,6 +40,11 @@ def analyze_workspace(context):
         inbound = [m for m in msgs if m.get('direction') == 'in']
         return inbound[-1] if inbound else msgs[-1]
 
+    def ev_ids(ev):
+        if ev and ev.get('id'):
+            return [str(ev['id'])]
+        return []
+
     # Helper to construct a compliant proposal action
     def make_action(contact_id, conv, action_type, **kwargs):
         if not action_type or action_type not in allowed:
@@ -82,7 +87,7 @@ def analyze_workspace(context):
                     'title': f"Digest item: {cname}",
                     'details': f"Recorded conversation with {cname} ({conv.get('phone')}). Current ticket state: {conv.get('status','open')}. Recent message: \"{ev.get('body','')[:200]}\".",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -97,7 +102,7 @@ def analyze_workspace(context):
                     'title': f"Triage Priority: {cname}",
                     'details': f"Customer {cname} has an open ticket. Inbound message: \"{ev.get('body','')[:200]}\". Suggested action: Review and triage to available team member.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -112,7 +117,7 @@ def analyze_workspace(context):
                     'title': f"Follow-up Candidate: {cname}",
                     'details': f"Contact {cname} ({conv.get('phone')}) last messaged with: \"{ev.get('body','')[:150]}\". Re-engagement draft prepared for human review.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -140,7 +145,7 @@ def analyze_workspace(context):
                 'title': f"Urgent Item: {cname}",
                 'details': f"Detected time-sensitive inquiry ({reason}) from {cname}: \"{ev.get('body','')[:200]}\". Follow-up task proposed.",
                 'contact_id': conv['contact_id'],
-                'evidence_ids': [ev['id']],
+                'evidence_ids': ev_ids(ev),
                 'action': action
             })
 
@@ -155,7 +160,7 @@ def analyze_workspace(context):
                     'title': f"Topic Inquiry: {cname}",
                     'details': f"Recurring conversation topic observed from {cname}: \"{ev.get('body','')[:150]}\". Tag proposed for topic tracking.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -173,7 +178,7 @@ def analyze_workspace(context):
                         'title': f"Suspicious Activity: {conv.get('contact_name', 'Unknown')}",
                         'details': f"Message flagged for review: \"{ev.get('body','')[:150]}\". Tagging for human inspection.",
                         'contact_id': conv['contact_id'],
-                        'evidence_ids': [ev['id']],
+                        'evidence_ids': ev_ids(ev),
                         'action': action
                     })
 
@@ -200,7 +205,7 @@ def analyze_workspace(context):
                 'title': f"High Intent: {cname}",
                 'details': f"Customer expressed purchase interest ({reason}): \"{ev.get('body','')[:200]}\". Proposing sales draft reply.",
                 'contact_id': conv['contact_id'],
-                'evidence_ids': [ev['id']],
+                'evidence_ids': ev_ids(ev),
                 'action': action
             })
 
@@ -217,7 +222,7 @@ def analyze_workspace(context):
                     'title': f"Automation Coverage: {cname}",
                     'details': f"Observed inquiry: \"{ev.get('body','')[:150]}\". Recommended verification against keyword rules.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -232,7 +237,7 @@ def analyze_workspace(context):
                     'title': f"Eligible Recipient: {cname}",
                     'details': f"Contact {cname} is opted-in and eligible for upcoming template broadcasts. Last active message: \"{ev.get('body','')[:100]}\".",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -247,7 +252,7 @@ def analyze_workspace(context):
                     'title': f"Segmentation Opportunity: {cname}",
                     'details': f"Contact {cname} has active chat history. Suggested tag for refined broadcast targeting.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -262,7 +267,7 @@ def analyze_workspace(context):
                     'title': f"Broadcast Concept from {cname}",
                     'details': f"Based on customer question: \"{ev.get('body','')[:150]}\", recommend creating an educational FAQ campaign.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -280,7 +285,7 @@ def analyze_workspace(context):
                     'title': f"Channel Verification: {cname}",
                     'details': f"Verified active two-way interaction with {cname}. Latest status: {ev.get('status','received')}.",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
@@ -296,7 +301,7 @@ def analyze_workspace(context):
                     'title': f"Finding: {cname}",
                     'details': f"Analyzed conversation with {cname}: \"{ev.get('body','')[:200]}\".",
                     'contact_id': conv['contact_id'],
-                    'evidence_ids': [ev['id']],
+                    'evidence_ids': ev_ids(ev),
                     'action': action
                 })
 
