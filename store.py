@@ -410,7 +410,7 @@ class Store:
                 if isinstance(e,RemoteError):raise Problem(str(e),502) from None
                 raise
         if action=='message.send' and any(flag in d and type(d[flag]) is not bool for flag in ['note','live']):raise Problem('Message note/live flags must be true or false.')
-        if action in ['demo.seed','message.simulate','campaign.run'] or action=='message.send' and not d.get('live') and not d.get('note'):
+        if action in ['demo.seed','message.simulate','campaign.run','sandbox.simulate_inbound','sandbox.simulate_status'] or action=='message.send' and not d.get('live') and not d.get('note'):
             if os.environ.get('TW_SANDBOX','false').lower()!='true':raise Problem('Simulation is disabled. Configure Meta for real messaging, or explicitly enable a separate sandbox.')
         if action in ['feedback.save','feedback.status']:return product_feedback.action(self,ctx,action,d)
         if action=='notification.read':return internal_comments.read(self,ctx,d)
@@ -478,6 +478,13 @@ class Store:
                 self.delivery(t,mid,st)
             return {'simulated':True,'status':st}
         if action=='message.send' and d.get('live'):
+            with self.db() as db:
+                c=self._get(db,t,'contact',d.get('contact_id'))
+                if c.get('channel')=='website':
+                    if d.get('note'):raise Problem('Use an internal note without live delivery.')
+                    result=self._message(db,t,c['id'],required(d.get('body'),'Message',4000),'out','sent',external_id='website_'+uid())
+                    db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(t,ctx['user']['name'],'message.website',now()))
+                    return result
             return self._live_reply(ctx,d)
         if action in ['templates.sync','template.submit']:
             return self._template_provider_action(ctx,action,d)
@@ -565,7 +572,7 @@ class Store:
                 if assignee and not db.execute('SELECT 1 FROM members WHERE tenant=? AND user=?',(t,assignee)).fetchone(): raise Problem('Choose a member of this workspace.')
                 team_operations.assignment(self,db,t,c['id'],c.get('assignee'),assignee,user,'manual')
                 updated_c=dict(c,status=status,assignee=assignee)
-                if status=='solved' and c.get('status')!='solved' and (now()-c.get('csat_survey_sent',0))>3600:
+                if os.environ.get('TW_SANDBOX','false').lower()=='true' and status=='solved' and c.get('status')!='solved' and (now()-c.get('csat_survey_sent',0))>3600:
                     updated_c['csat_survey_sent']=now()
                     self._message(db,t,c['id'],'Thank you for contacting us! How would you rate your support experience today?\n\n🔘 ⭐ 5 - Excellent · ⭐ 4 - Good · ⭐ 3 - Fair · ⭐ 2 - Poor · ⭐ 1 - Very Poor','out','simulated')
                 result=status_rule_change(self,db,t,c,self._put(db,t,'contact',updated_c,c['id']))
@@ -1024,7 +1031,7 @@ class Store:
         c=dict(c,last_inbound=max(c.get('last_inbound',0),timestamp),status='open')
         c=growth_services.inbound(self,db,t,c,event,simulated)
         rating_match=re.search(r'\b([1-5])\b',text)
-        if rating_match and c.get('csat_survey_sent') and (timestamp-c.get('csat_survey_sent',0))<86400:
+        if simulated and rating_match and c.get('csat_survey_sent') and (timestamp-c.get('csat_survey_sent',0))<86400:
             score=int(rating_match.group(1))
             c['csat_score']=score
             c.pop('csat_survey_sent',None)
@@ -1119,46 +1126,18 @@ class Store:
 
 
     def widget_message(self,tenant,data):
-        if not tenant:
-            with self.db() as db:
-                row=db.execute('SELECT id FROM tenants ORDER BY rowid LIMIT 1').fetchone()
-                tenant=row['id'] if row else ''
-        if not tenant:raise Problem('Workspace not found.',404)
-        name=str(data.get('name') or 'Website Visitor').strip()[:100]
-        phone_input=str(data.get('phone') or '').strip()
-        if not phone_input or not re.search(r'\d{4,}',phone_input):phone_input='+15550299'
-        clean_p=phone_number(phone_input); msg_text=required(data.get('message'),'Message',10000)
-        with self.db() as db: 
-            db.execute('BEGIN IMMEDIATE')
-            c=next((c for c in self._list(db,tenant,'contact') if c['phone']==clean_p),None)
-            if not c:
-                c=self._contact(db,tenant,{'name':name,'phone':clean_p,'source':'website_widget','optin':True})
-            mid='widget_'+uid()
-            res=self._inbound(db,tenant,{'id':mid,'from':clean_p,'text':{'body':msg_text},'timestamp':str(now())},True)
-            rows=[dict(r) for r in db.execute('SELECT id,direction,body,ts FROM messages WHERE tenant=? AND contact=? ORDER BY ts,rowid LIMIT 50',(tenant,c['id'])).fetchall()]
-            return {'success':True,'contact_id':c['id'],'contact_name':c['name'],'messages':rows}
+        import website_chat
+        return website_chat.message(self,tenant,data)
 
-    def widget_history(self,tenant,contact_id):
-        if not tenant:
-            with self.db() as db:
-                row=db.execute('SELECT id FROM tenants ORDER BY rowid LIMIT 1').fetchone()
-                tenant=row['id'] if row else ''
-        if not tenant or not contact_id:return {'messages':[]}
-        with self.db() as db:
-            rows=[dict(r) for r in db.execute('SELECT id,direction,body,ts FROM messages WHERE tenant=? AND contact=? ORDER BY ts,rowid LIMIT 50',(tenant,contact_id)).fetchall()]
-            return {'contact_id':contact_id,'messages':rows}
+    def widget_history(self,tenant,contact_id,visitor_token=''):
+        import website_chat
+        return website_chat.history(self,tenant,contact_id,visitor_token)
 
     def api_send_message(self,ctx,data):
-        phone=required(data.get('phone'),'Phone number')
-        clean_p=phone_number(phone); body=required(data.get('body'),'Message')
-        buttons=[str(b).strip() for b in data.get('buttons',[]) if str(b).strip()][:5] if isinstance(data.get('buttons'),list) else []
-        t=ctx['tenant_id']
+        clean_p=phone_number(required(data.get('phone'),'Phone number'))
+        if data.get('buttons'):
+            raise Problem('Interactive API sending is not supported yet. Send text without buttons.')
         with self.db() as db:
-            db.execute('BEGIN IMMEDIATE')
-            c=next((c for c in self._list(db,t,'contact') if c['phone']==clean_p),None)
-            if not c:
-                c=self._contact(db,t,{'name':data.get('name') or clean_p,'phone':clean_p,'optin':True,'source':'api'})
-            if buttons:
-                body=body+'\n\n🔘 '+' · '.join(buttons)
-            msg=self._message(db,t,c['id'],body,'out','simulated',external_id='api_'+uid())
-            return {'id':msg['id'],'contact_id':c['id'],'phone':clean_p,'status':msg['status'],'body':body,'buttons':buttons,'ts':msg['ts']}
+            c=next((c for c in self._list(db,ctx['tenant_id'],'contact') if c['phone']==clean_p),None)
+        if not c:raise Problem('Create this contact and record consent before sending.',404)
+        return self.action(ctx,'message.send',{'contact_id':c['id'],'body':data.get('body'),'live':True})

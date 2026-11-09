@@ -13,6 +13,7 @@
   const brandColor = script?.dataset?.color || window.VYBE_WIDGET_COLOR || '#108449';
   const apiUrl = (script?.src ? new URL(script.src).origin : window.location.origin);
 
+  let visitorToken = localStorage.getItem('vybe_widget_session_' + workspace) || '';
   let contactId = localStorage.getItem('vybe_widget_contact_' + workspace) || '';
   let visitorName = localStorage.getItem('vybe_widget_name_' + workspace) || '';
   let visitorPhone = localStorage.getItem('vybe_widget_phone_' + workspace) || '';
@@ -106,7 +107,7 @@
     win.style.display = isOpen ? 'flex' : 'none';
     if (isOpen) {
       input.focus();
-      if (contactId) loadHistory();
+      if (contactId && visitorToken) loadHistory();
     }
   }
 
@@ -143,7 +144,8 @@
   async function loadHistory() {
     if (!contactId || !workspace) return;
     try {
-      const res = await fetch(`${apiUrl}/api/widget/history?workspace=${encodeURIComponent(workspace)}&contact_id=${encodeURIComponent(contactId)}`);
+      const res = await fetch(`${apiUrl}/api/widget/history?workspace=${encodeURIComponent(workspace)}&contact_id=${encodeURIComponent(contactId)}`, {headers: {'X-Visitor-Token': visitorToken}});
+      if (res.status === 401) { visitorToken=''; contactId=''; localStorage.removeItem('vybe_widget_session_' + workspace); localStorage.removeItem('vybe_widget_contact_' + workspace); return; }
       if (!res.ok) return;
       const data = await res.json();
       if (data.messages && data.messages.length) {
@@ -179,14 +181,17 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           workspace,
-          contact_id: contactId,
+          visitor_token: visitorToken,
           name: visitorName || 'Website Visitor',
-          phone: visitorPhone || '+15550299',
+          phone: visitorPhone,
           message: msg
         })
       });
+      if (!res.ok) throw new Error("Message was not delivered. Please try again.");
       if (res.ok) {
         const data = await res.json();
+        visitorToken = data.visitor_token || visitorToken;
+        localStorage.setItem('vybe_widget_session_' + workspace, visitorToken);
         if (data.contact_id) {
           contactId = data.contact_id;
           localStorage.setItem('vybe_widget_contact_' + workspace, contactId);
@@ -199,7 +204,7 @@
         }
       }
     } catch (_) {
-      renderMessage("Thanks for your message! Our team will reply shortly.", "out");
+      renderMessage("Message was not delivered. Please try again.", "out");
     } finally {
       isSending = false;
       sendBtn.disabled = false;

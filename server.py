@@ -45,7 +45,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin','*')
-        self.send_header('Access-Control-Allow-Headers','Content-Type, Authorization, X-Workspace')
+        self.send_header('Access-Control-Allow-Headers','Content-Type, Authorization, X-Workspace, X-Visitor-Token')
         self.send_header('Access-Control-Allow-Methods','GET, POST, OPTIONS')
         self.send_header('Content-Length','0')
         self.end_headers()
@@ -55,7 +55,7 @@ class Handler(BaseHTTPRequestHandler):
         elif isinstance(data,str): data=data.encode()
         self.send_response(code)
         self.send_header('Access-Control-Allow-Origin','*')
-        self.send_header('Access-Control-Allow-Headers','Content-Type, Authorization, X-Workspace')
+        self.send_header('Access-Control-Allow-Headers','Content-Type, Authorization, X-Workspace, X-Visitor-Token')
         self.send_header('Access-Control-Allow-Methods','GET, POST, OPTIONS')
         self.send_header('Content-Type',content_type)
         self.send_header('Content-Length',str(len(data)))
@@ -118,7 +118,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.respond(200,(ROOT/'static'/'widget-preview.html').read_text(encoding='utf-8'),'text/html; charset=utf-8');return
             if path=='/api/widget/history':
                 q=parse_qs(urlsplit(self.path).query)
-                self.respond(200,self.server.store.widget_history(q.get('workspace',[''])[0],q.get('contact_id',[''])[0]));return
+                self.respond(200,self.server.store.widget_history(q.get('workspace',[''])[0],q.get('contact_id',[''])[0],self.headers.get('X-Visitor-Token','')));return
             if path=='/readyz':
                 try:
                     with self.server.store.db() as db:db.execute('SELECT 1 FROM tenants LIMIT 1').fetchone()
@@ -207,7 +207,7 @@ class Handler(BaseHTTPRequestHandler):
                 ws=data.get('workspace') or self.headers.get('X-Workspace')
                 self.respond(200,self.server.store.widget_message(ws,data));return
             if path=='/api/v1/messages/send':
-                ctx=api_tokens.authenticate(self.server.store,self.headers.get('Authorization',''),'messages:read')
+                ctx=api_tokens.authenticate(self.server.store,self.headers.get('Authorization',''),'messages:write')
                 data=json.loads(raw)
                 self.respond(201,self.server.store.api_send_message(ctx,data));return
             if path=='/api/media-upload':

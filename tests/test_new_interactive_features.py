@@ -7,6 +7,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from server import make_server
 from store import Store
@@ -39,7 +40,7 @@ class TestInteractiveFeatures(unittest.TestCase):
         self.assertEqual(res['messages'][0]['direction'], 'in')
 
         # Retrieve widget history
-        hist = self.s.widget_history(self.ws, res['contact_id'])
+        hist = self.s.widget_history(self.ws, res['contact_id'], res['visitor_token'])
         self.assertEqual(len(hist.get('messages', [])), 1)
         self.assertEqual(hist['messages'][0]['body'], 'Hello from embeddable chat widget!')
 
@@ -154,25 +155,14 @@ class TestInteractiveFeatures(unittest.TestCase):
         self.assertTrue(len(thank_you) >= 1)
 
     def test_developer_transactional_api_send(self):
-        """Test POST /api/v1/messages/send developer transactional API with Bearer token."""
-        # Call api_send_message using the context
-        res = self.s.api_send_message(self.ctx, {
-            'phone': '15550404',
-            'name': 'API Contact',
-            'body': 'Your verification code is 849201',
-            'buttons': ['Verify Now', 'Resend']
-        })
-        self.assertEqual(res['status'], 'simulated')
-        self.assertTrue(res['id'])
-        self.assertIn('🔘 Verify Now · Resend', res['body'])
-
-        # Verify contact was auto-created and message exists in state
-        state = self.s.state(self.ctx)
-        contact = next((c for c in state['contacts'] if c['phone'] == '15550404'), None)
-        self.assertIsNotNone(contact)
-        msgs = [m for m in state['messages'] if m['contact'] == contact['id']]
-        self.assertTrue(len(msgs) >= 1)
-        self.assertIn('849201', msgs[0]['body'])
+        contact = self.s.action(self.ctx, 'contact.save', {'name':'API customer', 'phone':'15550404', 'optin':True})
+        import time
+        with self.s.db() as db:
+            self.s._put(db,self.ws,'contact',dict(contact,last_real_inbound=int(time.time())),contact['id'])
+        with patch('store.meta_status',return_value={'live':True}), patch('store.send_text',return_value='wamid.qa') as send:
+            res = self.s.api_send_message(self.ctx, {'phone':'15550404','body':'Your request is ready'})
+        self.assertEqual(res['status'],'accepted')
+        send.assert_called_once_with(self.ws,'15550404','Your request is ready')
 
 
 class TestHTTPRoutes(unittest.TestCase):
@@ -190,7 +180,7 @@ class TestHTTPRoutes(unittest.TestCase):
         self.api_token = tokens.create(self.server.store, self.ctx, {
             'name': 'Server Test Token',
             'days': 30,
-            'scopes': ['messages:read', 'contacts:read']
+            'scopes': ['messages:write', 'contacts:read']
         })['token']
 
     def tearDown(self):
@@ -245,30 +235,21 @@ class TestHTTPRoutes(unittest.TestCase):
         # 4. GET /api/widget/history
         code, headers, body = self.request(
             f'/api/widget/history?workspace={self.ws}&contact_id={contact_id}',
-            headers={'Origin': 'https://external-store.example.com'}
+            headers={'Origin': 'https://external-store.example.com', 'X-Visitor-Token': body['visitor_token']}
         )
         self.assertIn(code, (200, 201))
         self.assertEqual(len(body.get('messages', [])), 1)
         self.assertEqual(body['messages'][0]['body'], 'Need assistance with pricing')
 
     def test_api_v1_messages_send(self):
-        """Test POST /api/v1/messages/send with Bearer token authentication."""
-        code, headers, body = self.request(
-            '/api/v1/messages/send',
-            method='POST',
-            data={
-                'phone': '+15550888',
-                'body': 'Your order #5521 has shipped!',
-                'buttons': ['Track Package', 'Help']
-            },
-            headers={
-                'Authorization': f'Bearer {self.api_token}',
-                'Origin': 'https://backend.mybrand.com'
-            }
-        )
-        self.assertIn(code, (200, 201))
-        self.assertTrue(body.get('id'))
-        self.assertIn('🔘 Track Package · Help', body.get('body'))
+        import time
+        contact=self.server.store.action(self.ctx,'contact.save',{'name':'QA customer','phone':'15550888'})
+        with self.server.store.db() as db:
+            self.server.store._put(db,self.ws,'contact',dict(contact,last_real_inbound=int(time.time())),contact['id'])
+        with patch('store.meta_status',return_value={'live':True}), patch('store.send_text',return_value='wamid.qa'):
+            code, headers, body=self.request('/api/v1/messages/send',method='POST',data={'phone':'+15550888','body':'QA request'},headers={'Authorization':f'Bearer {self.api_token}','Origin':'https://backend.mybrand.com'})
+        self.assertEqual(code,201,body)
+        self.assertEqual(body['status'],'accepted')
 
 
 if __name__ == '__main__':

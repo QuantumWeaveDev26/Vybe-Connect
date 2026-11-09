@@ -1,6 +1,6 @@
-# Read-only public API and personal token management
+# Public API and personal token management
 
-Open Connectors → API tokens (the developer console, #developers). Workspace administrators can create named tokens with contacts:read, messages:read and/or analytics:read permissions, choosing 7, 30, 90 or 365 days. The full bearer token is returned once, displayed in a private modal, and removed from the DOM on close, navigation, logout or workspace change. Save it in the integration's private secret store, not screenshots or source code. If creation completes after the dialog is dismissed, revoke the unseen token from the list and create another.
+Open Connectors → API tokens (the developer console, #developers). Workspace administrators can create named tokens with contacts:read, messages:read, analytics:read and/or messages:write permissions, choosing 7, 30, 90 or 365 days. The full bearer token is returned once, displayed in a private modal, and removed from the DOM on close, navigation, logout or workspace change. Save it in the integration's private secret store, not screenshots or source code. If creation completes after the dialog is dismissed, revoke the unseen token from the list and create another.
 
 Only SHA-256 token hashes are stored. Management endpoints require a current administrator session and exact same-origin writes. Tokens are bound to their workspace and issuing administrator. Missing/expired/revoked keys, wrong secrets, missing scopes and removed/demoted administrators are rejected. Password changes/recovery and MFA enrollment/removal revoke the issuing user's tokens across workspaces. Demotion/removal permanently revokes their keys in the affected workspace, so promoting them later does not revive old access. Logout alone does not revoke integration tokens. Administrators may revoke any key within their current workspace. Revocation blocks subsequent requests; a request already authenticated can finish.
 
@@ -16,7 +16,7 @@ Send `Authorization: Bearer YOUR_PRIVATE_TOKEN`. Session cookies and query-strin
 
 Contacts/messages accept limit (1–100, default 50) and after (a numeric cursor returned as next_after). Pass the returned cursor unchanged until it is null. Lists read current records, not immutable snapshots. Analytics dates span at most 366 inclusive days.
 
-This increment is read-only. It cannot send messages, create campaigns, mutate contacts, retrieve private attachments, invoke AI, manage billing or call providers. WATI's complete public API/MCP compatibility is not claimed. Existing signed agent callbacks remain separate.
+Read scopes cannot send messages or change records. The opt-in messages:write scope permits POST /api/v1/messages/send with a JSON phone and body. It requires an existing contact, a current 24-hour WhatsApp service window, live sending enabled, and the same entitlement and provider checks as the inbox. It returns actual provider acceptance, or an explicit failure/unknown result; it never invents a send. Interactive buttons are rejected until a real adapter is available. No provider retries are automatic. Create campaigns, contact mutation, private attachments, AI and billing remain outside this API. WATI's complete public API/MCP compatibility is not claimed. Existing signed agent callbacks remain separate.
 
 ## Verification
 

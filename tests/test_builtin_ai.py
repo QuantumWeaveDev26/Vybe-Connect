@@ -16,7 +16,7 @@ class BuiltinAITests(unittest.TestCase):
         self.c = self.store.action(self.ctx, 'contact.save', {'name': 'Alice Smith', 'phone': '919876543210'})
         with self.store.db() as db:
             self.msg = self.store._message(db, self.ctx['tenant_id'], self.c['id'], 'Can you send me your pricing and catalog asap?', 'in', 'received')
-        self.env_patch = patch.dict(os.environ, {'TW_AI_ENABLED': 'true'})
+        self.env_patch = patch.dict(os.environ, {'TW_AI_ENABLED': 'true', 'TW_AI_PROVIDER': 'builtin', 'TW_PLATFORM_AI_MANAGED': 'false'})
         self.env_patch.start()
 
     def tearDown(self):

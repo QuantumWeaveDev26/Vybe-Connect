@@ -21,9 +21,8 @@ def ai_status(tenant=None):
     import platform_ai
     if platform_ai.managed(tenant):
         configured=bool(os.environ.get('TW_OPENAI_API_KEY') and os.environ.get('TW_AI_MODEL')=='gpt-6-luna')
-        if configured:
-            access=platform_ai.entitlement(tenant);requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true';paid=bool(access and access['active'])
-            return {'enabled':requested and configured and paid,'requested_enabled':requested,'configured':configured,'model':'gpt-6-luna','models':['gpt-6-luna'],'provider':'VYBE AI','provider_id':'openai','paid_allowed':paid,'credential_source':'platform','platform_managed':True,'allowance':access,'gateway_options':[]}
+        access=platform_ai.entitlement(tenant);requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true';paid=bool(access and access['active'])
+        return {'enabled':requested and configured and paid,'requested_enabled':requested,'configured':configured,'model':'gpt-6-luna','models':['gpt-6-luna'],'provider':'VYBE AI','provider_id':'openai','paid_allowed':paid,'credential_source':'platform','platform_managed':True,'allowance':access,'gateway_options':[]}
     from ai_connection import settings
     saved=settings(tenant)
     if saved and saved.get('provider')=='gateway':
@@ -32,11 +31,11 @@ def ai_status(tenant=None):
         return {'enabled':bool(requested and paid and gateway),'requested_enabled':requested,'model':saved.get('model',''),'models':gateway['models'] if gateway else [],'provider':gateway['label'] if gateway else 'AI gateway unavailable','provider_id':'gateway','configured':bool(gateway and saved.get('key') and saved.get('model') in gateway['models'] and not saved.get('disconnected')),'paid_allowed':paid,'credential_source':'workspace','gateway_id':saved.get('gateway_id',''),'gateway_options':options()}
     provider=os.environ.get('TW_AI_PROVIDER','builtin').lower()
     if saved is not None:provider='openai'
-    model=os.environ.get('TW_AI_MODEL','') or ('gpt-6-luna' if provider=='openai' else 'vybe-local')
+    model=('vybe-rules' if provider in ['builtin','vybe'] else os.environ.get('TW_AI_MODEL','') or ('gpt-6-luna' if provider=='openai' else 'vybe-local'))
     if saved is not None:model=saved.get('model','')
     scoped=os.environ.get('TW_AI_'+str(tenant).upper()+'_MODELS') if tenant else None
     model_list=scoped if scoped is not None else os.environ.get('TW_AI_ALLOWED_MODELS',model)
-    if saved is not None:model_list=model
+    if saved is not None or provider in ['builtin','vybe']:model_list=model
     models=list(dict.fromkeys(value.strip() for value in model_list.split(',') if re.fullmatch(r'[A-Za-z0-9_.:/-]{1,100}',value.strip())))[:20]
     if model not in models:model=models[0] if models else ('gpt-6-luna' if provider=='openai' else 'vybe-local')
     if not models:models=[model]
@@ -45,7 +44,7 @@ def ai_status(tenant=None):
     if saved is not None:paid=saved.get('enabled') is True and not saved.get('disconnected')
     configured=bool(model and (openai_key(tenant) if provider=='openai' else True))
     from ai_gateway import options
-    return {'enabled':requested and (provider in ['ollama','builtin','vybe'] or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'VYBE Connect AI','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options()}
+    return {'enabled':requested and (provider in ['ollama','builtin','vybe'] or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'Workspace rules (no language model)' if provider in ['builtin','vybe'] else 'Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options()}
 
 
 def clean_history(history):
@@ -103,13 +102,15 @@ def ask_local(question,context,history):
                 with urllib.request.urlopen(request,timeout=10) as response: result=json.load(response)
                 text=result.get('message',{}).get('content','')
                 if text:return text[:20000]
-            except Exception:pass
+            except Exception as error:raise ValueError('The local language model is unavailable. No response was generated.') from error
+        raise ValueError('Configure a local loopback Ollama endpoint.')
+    if status['provider_id'] not in ['builtin','vybe']:raise ValueError('Unsupported AI provider.')
     if context.get('analysis_contract'):
         from builtin_ai import analyze_workspace
         return analyze_workspace(context)
     if context.get('_customer_reply'):
-        return json.dumps({'body':'Hello! Thank you for contacting us. We have received your message and an agent will assist you shortly.','confidence':0.95})
+        raise ValueError('Customer AI replies require a connected language model. Workspace rules cannot generate them.')
     if context.get('_agent_builder'):
-        return json.dumps({'name':'Custom Agent','instructions':question,'allowed_actions':['tag','note']})
+        raise ValueError('Agent generation requires a connected language model. Create a rules-based agent manually instead.')
     from builtin_ai import answer_workspace_chat
     return answer_workspace_chat(question,context,history)

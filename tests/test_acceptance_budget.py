@@ -27,3 +27,11 @@ class AcceptanceBudgetTests(unittest.TestCase):
         b.open(req)
         self.assertEqual(json.loads(req.data)['max_output_tokens'],1024)
         self.assertEqual(b.data['reserved_usd'],0);self.assertAlmostEqual(b.data['spent_upper_usd'],0.00015)
+    def test_quota_failure_stops_all_later_provider_requests(self):
+        import urllib.error
+        b=Budget(self.path,0.4)
+        b.native=Mock(side_effect=urllib.error.HTTPError('https://api.openai.com/v1/responses',429,'Quota',{},None))
+        with self.assertRaises(urllib.error.HTTPError):b.open(self.request())
+        with self.assertRaises(ValueError):b.open(self.request())
+        self.assertEqual(b.native.call_count,1)
+        self.assertEqual(b.data['provider_error_status'],429)

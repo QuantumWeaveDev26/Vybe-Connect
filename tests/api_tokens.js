@@ -4,7 +4,7 @@ const form={};let submit,post;
 const c=vm.createContext({Date,Array,Number,document:{addEventListener(){},querySelector(s){return s==='#modal'?modal:s==='#dialog-form'?form:null},querySelectorAll(){return [{value:'contacts:read'}]}},window:{addEventListener(){}},S:{workspace:'one',review:false,data:{context:{role:'admin',user:{id:'owner'}},api_tokens:[{id:'id',name:'<img onerror=bad>',scopes:['contacts:read'],expires:9999999999,revoked:0,last_used:0}]}},location:{origin:'https://example.test'},esc:v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;'),date:String,btn:(label,action,extra)=>`<button data-do="${action}" ${extra||''}>${label}</button>`,showModal(title,html,callback){submit=callback;return html},api:async(path,options)=>{post={path,body:JSON.parse(options.body)};return {token:'synthetic-once-only-token'}},refresh:async()=>true,toast(){}});
 vm.runInContext(fs.readFileSync('static/api-tokens.js','utf8'),c);
 const html=vm.runInContext('apiTokenManagerMarkup()',c);
-assert.match(html,/&lt;img/);assert.doesNotMatch(html,/<img/);assert.match(html,/Read-only/);assert.match(html,/api-token-revoke/);
+assert.match(html,/&lt;img/);assert.doesNotMatch(html,/<img/);assert.match(html,/Scoped access/);assert.match(html,/api-token-revoke/);
 vm.runInContext('S.data.context.role="agent"',c);assert.equal(vm.runInContext('apiTokenManagerMarkup()',c),'');vm.runInContext('S.data.context.role="admin"',c);
 (async()=>{
  await vm.runInContext('apiTokenAction("api-token-create",{})',c);await submit({name:'CRM',days:'30'});

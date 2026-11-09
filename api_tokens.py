@@ -5,7 +5,7 @@ import re
 import secrets
 import time
 
-SCOPES=('contacts:read','messages:read','analytics:read')
+SCOPES=('contacts:read','messages:read','analytics:read','messages:write')
 
 
 class APIError(Exception):
@@ -43,7 +43,7 @@ def listing(store,ctx,strict=True):
 def create(store,ctx,data):
     name=data.get('name');scopes=data.get('scopes');days=data.get('days')
     if not isinstance(name,str) or not name.strip() or len(name)>80:raise APIError('Enter a token name of 1–80 characters.')
-    if not isinstance(scopes,list) or not 1<=len(scopes)<=len(SCOPES) or any(s not in SCOPES for s in scopes) or len(set(scopes))!=len(scopes):raise APIError('Select valid read-only scopes.')
+    if not isinstance(scopes,list) or not 1<=len(scopes)<=len(SCOPES) or any(s not in SCOPES for s in scopes) or len(set(scopes))!=len(scopes):raise APIError('Select valid API scopes.')
     if type(days) is not int or days not in (7,30,90,365):raise APIError('Choose a supported token lifetime.')
     stamp=int(time.time());identifier=secrets.token_hex(8);token='vybe_'+identifier+'_'+secrets.token_urlsafe(32)
     with store.db() as db:

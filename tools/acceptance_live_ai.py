@@ -30,6 +30,8 @@ class Budget:
         self.path.parent.mkdir(parents=True,exist_ok=True)
         self.path.write_text(json.dumps(self.data,indent=2),encoding='utf-8')
     def open(self,request,*args,**kwargs):
+        if self.data.get('provider_blocked'):
+            raise ValueError('Provider acceptance stopped after an account or transport failure. No further requests will be sent.')
         u=urlsplit(request.full_url)
         if u.scheme!='https' or u.netloc!='api.openai.com' or not u.path.startswith('/v1/responses'):raise ValueError('Non-OpenAI network request blocked by acceptance harness.')
         record=None
@@ -42,7 +44,13 @@ class Budget:
             record={'index':len(self.data['calls'])+1,'reserved_upper_usd':bound,'state':'submitted_unknown'}
             self.data['calls'].append(record);self.data['reserved_usd']+=bound;self.save()
             request.data=raw
-        with self.native(request,*args,**kwargs) as response:raw=response.read()
+        try:
+            with self.native(request,*args,**kwargs) as response:raw=response.read()
+        except Exception as error:
+            self.data['provider_blocked']=True
+            self.data['provider_error_status']=getattr(error,'code',None)
+            self.save()
+            raise
         result=json.loads(raw)
         if record:self.pending[result.get('id')]=record
         else:record=self.pending.get(result.get('id'))
