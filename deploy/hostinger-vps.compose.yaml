@@ -20,8 +20,8 @@ services:
           import zipfile
           from pathlib import Path,PurePosixPath
 
-          COMMIT='c1ce1f606e206e28c8cb122f4e6eec1ccd8aab3a'
-          ARCHIVE_SHA256='e24006c344c8012cf2609e77a2205b4d48d9e3dd6910541c5d66d54e67dc41b6'
+          COMMIT='0ecf81d6ea3449005072aeff953ae5d5b64b7ad7'
+          ARCHIVE_SHA256='3b994e4c7f0b2c56e8661f8f4e8a90a32aa24f13de72af5e71717c4dd768cbf2'
           ARCHIVE_URL='https://codeload.github.com/QuantumWeaveDev26/Vybe-Connect/zip/'+COMMIT
           ARCHIVE_ROOT='Vybe-Connect-'+COMMIT
 
@@ -92,7 +92,7 @@ services:
     depends_on:
       source-init:
         condition: service_completed_successfully
-    command: ["python", "-B", "/source/c1ce1f606e206e28c8cb122f4e6eec1ccd8aab3a/server.py", "--port", "8788"]
+    command: ["python", "-B", "/source/0ecf81d6ea3449005072aeff953ae5d5b64b7ad7/server.py", "--port", "8788"]
     user: "10001:10001"
     working_dir: /source
     env_file:
@@ -105,7 +105,8 @@ services:
       TW_BIND: 0.0.0.0
       TW_DATA_DIR: /var/lib/teamwave/active
       TW_SETUP_TOKEN: ${TW_SETUP_TOKEN:-}
-      TW_AI_ENABLED: ${TW_AI_ENABLED:-true}
+      TW_AI_ENABLED: "true"
+      TW_AI_PROVIDER: "builtin"
       TW_PLATFORM_AI_MANAGED: "false"
       TW_BILLING_ENFORCE: "false"
       TW_RECOVERY_ENABLED: ${TW_RECOVERY_ENABLED:-false}
@@ -125,7 +126,7 @@ services:
     cpus: 0.50
     pids_limit: 128
     healthcheck:
-      test: ["CMD", "python", "-B", "/source/c1ce1f606e206e28c8cb122f4e6eec1ccd8aab3a/healthcheck.py"]
+      test: ["CMD", "python", "-B", "/source/0ecf81d6ea3449005072aeff953ae5d5b64b7ad7/healthcheck.py"]
       interval: 30s
       timeout: 10s
       start_period: 20s
