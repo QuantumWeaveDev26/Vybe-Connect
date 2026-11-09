@@ -6,7 +6,7 @@ Live health, readiness and bootstrap returned 200. Anonymous workspace state ret
 
 All 31 main routes rendered at 390×844 and 1280×900 without page-wide horizontal overflow or a page-level internal-error message. All twelve preset setup forms opened with the expected agent names. Browser error capture was empty. These are workflow and navigation checks, not exhaustive button, device or provider certification.
 
-Baseline Python discovery passed 700 tests, one skipped. After repairs, discovery passed 708 tests, one skipped. All 31 JavaScript suites passed. The four acceptance-budget guard checks passed separately. The twelve built-in preset runs passed local rules-engine execution/validation; this does not establish language-model quality.
+Baseline Python discovery passed 700 tests, one skipped. After repairs, discovery passed 708 tests, one skipped. All 32 JavaScript suites passed. The four acceptance-budget guard checks passed separately. The twelve built-in preset runs passed local rules-engine execution/validation; this does not establish language-model quality.
 
 ## Repairs
 
@@ -22,4 +22,10 @@ The new synthetic-only OpenAI acceptance attempt was capped at US$0.10 (below th
 
 The live QA tenant has AI runs paused. Platform OpenAI quota/model/billing and paid-tenant eligibility need successful acceptance before live agents can be called operational. Real Meta delivery/calling, customer Embedded Signup approval, Razorpay subscription lifecycle, Shiprocket operations, recovery-email delivery and complete device testing remain separate gates. UI checks and mocked provider contracts do not close those gates.
 
-Deployment evidence will be added only after the running release and public assets are verified. Production data and private environment values must be preserved.
+## Verified deployment
+
+The final running source is ea9611a9b703cf9a80410293f1dacb77161650ca, archive SHA-256 e74c66e09988aa8ad96988f21e67d37ecc6df815c3570fc3d86d9a640425e392. The original VPS application is healthy and its source initializer exited zero. The deployed index and all 47 checked frontend assets match the final source. Six health/authentication/private-path checks passed, including rejection of unauthenticated widget history. Runtime environment values (compared without depending on their order), private .env contents and normalized data/source mounts are unchanged. A private rollback copy is on the same VPS under /docker/vybe-connect/rollback-20261109-ea9611a.
+
+Post-deployment browser acceptance sent a synthetic website-visitor message into the isolated QA inbox, then sent a team reply back to that same website visitor. The reply appeared automatically while the widget was open, and both messages persisted after reload/redeployment. No WhatsApp send or paid provider call was involved. The visitor was not granted WhatsApp marketing consent. The UI shows Website chat, omits unsupported WhatsApp attachment/template controls for that channel, and no longer claims AI responses or online/reply-time availability. The working workspace-bound setup link and CSP-compatible preview control are under API tokens. Main workspace selection was restored to QuantumWeave AI.
+
+The live runtime reports OpenAI enabled, model gpt-6-luna and a global key configured; this is configuration evidence, not successful inference. It also reports TW_PLATFORM_AI_MANAGED=false, so subscription-funded customer AI mode is not active. Customer subscription activation and live billing/provider acceptance remain open; this audit does not silently enable paid access, buy credits, send WhatsApp tests or certify full WATI parity. The public Compose template now respects environment choices rather than overriding them with a hard-coded built-in provider.
