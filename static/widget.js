@@ -19,6 +19,8 @@
   let visitorPhone = localStorage.getItem('vybe_widget_phone_' + workspace) || '';
   let isOpen = false;
   let isSending = false;
+  let historyTimer=null;
+  let historyLoading=false;
 
   // Inject Styles
   const style = document.createElement('style');
@@ -105,6 +107,8 @@
   function toggle() {
     isOpen = !isOpen;
     win.style.display = isOpen ? 'flex' : 'none';
+    clearInterval(historyTimer);
+    if(isOpen) historyTimer=setInterval(()=>{if(!isSending && contactId && visitorToken)loadHistory()},5000);
     if (isOpen) {
       input.focus();
       if (contactId && visitorToken) loadHistory();
@@ -142,7 +146,8 @@
   }
 
   async function loadHistory() {
-    if (!contactId || !workspace) return;
+    if (!contactId || !workspace || historyLoading) return;
+    historyLoading=true;
     try {
       const res = await fetch(`${apiUrl}/api/widget/history?workspace=${encodeURIComponent(workspace)}&contact_id=${encodeURIComponent(contactId)}`, {headers: {'X-Visitor-Token': visitorToken}});
       if (res.status === 401) { visitorToken=''; contactId=''; localStorage.removeItem('vybe_widget_session_' + workspace); localStorage.removeItem('vybe_widget_contact_' + workspace); return; }
@@ -152,7 +157,7 @@
         msgContainer.innerHTML = '';
         data.messages.forEach(m => renderMessage(m.body, m.direction));
       }
-    } catch (_) {}
+    } catch (_) {} finally {historyLoading=false;}
   }
 
   async function sendMessage(text) {
