@@ -70,7 +70,7 @@
           <div class="vw-avatar">V</div>
           <div>
             <h4>${brandTitle}</h4>
-            <p><span class="vw-dot"></span> Online · Replies in minutes</p>
+            <p><span class="vw-dot"></span> Message our team</p>
           </div>
         </div>
         <button class="vw-close" id="vybe-widget-close" aria-label="Close chat">&times;</button>
@@ -84,7 +84,6 @@
         ${!visitorName ? `
           <div class="vw-input-row" id="vw-visitor-fields">
             <input class="vw-input" id="vw-name" placeholder="Your name" value="${visitorName}" />
-            <input class="vw-input" id="vw-phone" placeholder="Phone or Email" value="${visitorPhone}" />
           </div>
         ` : ''}
         <div class="vw-input-row">
@@ -92,7 +91,7 @@
           <button class="vw-send-btn" id="vw-send" type="button">Send</button>
         </div>
       </div>
-      <div class="vw-footer">Powered by VYBE Connect AI</div>
+      <div class="vw-footer">Powered by VYBE Connect</div>
     </div>
   `;
   document.body.appendChild(root);
