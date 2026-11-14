@@ -19,7 +19,7 @@ def grant(db,tenant):
     id,job=subscriptions[-1];result=job.get('result',{});end=result.get('current_end',0)
     from business_providers import plans
     key=job.get('payload',{}).get('notes',{}).get('plan_key');plan=plans().get(key)
-    active=bool(plan and result.get('provider_status')=='active' and type(end) is int and end>time.time() and job.get('payload',{}).get('plan_id')==plan['plan_id'])
+    active=bool(plan and re.fullmatch(r'sub_[A-Za-z0-9]+',str(result.get('provider_id',''))) and result.get('provider_status')=='active' and type(end) is int and end>time.time() and job.get('payload',{}).get('plan_id')==plan['plan_id'])
     if not active:return {'active':False,'remaining':0,'limit':0}
     limit=plan.get('ai_requests',50)
     if type(limit) is not int or not 1<=limit<=1000:limit=50

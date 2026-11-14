@@ -39,6 +39,9 @@ def action(store,ctx,operation,data):
             lambda result,job:payment_project(result,job,order))
     if operation=='billing.subscribe':
         if not status(tenant,'billing')['ready']:raise ServiceError('Configure and enable platform subscription billing first.')
+        from platform_ai import grant
+        with store.db() as db:
+            if grant(db,tenant)['active']:raise ServiceError('Your subscription is already active.',409)
         plan=plans().get(data.get('plan'))
         if not plan:raise ServiceError('Choose a server-configured plan.')
         remote=razorpay(tenant,'billing','GET','plans/'+plan['plan_id'])

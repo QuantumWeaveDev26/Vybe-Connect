@@ -2,6 +2,10 @@
 
 ## 14 November update
 
+Follow-up: authenticated AI state now exposes only safe current cooldown metadata, allowing Ask and agent screens to pause submission without exposing provider errors or credentials. A pause expires automatically; it does not change the subscription or reserve another request. Managed-customer errors direct users to their subscription or platform support, rather than requesting their own provider key. Billing-only and managed-AI access now share the same configured-plan/provider-identity checks, and an active subscription blocks another checkout on the server before any remote request.
+
+Operators can run `python -B readiness.py` inside the existing runtime. It checks configuration only, prints no secrets, performs no network requests or data writes, and exits 2 because live-provider, mailbox, device and restore acceptance cannot be established by configuration. It neither activates services nor substitutes for Meta review or Razorpay merchant setup.
+
 OpenAI 429 responses now distinguish provider quota/credit limits from rate limits when the provider supplies a code. A bounded per-key cooldown prevents repeated new submissions; existing responses can still be retrieved or cancelled. Known cooldowns are checked before reserving another included request. Explicit 401/403/404/429 rejections are recorded as failed rather than an uncertain submission. Network interruptions retain the unknown-outcome safeguards. Cooldowns are process-local and reset on restart; they are not a replacement for provider account limits.
 
 Active subscriptions no longer offer another checkout, and authenticated, active or terminal subscriptions hide stale checkout URLs. Checkout remains unavailable without configured merchant credentials and verified provider plan IDs. This change does not create plans, authorize recurring payments, add API credits or establish live inference/payment acceptance.

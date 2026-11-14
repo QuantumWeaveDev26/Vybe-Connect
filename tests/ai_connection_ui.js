@@ -24,5 +24,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
  assert.equal(effects.calls[1].data.provider,'gateway');assert.equal(gatewayData.key,'');assert.equal(input.value,'');
  vm.runInContext('S.data.context.role="agent"',ctx);assert.doesNotMatch(vm.runInContext('aiConnectionCard()',ctx),/data-ai-connection/);
  vm.runInContext('S.data.context.role="admin";S.workspace="other";clearAIConnectionDialog()',ctx);assert.equal(modal.innerHTML,'');assert.equal(modal.open,false);
+ vm.runInContext('S.data.services={platform_ai_mode:true};S.data.ai={platform_managed:true,enabled:true,configured:true,provider_pause:{reason:"quota_exhausted"},allowance:{active:true,remaining:1,limit:2}}',ctx);
+ const paused=vm.runInContext('aiConnectionCard()',ctx);assert.match(paused,/Temporarily paused/);assert.doesNotMatch(paused,/Subscription needed|Connect OpenAI/);
  console.log('AI connection UI: admin-only controls, spending off by default, masked key input and workspace-change cleanup passed.');
 })().catch(error=>{console.error(error);process.exitCode=1});

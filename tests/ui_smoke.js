@@ -223,3 +223,11 @@ html=vm.runInContext('templateCards()',context);assert.match(html,/Appointment b
 vm.runInContext("TEMPLATE_PICK.query='does-not-exist'",context);html=vm.runInContext('templateCards()',context);assert.match(html,/No templates match/);assert.equal(vm.runInContext('TEMPLATE_PICK.id',context),null);
 assert.doesNotMatch(vm.runInContext("characterAvatar('<img src=x onerror=alert(1)>')",context),/<img/);
 console.log('Template filter selection and avatar input safety passed.');
+
+// A provider cooldown disables submission without asking subscribed users for a key.
+context.fixture.ai={enabled:true,configured:true,platform_managed:true,allowance:{active:true,remaining:2},provider_pause:{reason:'quota_exhausted',retry_after:60}};
+vm.runInContext('S.data=fixture',context);
+assert.equal(vm.runInContext('aiCanSubmit(S.data.ai)',context),false);
+assert.equal(vm.runInContext('aiRuntimeLabel()',context),'AI temporarily paused');
+assert.doesNotMatch(vm.runInContext('aiSetupGuidance(S.data.ai)',context),/Connect|API key|subscription/);
+context.fixture.ai.provider_pause=null;assert.equal(vm.runInContext('aiCanSubmit(S.data.ai)',context),true);

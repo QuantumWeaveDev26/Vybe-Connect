@@ -23,9 +23,10 @@ function showAI(tab){
   ensureAIScope();if(tab)A.tab=tab;if(tab==='agents'&&S.route==='ai-agents'){$('#workspace-ai')?.remove();return renderAI()}
   let panel=$('#workspace-ai');if(!panel){panel=document.createElement('aside');panel.id='workspace-ai';panel.setAttribute('aria-label','Workspace AI assistant');document.body.append(panel)}renderAI();
 }
-function aiCanSubmit(a){return a.enabled&&a.configured&&(!a.platform_managed||a.allowance?.remaining>0)}
-function aiSetupGuidance(a){return a.platform_managed?(a.allowance?.active?(a.allowance.remaining===0?'Your included AI requests are used up for this billing cycle.':'VYBE AI is temporarily unavailable. Contact support.'):'Choose a subscription to unlock included VYBE AI. No API key needed.'):'Configure an active AI provider. OpenAI also requires workspace paid-call approval. No answer is simulated.'}
-function aiRuntimeLabel(){const a=S.data.ai||{};if(a.platform_managed)return aiCanSubmit(a)?'VYBE AI included':a.allowance?.active?'AI allowance unavailable':'Subscription needed';return a.enabled&&a.configured?(a.provider||'AI')+' configured':['openai','gateway'].includes(a.provider_id)&&!a.paid_allowed?'AI requests paused':'AI not connected'}
+function aiCanSubmit(a){return a.enabled&&a.configured&&!a.provider_pause&&(!a.platform_managed||a.allowance?.remaining>0)}
+function aiPauseGuidance(a){return a.provider_pause?.reason==='rate_limited'?'AI is temporarily busy. Try again shortly.':'AI is temporarily paused. The platform owner needs to check OpenAI billing and limits.'}
+function aiSetupGuidance(a){if(a.provider_pause)return aiPauseGuidance(a);return a.platform_managed?(a.allowance?.active?(a.allowance.remaining===0?'Your included AI requests are used up for this billing cycle.':'VYBE AI is temporarily unavailable. Contact support.'):'Choose a subscription to unlock included VYBE AI. No API key needed.'):'Configure an active AI provider. OpenAI also requires workspace paid-call approval. No answer is simulated.'}
+function aiRuntimeLabel(){const a=S.data.ai||{};if(a.provider_pause)return 'AI temporarily paused';if(a.platform_managed)return aiCanSubmit(a)?'VYBE AI included':a.allowance?.active?'AI allowance unavailable':'Subscription needed';return a.enabled&&a.configured?(a.provider||'AI')+' configured':['openai','gateway'].includes(a.provider_id)&&!a.paid_allowed?'AI requests paused':'AI not connected'}
 function agentStamp(stamp){return stamp?new Date(stamp*1000).toLocaleString():'—'}
 const AGENT_CATALOG_INFO={
  'Daily Digest':['Overview','A clear snapshot of your inbox and campaigns.'],

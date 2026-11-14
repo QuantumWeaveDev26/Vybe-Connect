@@ -19,10 +19,11 @@ def openai_key(tenant):
 
 def ai_status(tenant=None):
     import platform_ai
+    from openai_errors import pause_status
     if platform_ai.managed(tenant):
         configured=bool(os.environ.get('TW_OPENAI_API_KEY') and os.environ.get('TW_AI_MODEL')=='gpt-6-luna')
         access=platform_ai.entitlement(tenant);requested=os.environ.get('TW_AI_ENABLED','false').lower()=='true';paid=bool(access and access['active'])
-        return {'enabled':requested and configured and paid,'requested_enabled':requested,'configured':configured,'model':'gpt-6-luna','models':['gpt-6-luna'],'provider':'VYBE AI','provider_id':'openai','paid_allowed':paid,'credential_source':'platform','platform_managed':True,'allowance':access,'gateway_options':[]}
+        return {'enabled':requested and configured and paid,'requested_enabled':requested,'configured':configured,'model':'gpt-6-luna','models':['gpt-6-luna'],'provider':'VYBE AI','provider_id':'openai','paid_allowed':paid,'credential_source':'platform','platform_managed':True,'allowance':access,'gateway_options':[],'provider_pause':pause_status(openai_key(tenant)) if configured and paid else None}
     from ai_connection import settings
     saved=settings(tenant)
     if saved and saved.get('provider')=='gateway':
@@ -44,7 +45,7 @@ def ai_status(tenant=None):
     if saved is not None:paid=saved.get('enabled') is True and not saved.get('disconnected')
     configured=bool(model and (openai_key(tenant) if provider=='openai' else True))
     from ai_gateway import options
-    return {'enabled':requested and (provider in ['ollama','builtin','vybe'] or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'Workspace rules (no language model)' if provider in ['builtin','vybe'] else 'Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options()}
+    return {'enabled':requested and (provider in ['ollama','builtin','vybe'] or provider=='openai' and paid),'requested_enabled':requested,'model':model,'models':models,'provider':'OpenAI' if provider=='openai' else 'Workspace rules (no language model)' if provider in ['builtin','vybe'] else 'Ollama','provider_id':provider,'configured':configured,'paid_allowed':paid if provider=='openai' else False,'credential_source':'workspace' if saved is not None else 'environment','gateway_options':options(),'provider_pause':pause_status(openai_key(tenant)) if provider=='openai' and configured and paid else None}
 
 
 def clean_history(history):
@@ -63,6 +64,9 @@ def build_system(context):
 def ask_local(question,context,history):
     tenant=context.get('_workspace_id');status=ai_status(tenant)
     selected=context.get('_model') or status['model']
+    if status.get('platform_managed'):
+        if not status['paid_allowed']:raise ValueError('Choose an active subscription to use included VYBE AI. No API key is needed.')
+        if not status['enabled'] or not status['configured']:raise ValueError('VYBE AI is temporarily unavailable. Contact platform support.')
     if status['provider_id']=='openai' and not status['paid_allowed']:raise ValueError('OpenAI paid calls are disabled for this workspace. Enable real usage in Settings > AI assistant connection only after approving provider charges.')
     if not status['enabled'] or not status['configured']:raise ValueError('AI is not configured. Connect a provider in Settings. The platform operator must also enable AI processing.')
     if selected not in status['models']:raise ValueError('The selected AI model is not allowed by the server configuration.')

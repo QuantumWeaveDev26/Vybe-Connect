@@ -20,6 +20,16 @@ def identity(key):
     return hashlib.sha256(key.encode()).hexdigest()
 
 
+def pause_status(key):
+    """Return only safe, current cooldown metadata; never send a provider request."""
+    with _lock:
+        entry = _blocked.get(identity(key))
+        if entry and entry[0] > time.monotonic():
+            return {'reason':entry[1].reason,'retry_after':max(1,int(entry[0]-time.monotonic()))}
+        _blocked.pop(identity(key), None)
+    return None
+
+
 def ensure_available(key):
     with _lock:
         entry = _blocked.get(identity(key))

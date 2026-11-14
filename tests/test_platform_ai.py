@@ -19,6 +19,15 @@ class PlatformAITests(unittest.TestCase):
         self.s.action(self.ctx,'contact.save',{'name':'Allowed','phone':'919000000001'})
         with self.assertRaises(Problem):self.s.action(self.ctx,'ai.connection.save',{'key':'sk-'+'x'*40,'model':'gpt-6-luna','enabled':True})
         state=self.s.state(self.ctx);self.assertNotIn('platform-private-key',json.dumps(state));self.assertNotIn('prefix',state['services']['connections']['billing'])
+
+    def test_customer_ai_errors_request_subscription_or_support_never_a_provider_key(self):
+        context={'_workspace_id':self.t,'_gateway_path':str(self.path)}
+        with patch('ai.request_openai') as provider:
+            with self.assertRaisesRegex(ValueError,'active subscription'):ask_local('Hello',context,[])
+            self.subscription()
+            with patch.dict(os.environ,{'TW_AI_ENABLED':'false'}):
+                with self.assertRaisesRegex(ValueError,'platform support'):ask_local('Hello',context,[])
+            provider.assert_not_called()
     def test_cycle_allowance_is_reserved_before_provider_and_last_answer_is_usable(self):
         self.subscription();context={'_workspace_id':self.t,'_gateway_path':str(self.path),'business':'Synthetic'}
         with patch('ai.request_openai',return_value='Synthetic answer') as call:
@@ -54,6 +63,31 @@ class PlatformAITests(unittest.TestCase):
         with patch.dict(os.environ,{'TW_BILLING_PLANS':'{}'}):
             self.assertFalse(self.s.state(self.ctx)['services']['subscription_active'])
             with self.assertRaises(Problem):self.s.action(self.ctx,'contact.save',{'name':'Blocked','phone':'919000000001'})
+
+    def test_billing_only_mode_requires_current_plan_and_provider_identity(self):
+        self.subscription()
+        with patch.dict(os.environ,{'TW_PLATFORM_AI_MANAGED':'false','TW_BILLING_ENFORCE':'true'}):
+            self.assertTrue(self.s.state(self.ctx)['services']['subscription_active'])
+            with patch.dict(os.environ,{'TW_BILLING_PLANS':'{}'}):
+                self.assertFalse(self.s.state(self.ctx)['services']['subscription_active'])
+                with self.assertRaises(Problem):self.s.action(self.ctx,'contact.save',{'name':'Blocked','phone':'919000000001'})
+            self.subscription(provider_id='')
+            self.assertFalse(self.s.state(self.ctx)['services']['subscription_active'])
+
+    def test_provider_pause_status_is_private_and_does_not_consume_allowance(self):
+        import io,urllib.error,openai_errors
+        self.subscription()
+        error=urllib.error.HTTPError('https://api.openai.com/v1/responses',429,'PRIVATE',{},io.BytesIO(b'{"error":{"code":"insufficient_quota","message":"PRIVATE"}}'))
+        try:
+            openai_errors.http_failure(error,'platform-private-key')
+            status=ai_status(self.t)
+            self.assertEqual(status['provider_pause']['reason'],'quota_exhausted')
+            self.assertEqual(status['allowance']['remaining'],1)
+            self.assertNotIn('PRIVATE',json.dumps(status));self.assertNotIn('platform-private-key',json.dumps(status))
+            with patch('openai_errors.time.monotonic',return_value=10**15):
+                self.assertIsNone(ai_status(self.t)['provider_pause'])
+        finally:
+            with openai_errors._lock:openai_errors._blocked.clear()
 
     def test_known_provider_cooldown_preserves_remaining_subscription_allowance(self):
         import io,urllib.error,openai_errors

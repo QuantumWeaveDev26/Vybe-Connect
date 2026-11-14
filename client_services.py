@@ -15,11 +15,8 @@ def state(store,db,ctx):
     tenant=ctx['tenant_id'];jobs=store._list(db,tenant,'servicejob')
     subscriptions=[job for job in jobs if job['kind']=='billing.subscription']
     current=subscriptions[-1] if subscriptions else None
-    result=current.get('result',{}) if current else {}
-    end=result.get('current_end',0)
-    active=result.get('provider_status')=='active' and type(end) is int and end>int(time.time())
     import platform_ai
-    if platform_ai.managed(tenant):active=platform_ai.grant(db,tenant)['active']
+    active=platform_ai.grant(db,tenant)['active']
     operator=platform_admin(ctx);connections={provider:status(tenant,provider) for provider in ('payments','shipping','billing')}
     if platform_ai.enabled() and not operator:connections={k:{field:v[field] for field in ('provider','ready','configured','enabled','mode')} for k,v in connections.items()}
     return {'connections':connections,'platform_ai_mode':platform_ai.enabled(),

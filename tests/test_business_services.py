@@ -229,3 +229,11 @@ class BusinessServiceTests(unittest.TestCase):
         job={'result':{'provider_id':'sub_recorded'}}
         for resource in [{'id':'sub_other','status':'active','current_end':1},{'id':'sub_recorded','status':'unexpected','current_end':1},{'id':'sub_recorded','status':'active','current_end':'tomorrow'},{'id':'sub_recorded','status':'active','current_end':True}]:
             with self.subTest(resource=resource),self.assertRaises(Exception):payment_services.validate_resource_identity(job,resource,'billing')
+
+    def test_active_subscription_rejects_another_checkout_before_any_provider_request(self):
+        plan={'starter':{'plan_id':'plan_fixture','name':'Starter','amount_minor':50000,'currency':'INR','interval':'monthly','cycles':12}}
+        with self.s.db() as db:
+            self.s._put(db,self.t,'servicejob',{'kind':'billing.subscription','reference':'workspace-0','created':1,'status':'created','payload':{'plan_id':'plan_fixture','notes':{'plan_key':'starter'}},'result':{'provider_id':'sub_fixture','provider_status':'active','current_end':int(time.time())+3600}})
+        with patch.dict(os.environ,{'TW_BILLING_PLANS':json.dumps(plan)}),patch('payment_services.razorpay') as provider:
+            with self.assertRaisesRegex(Problem,'already active'):self.act('billing.subscribe',plan='starter')
+            provider.assert_not_called()
