@@ -23,6 +23,23 @@ class ChatJobTests(unittest.TestCase):
         return {'id':'resp_test1','status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps({'answer':answer,'references':references if references is not None else [{'label':'Pricing inquiry','contact_id':self.c['id'],'message_ids':[self.m['id']]}]})}]}]}
     def advance(self):self.clock.stop();self.clock=patch('chat_jobs.now',return_value=2000000010);self.clock.start()
 
+    def test_known_openai_rejection_is_failed_without_resubmission(self):
+        from openai_errors import OpenAIRequestError
+        job=self.start()
+        with patch('chat_jobs.openai_create',side_effect=OpenAIRequestError('Quota exhausted',429,'quota_exhausted')) as provider:
+            self.assertTrue(self.s.process_chat_job_once())
+            self.assertFalse(self.s.process_chat_job_once())
+        with self.s.db() as db:result=self.s._get(db,self.ctx['tenant_id'],'aijob',job['id'])
+        self.assertEqual(result['status'],'failed');self.assertEqual(provider.call_count,1)
+
+    def test_cooldown_is_not_recorded_as_a_submitted_unknown_request(self):
+        from openai_errors import OpenAIRequestError
+        job=self.start()
+        with patch('openai_errors.ensure_available',side_effect=OpenAIRequestError('Paused',429,'rate_limited')),patch('chat_jobs.openai_create') as provider:
+            self.assertTrue(self.s.process_chat_job_once())
+        with self.s.db() as db:result=self.s._get(db,self.ctx['tenant_id'],'aijob',job['id'])
+        self.assertEqual(result['status'],'failed');self.assertFalse(result.get('submitted'));provider.assert_not_called()
+
     def test_queued_cancel_does_not_call_provider(self):
         job=self.start();self.s.action(self.ctx,'ai.chat.cancel',{'chat_id':job['chat_id']})
         with patch('chat_jobs.openai_create') as provider:self.assertFalse(self.s.process_chat_job_once());provider.assert_not_called()

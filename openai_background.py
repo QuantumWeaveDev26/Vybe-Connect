@@ -3,6 +3,7 @@ import json
 import re
 import urllib.request
 import urllib.error
+from openai_errors import ensure_available,http_failure
 from agent_builder import agent_schema
 
 
@@ -15,10 +16,11 @@ def chat_schema():
 
 
 def exchange(key,method,path,payload=None):
+    if method=='POST' and not path:ensure_available(key)
     request=urllib.request.Request('https://api.openai.com/v1/responses'+path,data=json.dumps(payload).encode() if payload is not None else None,headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'},method=method)
     try:
         with urllib.request.urlopen(request,timeout=30) as response:result=json.load(response)
-    except urllib.error.HTTPError as e:raise ValueError('OpenAI background request returned HTTP '+str(e.code)+'.') from None
+    except urllib.error.HTTPError as e:raise http_failure(e,key,background=True) from None
     except Exception:raise ValueError('OpenAI background request outcome could not be confirmed.') from None
     if not isinstance(result,dict):raise ValueError('OpenAI returned an invalid background response.')
     return result

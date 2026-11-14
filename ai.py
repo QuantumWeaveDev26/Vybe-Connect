@@ -85,6 +85,8 @@ def ask_local(question,context,history):
         return gateway_request(tenant,context.get('_gateway_path'),selected,system,question,clean_history(history),bool(context.get('analysis_contract')) and schema is None,schema)
     if status['provider_id']=='openai':
         from platform_ai import reserve
+        from openai_errors import ensure_available
+        ensure_available(openai_key(tenant))
         reserve(tenant,context.get('_gateway_path'),system,question,clean_history(history))
         if context.get('_customer_reply'):
             from customer_reply_contract import customer_schema

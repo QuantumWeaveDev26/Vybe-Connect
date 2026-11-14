@@ -1,5 +1,13 @@
 # Customer subscription and platform-funded AI
 
+## 14 November update
+
+OpenAI 429 responses now distinguish provider quota/credit limits from rate limits when the provider supplies a code. A bounded per-key cooldown prevents repeated new submissions; existing responses can still be retrieved or cancelled. Known cooldowns are checked before reserving another included request. Explicit 401/403/404/429 rejections are recorded as failed rather than an uncertain submission. Network interruptions retain the unknown-outcome safeguards. Cooldowns are process-local and reset on restart; they are not a replacement for provider account limits.
+
+Active subscriptions no longer offer another checkout, and authenticated, active or terminal subscriptions hide stale checkout URLs. Checkout remains unavailable without configured merchant credentials and verified provider plan IDs. This change does not create plans, authorize recurring payments, add API credits or establish live inference/payment acceptance.
+
+The historical deployment notes below are dated evidence. Recheck runtime mode and provider readiness before enabling customer access.
+
 When TW_PLATFORM_AI_MANAGED=true, new customer workspaces use the platform OpenAI key and gpt-6-luna. Customers cannot save/remove AI provider credentials or run platform provider diagnostics. They see subscription status, included requests and their WhatsApp connection. The operator retains service configuration screens; Services defaults to Subscription.
 
 Verified Razorpay subscription state, current period end and a matching configured plan are required for customer AI. Core mutation access also requires an active subscription. Existing explicitly approved operator workspaces retain their current AI connection. Keys are never returned in public state. No customer token copying or fake subscription activation is used.

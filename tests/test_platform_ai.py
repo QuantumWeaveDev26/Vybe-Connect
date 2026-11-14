@@ -54,3 +54,20 @@ class PlatformAITests(unittest.TestCase):
         with patch.dict(os.environ,{'TW_BILLING_PLANS':'{}'}):
             self.assertFalse(self.s.state(self.ctx)['services']['subscription_active'])
             with self.assertRaises(Problem):self.s.action(self.ctx,'contact.save',{'name':'Blocked','phone':'919000000001'})
+
+    def test_known_provider_cooldown_preserves_remaining_subscription_allowance(self):
+        import io,urllib.error,openai_errors
+        self.subscription()
+        plan=json.loads(os.environ['TW_BILLING_PLANS']);plan['starter']['ai_requests']=2
+        context={'_workspace_id':self.t,'_gateway_path':str(self.path)}
+        def reject(*args,**kwargs):
+            error=urllib.error.HTTPError('https://api.openai.com/v1/responses',429,'quota',{},io.BytesIO(b'{"error":{"code":"insufficient_quota"}}'))
+            raise openai_errors.http_failure(error,'platform-private-key')
+        try:
+            with patch.dict(os.environ,{'TW_BILLING_PLANS':json.dumps(plan)}),patch('ai.request_openai',side_effect=reject) as provider:
+                for _ in range(2):
+                    with self.assertRaises(openai_errors.OpenAIRequestError):ask_local('Hello',context,[])
+                self.assertEqual(provider.call_count,1)
+                self.assertEqual(platform_ai.entitlement(self.t)['remaining'],1)
+        finally:
+            with openai_errors._lock:openai_errors._blocked.clear()

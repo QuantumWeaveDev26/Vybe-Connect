@@ -199,6 +199,9 @@ def process_chat_job_once(store):
             scope={c['contact_id']:[m['id'] for m in c['messages']] for c in context['recent_conversations']}
             knowledge_scope={}
             for passage in context['knowledge_passages']:knowledge_scope.setdefault(passage['document_id'],[]).append(passage['chunk_id'])
+            if job['provider']=='openai':
+                from openai_errors import ensure_available
+                ensure_available(openai_key(tenant))
             job=commit_job(store,tenant,job['id'],lease,{'history_hash':history_hash(chat['messages']),'reference_scope':scope,'knowledge_scope':knowledge_scope,'phase':'Requesting model','submitted':True})
             if job['cancel_requested']:
                 commit_job(store,tenant,job['id'],lease,{'status':'cancelled','phase':'Cancelled before submission','cancel_outcome':'not_submitted','lease':'','lease_until':0});return True
@@ -207,6 +210,8 @@ def process_chat_job_once(store):
                 answer=ask_local(job['question'],context,history);finish_answer(store,tenant,job,lease,{},local_answer=answer);return True
             stage='create'
             from platform_ai import reserve
+            from openai_errors import ensure_available
+            ensure_available(openai_key(tenant))
             reserve(tenant,str(store.path),build_system(context),job['question'],history)
             if job.get('purpose')=='agent_builder':result=openai_create_agent(openai_key(tenant),job['model'],builder_system(ctx['workspace']['name']),job['question'],history)
             else:result=openai_create(openai_key(tenant),job['model'],build_system(context),job['question'],history)
@@ -224,7 +229,9 @@ def process_chat_job_once(store):
         with store.db() as db:
             db.execute('BEGIN IMMEDIATE');current=store._get(db,tenant,'aijob',job['id'])
             if current['lease']==lease:
-                unknown=current.get('submitted') and not current.get('provider_id') and current.get('provider')=='openai'
+                from openai_errors import OpenAIRequestError
+                rejected=isinstance(error,OpenAIRequestError) and error.http_status in (401,403,404,429)
+                unknown=current.get('submitted') and not current.get('provider_id') and current.get('provider')=='openai' and not rejected
                 cancelled=current.get('cancel_requested') and current.get('submitted')
                 message=str(error) if isinstance(error,(ValueError,ChatError)) else 'AI job failed. No answer was published.'
                 retries=current.get('read_failures',0)+1
