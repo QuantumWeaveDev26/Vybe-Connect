@@ -1,3 +1,4 @@
+from text_templates import render as render_text,contact_variables
 """Workspace-scoped growth/support workflows. No implicit provider execution."""
 import hashlib
 import hmac
@@ -125,7 +126,10 @@ def action(store,ctx,operation,data):
             if not any(result[k] for k in ('reply','note','tag')):raise Problem('Add a reply draft, private note or tag.')
         elif op=='macro.apply':
             c=store._get(db,t,'contact',data.get('contact_id'));m=store._get(db,t,'macro',data.get('id'))
-            if m['reply']:store._message(db,t,c['id'],m['reply'].replace('{{name}}',c['name']),'out','draft')
+            if m['reply']:
+                try:body=render_text(m['reply'],contact_variables(c))
+                except ValueError as error:raise Problem(str(error)) from None
+                store._message(db,t,c['id'],body,'out','draft')
             if m['note']:
                 import internal_comments
                 internal_comments.create(store,db,ctx,c,m['note'],[])

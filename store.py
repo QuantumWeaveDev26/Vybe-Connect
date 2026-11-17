@@ -257,8 +257,8 @@ class Store:
         try:return inspect_invite(self,token)
         except InviteError as e:raise Problem(str(e),e.code)
 
-    def message_analytics(self,ctx,start,end):
-        try:return traffic_report(self,ctx,start,end)
+    def message_analytics(self,ctx,start,end,export=False):
+        try:return traffic_report(self,ctx,start,end,export=export)
         except ReportError as e:raise Problem(str(e),e.code)
 
     def accept_invitation(self,data):
@@ -327,6 +327,10 @@ class Store:
             data['gateway_usage']=ai_gateway.usage(self,db,tenant)
             data['api_tokens']=api_tokens.listing(self,ctx,strict=False)
             data['members']=[dict(x) for x in db.execute('SELECT u.id,u.name,u.email,m.role FROM users u JOIN members m ON m.user=u.id WHERE m.tenant=?',(tenant,))]
+            from member_permissions import policy
+            data['permissions']=policy(self,db,tenant,ctx['user']['id'])
+            if ctx['role']=='admin':
+                for member in data['members']:member['permissions']=policy(self,db,tenant,member['id'])
             data['product_feedback']=product_feedback.state(db,ctx)
             data.update(internal_comments.state(self,db,ctx))
             data['team_operations']=team_operations.state(self,db,tenant)
@@ -353,7 +357,8 @@ class Store:
             data['owned_commerce']=owned_commerce.state(self,db,tenant)
             data['services']=client_services.state(self,db,ctx)
             data['provider_checks']=provider_checks.state(self,db,tenant)
-            data['calling']=dict(whatsapp_calls.status(tenant),calls=[whatsapp_calls.public(c) for c in self._list(db,tenant,'voicecall')[-100:]],requests=[whatsapp_calls.public(c) for c in self._list(db,tenant,'callpermission')[-50:]])
+            data['calling']=dict(whatsapp_calls.status(tenant),calls=whatsapp_calls.recent_calls(self,db,tenant),requests=[whatsapp_calls.public(c) for c in self._list(db,tenant,'callpermission')[-50:]])
+            if not data['permissions']['calling']:data['calling'].update(calls=[],requests=[],access=False)
             data['queue']=[dict(x) for x in db.execute('SELECT id,campaign,contact,status,due,error,external_id FROM outbound WHERE tenant=? ORDER BY rowid DESC LIMIT 500',(tenant,))]
         data['whatsapp_connection']=embedded_signup.state(self,ctx)
         return dict(data,context={k:v for k,v in ctx.items() if not k.startswith('_')},meta=meta_status(tenant),ai=ai_status(tenant),sandbox=os.environ.get('TW_SANDBOX','false').lower()=='true')
@@ -372,6 +377,9 @@ class Store:
     def action(self,ctx,action,d):
         if not isinstance(action,str) or not 1<=len(action)<=100 or not isinstance(d,dict):raise Problem('Use a named action and an object payload.')
         t=ctx['tenant_id']; user=ctx['user']['id']
+        if action=='member.permissions':
+            from member_permissions import save
+            return save(self,ctx,d)
         try:client_services.enforce(self,ctx,action)
         except ServiceError as e:raise Problem(str(e),e.code)
         if action.startswith('google.'):
@@ -572,6 +580,10 @@ class Store:
                 if assignee and not db.execute('SELECT 1 FROM members WHERE tenant=? AND user=?',(t,assignee)).fetchone(): raise Problem('Choose a member of this workspace.')
                 team_operations.assignment(self,db,t,c['id'],c.get('assignee'),assignee,user,'manual')
                 updated_c=dict(c,status=status,assignee=assignee)
+                if status!=c['status']:
+                    self._put(db,t,'conversationevent',dict(contact_id=c['id'],before=c['status'],after=status,actor=user,created=now(),opened=c.get('report_opened')))
+                    if status=='open':updated_c['report_opened']=now()
+                    elif status=='solved':updated_c.pop('report_opened',None)
                 if os.environ.get('TW_SANDBOX','false').lower()=='true' and status=='solved' and c.get('status')!='solved' and (now()-c.get('csat_survey_sent',0))>3600:
                     updated_c['csat_survey_sent']=now()
                     self._message(db,t,c['id'],'Thank you for contacting us! How would you rate your support experience today?\n\n🔘 ⭐ 5 - Excellent · ⭐ 4 - Good · ⭐ 3 - Fair · ⭐ 2 - Poor · ⭐ 1 - Very Poor','out','simulated')
@@ -1106,6 +1118,8 @@ class Store:
             if changed:enqueue_event(self,db,tenant,'message.status',str(external)+':'+status,{'message_id':row['id'] if row else None,'provider_id':external,'status':status})
 
     def export_contacts(self,ctx):
+        from member_permissions import require
+        require(self,ctx,'exports')
         def safe(s):
             s=str(s)
             return "'"+s if s.lstrip().startswith(('=','+','-','@','\t','\r')) else s

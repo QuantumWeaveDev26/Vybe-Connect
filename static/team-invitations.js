@@ -42,12 +42,13 @@ async function openInvitation(){
 function memberAccessControls(member){
   if(S.data.context.role!=='admin')return '';
   if(member.role==='admin'&&S.data.members.filter(m=>m.role==='admin').length===1)return '<span class="hint">Sole administrator</span>';
-  return btn('Change role','member-role',`data-id="${esc(member.id)}"`,'small')+btn('Remove access','member-remove',`data-id="${esc(member.id)}"`,'small ghost danger');
+  return (member.role==='agent'?btn('Permissions','member-permissions',`data-id="${esc(member.id)}"`,'small'):'')+btn('Change role','member-role',`data-id="${esc(member.id)}"`,'small')+btn('Remove access','member-remove',`data-id="${esc(member.id)}"`,'small ghost danger');
 }
 function memberAccessAction(action,el){
   const member=S.data.members.find(m=>m.id===el.dataset.id);if(!member)throw new Error('Member no longer available.');
   const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user;
   const perform=async(operation,data)=>{if(!same())throw new Error('Workspace changed.');await act(operation,{id:member.id,...data});if(!same())return;$('#modal').close();await refresh()};
+  if(action==='member-permissions'){const p=member.permissions||{calling:true,reports:true,exports:true,version:0};return showModal('Workspace permissions',`<p>${esc(member.name)}</p>`+[['calling','Handle calls'],['reports','View reports'],['exports','Export data']].map(([key,label])=>field(key,label,p[key]!==false,'checkbox')).join(''),values=>perform('member.permissions',{version:p.version||0,permissions:values}),'Save permissions')}
   if(action==='member-role')return showModal('Change workspace role',`<p>${esc(member.name)} · ${esc(member.email)}</p>`+field('role','Role',member.role,'select',[['agent','Agent'],['admin','Administrator']])+'<p class="hint">Administrators manage configuration, campaigns, automations and team access. Losing administrator status revokes their pending invitations. Keep at least one administrator.</p>',data=>perform('member.role',data),'Save role');
   if(action==='member-remove')return showModal('Remove workspace access',`<p>Remove <strong>${esc(member.name)}</strong> from <strong>${esc(S.data.context.workspace.name)}</strong>?</p><p>Their account and other workspace memberships remain. Open assignments become unassigned; conversation history remains. Pending invitations issued by a removed administrator are revoked. Existing in-flight requests cannot be recalled.</p>`,()=>perform('member.remove',{}),'Remove workspace access');
 }

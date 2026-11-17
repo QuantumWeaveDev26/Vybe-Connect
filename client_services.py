@@ -55,6 +55,6 @@ def enforce(store,ctx,operation):
     import platform_ai
     if (os.environ.get('TW_BILLING_ENFORCE','false').lower()!='true' and not platform_ai.enabled()) or platform_admin(ctx) or ctx.get('review_only'):return
     # Keep billing, account security, exports and read access available for recovery.
-    if operation.startswith(('billing.','invite.','notification.','feedback.')) or operation in ('calls.end','calls.reject','calls.release','services.release-failed'):return
+    if operation.startswith(('billing.','invite.','notification.','feedback.')) or operation in ('calls.end','calls.reject','calls.release','calls.session','calls.history','services.release-failed'):return
     with store.db() as db:current=state(store,db,ctx)
     if not current['subscription_active']:raise ServiceError('An active verified subscription is required for workspace changes.',402)

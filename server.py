@@ -129,7 +129,7 @@ class Handler(BaseHTTPRequestHandler):
                 review=self.server.review;ctx=review.context
                 if path=='/api/review/state':self.respond(200,review.state());return
                 query=parse_qs(urlsplit(self.path).query)
-                if path=='/api/review/analytics':self.respond(200,review.store.message_analytics(ctx,query.get('from',[''])[0],query.get('to',[''])[0]));return
+                if path=='/api/review/analytics':self.respond(200,review.store.message_analytics(ctx,query.get('from',[''])[0],query.get('to',[''])[0],export=query.get('export')==['csv']));return
                 if path=='/api/review/chat-source':self.respond(200,review.store.source_messages(ctx,query.get('contact_id',[''])[0],query.get('ids',[''])[0].split(',')));return
                 if path=='/api/review/knowledge-source':self.respond(200,review.store.knowledge_passage(ctx,query.get('document_id',[''])[0],query.get('chunk_id',[''])[0]));return
                 if path=='/api/review/export':self.respond(200,review.store.export_contacts(ctx),'text/csv; charset=utf-8');return
@@ -139,7 +139,7 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/api/state': self.respond(200,self.server.store.state(self.context()));return
             if path=='/api/analytics':
                 query=parse_qs(urlsplit(self.path).query)
-                self.respond(200,self.server.store.message_analytics(self.context(),query.get('from',[''])[0],query.get('to',[''])[0]));return
+                self.respond(200,self.server.store.message_analytics(self.context(),query.get('from',[''])[0],query.get('to',[''])[0],export=query.get('export')==['csv']));return
             if path=='/api/knowledge-source':
                 query=parse_qs(urlsplit(self.path).query)
                 self.respond(200,self.server.store.knowledge_passage(self.context(),query.get('document_id',[''])[0],query.get('chunk_id',[''])[0]));return

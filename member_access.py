@@ -24,6 +24,7 @@ def action(store,ctx,operation,data):
         if operation=='member.role':db.execute('UPDATE members SET role=? WHERE tenant=? AND user=?',(data['role'],tenant,target))
         else:
             db.execute('DELETE FROM members WHERE tenant=? AND user=?',(tenant,target))
+            db.execute("DELETE FROM entities WHERE tenant=? AND kind='memberpermission' AND json_extract(data,'$.user')=?",(tenant,target))
             team_operations.removed_member(store,db,tenant,target)
             for kind,field in [('contact','assignee'),('task','owner')]:
                 rows=db.execute("SELECT id,data FROM entities WHERE tenant=? AND kind=? AND json_extract(data,?)=?",(tenant,kind,'$.'+field,target)).fetchall()

@@ -14,6 +14,7 @@ from customer_orders import customer_orders
 from team_operations import team_record
 from ai_handoff import handoff,active_member
 from reply_tracking import accepted as track_accepted_reply
+from ai_context import customer_conversation
 
 ACTIVE={'queued','generating','sending'}
 
@@ -28,7 +29,7 @@ def automatic_allowed(tenant):return os.environ.get('TW_AI_'+tenant.upper()+'_AU
 
 def runtime(tenant):
     ai=ai_status(tenant);meta=meta_status(tenant)
-    return {'ai_ready':ai['enabled'] and ai['configured'],'automatic_allowed':automatic_allowed(tenant),'live_ready':bool(ai['enabled'] and ai['configured'] and automatic_allowed(tenant) and meta['live'] and meta.get('configured'))}
+    return {'ai_ready':ai['enabled'] and ai['configured'] and not ai.get('provider_pause'),'automatic_allowed':automatic_allowed(tenant),'live_ready':bool(ai['enabled'] and ai['configured'] and not ai.get('provider_pause') and automatic_allowed(tenant) and meta['live'] and meta.get('configured'))}
 
 
 def public_job(job):return {k:job[k] for k in ['id','contact_id','assistant_id','status','phase','created','updated','error','reason','message_id','knowledge_references'] if k in job}
@@ -144,7 +145,7 @@ def process_once(store):
             owner=owner_context(db,tenant,assistant['owner']);messages=conversation(db,tenant,contact['id']);question=next((m['body'] for m in reversed(messages) if m['direction']=='in'),'')
             if not messages or messages[-1]['direction']!='in' or messages[-1]['id']!=job['inbound_id']:
                 store._put(db,tenant,'customerreplyjob',dict(job,status='superseded',phase='Conversation was answered or newer input arrived',updated=stamp),job['id']);continue
-            context={'_workspace_id':tenant,'_model':job['model'],'_customer_reply':True,'business':owner['business'],'support_instructions':assistant['instructions'],'conversation':[{'direction':m['direction'],'text':m['body'][:2000],'truncated':len(m['body'])>2000} for m in messages],
+            context={'_workspace_id':tenant,'_model':job['model'],'_customer_reply':True,'business':owner['business'],'support_instructions':assistant['instructions'],'conversation':customer_conversation(messages),
                      'knowledge_sources':[{k:s[k] for k in ['id','title','body']} for s in store._list(db,tenant,'knowledge') if s['enabled'] and s['id'] in assistant['source_ids']],
                      'knowledge_passages':retrieve(store,db,tenant,question,assistant['source_ids']),'customer_orders':customer_orders(store,db,tenant,contact['id']) if assistant.get('order_access') else []}
             has_knowledge=bool(context['knowledge_sources'] or context['knowledge_passages'] or context['customer_orders'])

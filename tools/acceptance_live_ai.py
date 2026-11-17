@@ -76,7 +76,7 @@ class Budget:
         self.save()
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--allow-paid',action='store_true');ap.add_argument('--max-cost-usd',type=float,default=0);ap.add_argument('--key-file',type=Path,required=True);ap.add_argument('--report',type=Path,required=True);args=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true',help='One preset and one grounded customer-reply test only');ap.add_argument('--allow-paid',action='store_true');ap.add_argument('--max-cost-usd',type=float,default=0);ap.add_argument('--key-file',type=Path,required=True);ap.add_argument('--report',type=Path,required=True);args=ap.parse_args()
     if not args.allow_paid or not 0<args.max_cost_usd<=0.4:ap.error('Explicit --allow-paid and a cap of at most US$0.40 are required.')
     match=re.search(r'sk-[A-Za-z0-9_-]{20,}',args.key_file.read_text(encoding='utf-8-sig'))
     if not match:raise ValueError('No key found in the private file.')
@@ -92,7 +92,7 @@ def main():
         s.inbound(tenant,{'id':'synthetic-inbound-qa','from':contact['phone'],'text':{'body':'I want to buy the Starter plan. What are your opening hours? Please help before Friday.'},'timestamp':str(int(time.time()))})
         knowledge=s.action(ctx,'knowledge.save',{'title':'Approved QA hours','body':'Synthetic QA Shop opens at 9 AM and closes at 5 PM, Monday to Friday. No refund policy has been approved.','enabled':True})
         with patch('urllib.request.urlopen',side_effect=budget.open):
-            for name,instructions in presets:
+            for name,instructions in (presets[:1] if args.smoke else presets):
                 def run(name=name,instructions=instructions):
                     agent=s.action(ctx,'aiagent.save',{'name':name,'instructions':instructions})
                     result=s.action(ctx,'ai.run',{'agent_id':agent['id']})
@@ -112,8 +112,9 @@ def main():
                 state=s.state(ctx);chat=next(c for c in state['aichats'] if c['id']==job['chat_id']);answer=chat['messages'][-1]
                 assert answer['role']=='assistant' and answer['content'].strip()
                 return {'status':current['status'],'answer':answer['content'][:240],'proposal':bool(answer.get('agent_draft'))}
-            budget.check('Queued AI Ask with grounded citations',lambda:queued('chat','What are our approved opening hours? Answer briefly and cite the supplied knowledge.'))
-            budget.check('AI agent builder proposal',lambda:queued('agent_builder','Create a manual agent that reviews unanswered chats. Do not schedule or send anything.'))
+            if not args.smoke:
+                budget.check('Queued AI Ask with grounded citations',lambda:queued('chat','What are our approved opening hours? Answer briefly and cite the supplied knowledge.'))
+                budget.check('AI agent builder proposal',lambda:queued('agent_builder','Create a manual agent that reviews unanswered chats. Do not schedule or send anything.'))
             def customer_reply():
                 s.action(ctx,'customer-assistant.save',{'name':'QA Support','instructions':'Answer only from approved business knowledge. Hand off unknown policies.','enabled':True,'mode':'draft','keywords':[],'source_ids':[knowledge['id']],'daily_limit':2})
                 s.inbound(tenant,{'id':'synthetic-customer-support-qa','from':contact['phone'],'text':{'body':'What time do you open and close?'},'timestamp':str(int(time.time()))})
