@@ -765,8 +765,9 @@ class Store:
         context['queue_counts']={status:sum(q['status']==status for q in state['queue']) for status in ['queued','sending','accepted','sent','delivered','read','failed','unknown','cancelled']}
         context['queue_scope']='Counts cover at most 500 most recently recorded queue rows, not lifetime totals.'
         recent={}
+        from ai_context import conversation_evidence
         for message in state['messages']:
-            if message['direction'] in ['in','out']:
+            if conversation_evidence(message):
                 recent.setdefault(message['contact'],[]).append(message)
         contacts={c['id']:c for c in state['contacts']}
         context['current_timestamp']=now()
@@ -846,6 +847,10 @@ class Store:
         agent_id=d.get('agent_id')
         if not agent_id:raise Problem('Choose a saved AI agent.')
         token=lease or uid();tenant=ctx['tenant_id'];result=None;error=''
+        with self.db() as db:
+            member=db.execute('SELECT role FROM members WHERE tenant=? AND user=?',(tenant,ctx['user']['id'])).fetchone()
+            if not member or trigger=='scheduled' and member['role']!='admin':raise Problem('Workspace access changed before agent execution.',403)
+            ctx=dict(ctx,role=member['role'])
         if not lease:
             with self.db() as db:
                 db.execute('BEGIN IMMEDIATE')
@@ -879,6 +884,7 @@ class Store:
                 tenant=agent.pop('tenant')
                 configured=ai_status(tenant)
                 if not configured['enabled'] or not configured['configured']:continue
+                if configured.get('provider_pause') or configured.get('platform_managed') and configured.get('allowance',{}).get('remaining',0)<=0:continue
                 ctx=scheduled_context(db,tenant,agent.get('schedule_owner'))
                 if not ctx:
                     self._put(db,tenant,'aiagent',dict(agent,schedule_enabled=False,next_run=0,last_error='Schedule paused: its administrator no longer has access.'),agent['id'])
@@ -906,6 +912,9 @@ class Store:
         with self.db() as db:
             run=self._put(db,tenant,'airun',{'agent_id':d['agent_id'],'agent_name':context['agent']['name'],'status':'running','created':stamp,'started_by':ctx['user']['id'],'summary':'','scope':context['conversation_scope'],'sample_contacts':len(context['recent_conversations']),'trigger':trigger})
         try:
+            from ai_context import analysis_context
+            analysis_context(context)
+            run=dict(run,sample_contacts=len(context['recent_conversations']),scope=context['conversation_scope']+' '+context['input_scope'])
             answer=ask_local('Analyze the supplied workspace using this agent role. Follow analysis_contract and return JSON only. Propose actions for review; never execute them.',context,[])
             summary,findings=parse_findings(answer,context)
         except (ValueError,TypeError,KeyError) as e:
@@ -916,15 +925,16 @@ class Store:
         with self.db() as db:
             db.execute('BEGIN IMMEDIATE')
             current=self._get(db,tenant,'aiagent',d['agent_id'])
-            if current.get('archived') or current.get('version',0)!=context['agent']['version'] or not lease_valid(db,tenant,d['agent_id'],lease,now()):
-                self._put(db,tenant,'airun',dict(run,status='interrupted',error='Agent changed, archived or execution lease lost.',finished=now()),run['id'])
+            member=db.execute('SELECT role FROM members WHERE tenant=? AND user=?',(tenant,ctx['user']['id'])).fetchone()
+            if not member or trigger=='scheduled' and member['role']!='admin' or current.get('archived') or current.get('version',0)!=context['agent']['version'] or not lease_valid(db,tenant,d['agent_id'],lease,now()):
+                self._put(db,tenant,'airun',dict(run,status='interrupted',error='Workspace access or agent changed, archived or execution lease lost.',finished=now()),run['id'])
                 lost=True
             else:
                 for finding in findings:
                     self._put(db,tenant,'finding',dict(finding,run_id=run['id'],agent_name=run['agent_name'],status='pending',created=now(),target_fingerprint=snapshots.get(finding['contact_id'],'')))
                 result=self._put(db,tenant,'airun',dict(run,status='completed',summary=summary,finished=now(),finding_count=len(findings)),run['id'])
                 db.execute('INSERT INTO audit(tenant,actor,action,ts) VALUES(?,?,?,?)',(tenant,ctx['user']['name'],'ai.run',now()))
-        if lost:raise Problem('Agent changed, archived or execution lease lost; findings were not published.',409)
+        if lost:raise Problem('Workspace access or agent changed, archived or execution lease lost; findings were not published.',409)
         return result
 
     def _template_provider_action(self,ctx,action,d):

@@ -135,6 +135,8 @@ def finish_answer(store,tenant,job,lease,result,local_answer=None):
         if current['cancel_requested']:
             changes=dict(status='cancelled',phase='Answer discarded after cancellation',cancel_outcome='local_discarded' if local_answer is not None else 'provider_completed')
         else:
+            owner=owner_context(db,tenant,current['owner'])
+            if not owner or current.get('purpose')=='agent_builder' and owner['role']!='admin':raise ChatError('Workspace access changed while the answer was generated. The late answer was not published.',403)
             chat=store._get(db,tenant,'aichat',current['chat_id'])
             if history_hash(chat['messages'])!=current['history_hash']:raise ValueError('This AI conversation changed while the answer was being generated. The late answer was not published.')
             proposal=None;knowledge=[]

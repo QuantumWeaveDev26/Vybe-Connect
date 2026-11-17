@@ -20,6 +20,7 @@ async function api(path,options={}){if(S.review&&path.startsWith('/api/')){const
 async function refresh({starting=false, signal}={}) {
   try {
     const next=await api('/api/state',{signal});
+    if(signal?.aborted)throw signal.reason||new Error('Workspace request expired.');
     const changed=JSON.stringify(next)!==JSON.stringify(S.data);
     S.data=next;
     S.workspace=next.context.tenant_id;
@@ -27,6 +28,7 @@ async function refresh({starting=false, signal}={}) {
     if (starting||changed) render();
     return true;
   } catch (error) {
+    if(signal?.aborted)throw signal.reason||error;
     if (error.status===401) {
       S.data=null;
       if (S.reviewAvailable&&location.pathname!=='/owner') await openPublicReview();
@@ -314,14 +316,19 @@ $('#modal').addEventListener('cancel',()=>formSubmit=null);
 $('#modal').addEventListener('close',clearSecurityDialog);
 async function retryStartupRequest(request) {
   for (let attempt=0; ; attempt++) {
+    let timer;
     try {
-      const signal=typeof AbortSignal!=='undefined'&&AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined;
-      return await request(signal);
+      const controller=typeof AbortController!=='undefined'?new AbortController():null;
+      const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>{
+        const error=new Error('Workspace request timed out.');error.name='TimeoutError';
+        controller?.abort(error);reject(error);
+      },4000)});
+      return await Promise.race([request(controller?.signal),deadline]);
     } catch (error) {
       const temporary=error.name==='TypeError'||error.name==='TimeoutError'||[500,502,503,504].includes(error.status);
       if (!temporary||attempt===2) throw error;
       await new Promise(resolve=>setTimeout(resolve,400*(attempt+1)));
-    }
+    } finally {clearTimeout(timer)}
   }
 }
 function showStartupError() {

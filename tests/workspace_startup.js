@@ -14,6 +14,7 @@ function harness(stateResponse) {
   const context = vm.createContext({
     S: state,
     AbortSignal,
+    AbortController,
     location: {hash: '', pathname: '/'},
     localStorage: {setItem() {}, removeItem() {}},
     hasPasswordResetHash: () => false,
@@ -22,7 +23,8 @@ function harness(stateResponse) {
     $: selector => selector === '#app' ? app : {addEventListener: (_, handler) => { retry = handler; }},
     render: () => { app.innerHTML = 'Workspace dashboard'; },
     renderAuth: () => { app.innerHTML = 'Sign in'; },
-    setTimeout: callback => callback(),
+    setTimeout: (callback,delay) => delay<4000?setTimeout(callback,0):setTimeout(callback,4000),
+    clearTimeout,
     api: async (path, {signal}) => {
       assert.equal(signal.aborted, false);
       if (path === '/api/bootstrap') return {initialized: true, deployment: 'hosted'};
