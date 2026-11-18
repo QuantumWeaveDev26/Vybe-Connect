@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const ctx=vm.createContext({Date,Math,Number,String,Object,Map,Array,location:{origin:'https://vybe.example'},window:{addEventListener(){}},document:{addEventListener(){}},S:{workspace:'one',servicesTab:'billing',data:{context:{role:'admin',user:{id:'owner'}},meta:{configured:false},ai:{platform_managed:true,configured:true},members:[{id:'owner',name:'Owner'}],external_agents:[],webhook_events:[],google_connections:{setup_ready:false,connections:[{kind:'google_sheets',connected:false}],jobs:[]},services:{platform_admin:true,plans:[],connections:{billing:{ready:false}},clients:[],jobs:[]}}},esc:x=>String(x??''),icon:()=>'',badge:x=>`<span>${x}</span>`,btn:(a,b,d='')=>`<button data-do="${b}" ${d}>${a}</button>`,pagehead:(a,b)=>`<h1>${a}</h1><p>${b}</p>`,apiTokenManagerMarkup:()=>'<section>API tokens</section>',developerContractPage:()=>'',growthAdmin:()=>true,ownedCommerceMoney:(n)=>String(n/100)});
+for(const file of ['connectors','services','extensions','team-operations','shell'])vm.runInContext(fs.readFileSync(`static/${file}.js`,'utf8'),ctx);
+let html=vm.runInContext('developerPage()',ctx);
+assert.match(html,/Optional integrations/,'External agent setup is optional for platform AI');
+assert.match(html,/href="#ai-agents"/);assert.doesNotMatch(html,/Setup needed/);
+html=vm.runInContext('servicesPage()',ctx);assert.match(html,/Starter/,'Operator billing must also show plan cards');assert.doesNotMatch(html,/TW_BILLING_PLANS/);assert.match(html,/Checkout coming soon/);
+html=vm.runInContext('googleConnectionsPage()',ctx);assert.match(html,/Import CSV/);assert.match(html,/Platform setup required/);assert.doesNotMatch(html,/>Not connected</);
+html=vm.runInContext('teamOperationsPanel()',ctx);assert.match(html,/Availability not chosen/);assert.match(html,/data-do="team-availability"/);
+vm.runInContext("S.route='campaigns'",ctx);html=vm.runInContext('primaryNavigation()',ctx);assert.doesNotMatch(html,/#roadmap/);
+console.log('Setup workflows: optional integrations, honest provider gates, shared plan cards and actionable availability passed.');

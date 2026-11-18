@@ -12,8 +12,7 @@ const primaryDestinations=[
  ['commerce','Commerce & Integrations','commerce','Manage connected services, products and orders'],
  ['analytics','Analytics','analytics','Review team activity and messaging reports'],
  ['developers','Connectors','developers','Open API, integrations and webhook delivery'],
- ['settings','Settings','settings','Configure WhatsApp and workspace access'],
- ['roadmap','Parity Status','roadmap','See implemented features and remaining release gaps']
+ ['settings','Settings','settings','Configure WhatsApp and workspace access']
 ];
 function primaryNavigation(){const section=shellSection();return primaryDestinations.map(([route,label,glyph,description,action])=>{
  const selected=(route==='rules'?'automations':route)===section;
@@ -27,7 +26,7 @@ function shellSection(){if(['working-hours','google-connections','semantic-knowl
 function contextMenu(){const section=shellSection();let title='',items=[];if(section==='campaigns'){title='Campaigns';items=[['campaigns','Campaign Overview'],['templates','Template Messages']]}
 if(section==='automations'){title='Automations';items=[['rules','Rules'],['flows','Chatbots'],['whatsapp-forms','WhatsApp forms'],['sequences','Sequences & Drip'],['replies','Reply Material'],['customer-assistant','AI Customer Replies'],['help-centre','Public help centre'],['external-agents','Astra / Custom AI'],['findings','AI Agent Findings']]}
 if(section==='contacts'){title='Contacts';items=[['contacts','All Contacts'],['segments','Segments & Filters']]}
-if(section==='developers'){title='Developer console';items=[['developers','Get started & API'],['external-agents','API agents'],['webhooks','Webhooks & logs'],['commerce','Integrations'],['recipes','Integration recipes']]}
+if(section==='developers'){title='Connectors';items=[['developers','API & integrations'],['external-agents','External agents'],['webhooks','Webhooks & logs'],['commerce','Integrations'],['recipes','Integration recipes']]}
 if(section==='settings'){title='Settings';items=[['settings','WhatsApp Cloud API'],['team','Team & user management'],['services','Services & billing'],['working-hours','Working hours & SLA'],['google-connections','Google connections'],['semantic-knowledge','Semantic knowledge']]}
 if(section==='inbox'){title='Team Inbox';items=[['inbox','Conversations'],['support-tools','Support tools']]}
 if(section==='pipeline'){title='Sales CRM';items=[['pipeline','Pipeline'],['branches','Branches & routing']]}
@@ -70,17 +69,17 @@ function navigationToggleMarkup(expanded){
  return btn('<b class="nav-toggle-mark" aria-hidden="true">&#9776;</b><span>Navigation</span>','nav-toggle',`aria-label="${expanded?'Collapse':'Expand'} navigation" title="${expanded?'Collapse':'Expand'} navigation" aria-expanded="${expanded}"`,'navlink ghost');
 }
 function applyNavigationPreference(){
- const preference=workspaceStorage.getItem('vybe-nav-expanded');const narrow=typeof innerWidth!=='undefined'&&innerWidth<=1050;const expanded=narrow?mobileNavigationOpen:preference!=='false';
+ const preference=workspaceStorage.getItem('vybe-nav-expanded');const narrow=typeof innerWidth!=='undefined'&&innerWidth<=1050;const expanded=narrow?mobileNavigationOpen:preference==='true';
  document.querySelector('.shell')?.classList?.toggle('nav-expanded',expanded);
  const bottom=document.querySelector('.sidebar-bottom');
  if(bottom&&!bottom.querySelector('[data-do="nav-toggle"]'))bottom.insertAdjacentHTML('afterbegin',navigationToggleMarkup(expanded));
- if(bottom&&!bottom.querySelector('[data-do="launch-preview"]'))bottom.insertAdjacentHTML('beforeend',btn(icon('sparkles')+'<span>Opening animation</span>','launch-preview','aria-label="Replay opening animation" data-nav-label="Opening animation"','navlink ghost'));
  const button=document.querySelector('[data-do="nav-toggle"]');
  if(button){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse':'Expand')+' navigation');button.setAttribute('title',(expanded?'Collapse':'Expand')+' navigation')}
 }
 function toggleNavigation(){if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else workspaceStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference()}
 
 if(typeof document!=='undefined'){
+if(typeof window!=='undefined')window.addEventListener('resize',applyNavigationPreference);
 document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar .navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]'))){mobileNavigationOpen=false;applyNavigationPreference()}});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&mobileNavigationOpen){mobileNavigationOpen=false;applyNavigationPreference()}});
 

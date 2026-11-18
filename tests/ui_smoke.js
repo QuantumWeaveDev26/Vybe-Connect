@@ -158,7 +158,7 @@ html=vm.runInContext("accountPasswordFields()",context);assert.match(html,/Curre
 const navigationContext=vm.createContext({console,S:{route:'flows'},esc:v=>String(v).replace(/&/g,'&amp;'),icon:n=>`<i data-icon="${n}"></i>`});
 vm.runInContext(fs.readFileSync(path.join(root,'shell.js'),'utf8'),navigationContext);
 html=vm.runInContext('primaryNavigation()',navigationContext);
-assert.equal((html.match(/class="navlink/g)||[]).length,13);
+assert.equal((html.match(/class="navlink/g)||[]).length,12);
 assert.equal((html.match(/aria-current="page"/g)||[]).length,1);
 assert.match(html,/<a[^>]*href="#rules"[^>]*aria-current="page"/);
 assert.match(html,/<a(?=[^>]*href="#ai-agents")(?=[^>]*aria-label="AI Agents)[^>]*>/);

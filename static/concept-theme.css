@@ -152,3 +152,65 @@ dialog{border-radius:22px;border-color:#d8e7dc;background:#fffefa;box-shadow:0 2
 .template-preview-card~*{min-width:0}.split>.card .tablewrap td button{white-space:nowrap;word-break:normal;overflow-wrap:normal;min-width:64px}.split>.card .tablewrap td:last-child{min-width:90px}
 @media(max-width:550px){.template-list-card .tablewrap{overflow:visible}.template-list-card table,.template-list-card tbody{display:block;width:100%}.template-list-card thead{display:none}.template-list-card tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px;padding:18px;border-bottom:1px solid #e4ece5}.template-list-card tbody td{display:block;padding:0!important;border:0!important;min-width:0!important}.template-list-card tbody td:first-child{grid-column:1;grid-row:1/3;overflow-wrap:anywhere}.template-list-card tbody td:nth-child(2),.template-list-card tbody td:last-child{grid-column:2;text-align:right}.template-list-card tbody td button{padding:9px!important}.template-list-card .cardhead{gap:10px;flex-wrap:wrap}}
 @media(max-width:900px){.shell .main{min-width:0}.main>.context-nav{top:0;min-height:0;max-width:100%;box-sizing:border-box;align-items:center}.main>.context-nav .context-link{flex-shrink:0;font-size:13px;padding:10px}}
+/* Responsive workspace: reserve width for work before adding a second sidebar. */
+.shell .main{min-width:0}
+.shell .main>.content{max-width:1800px;min-width:0;width:100%;margin-inline:auto}
+.shell .main.has-context>.content{width:calc(100% - 220px);margin-left:220px}
+.shell .main>.context-nav{position:fixed;top:64px;bottom:0;left:var(--rail);width:220px;min-height:0;overflow-y:auto}
+.card,.cardbody,.grid2>*,.split>*,.growth-grid>*{min-width:0}
+.grid2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.split{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.pagehead,.toolbar,.cardhead{flex-wrap:wrap}
+.pagehead>div,.toolbar>div{min-width:0}
+.cardhead h2,.pagehead h1{overflow-wrap:anywhere}
+.setup-connections{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:28px}
+.setup-connections h2{font-size:17px;margin-bottom:12px}
+.setup-connections p{font-size:14px;line-height:1.6;margin:12px 0}
+.developer-contract>.setup-connections{padding:20px 0}
+.developer-contract>summary{min-height:44px;cursor:pointer;align-content:center}
+.developer-step-link{display:inline-flex;align-items:center;min-height:44px}
+.notice:has(.developer-step-link){flex-wrap:wrap}
+.notice>span{min-width:0;flex:1 1 220px}
+@media(max-width:1500px){
+ .shell .main>.context-nav{position:sticky;top:64px;bottom:auto;left:auto;width:100%;max-width:100%;min-height:0;display:flex;align-items:center;gap:8px;padding:10px 22px;overflow-x:auto;overflow-y:hidden;border:0;border-bottom:1px solid var(--border);z-index:12;scrollbar-width:thin}
+ .shell .main>.context-nav h2,.shell .main>.context-nav>.navlabel{display:none}
+ .shell .main>.context-nav .context-link{flex:none;white-space:nowrap;min-height:44px;padding:10px 12px;margin:0;font-size:13px}
+ .shell .main>.context-nav>.primary{flex:none;width:auto;margin:0;min-height:44px}
+ .shell .main.has-context>.content{width:100%;margin-left:0}
+}
+@media(max-width:1050px){
+ .shell.nav-expanded{--rail:68px}
+ .shell.nav-expanded>.sidebar{z-index:45}
+ .shell .main>.content{padding:22px}
+ .inbox{grid-template-columns:270px minmax(0,1fr)}
+ .contactpanel{display:none}
+}
+@media(max-width:900px){
+ .shell .main>.context-nav{top:64px!important}
+ .grid2,.split{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:650px){
+ .shell,.shell.nav-expanded{--rail:0px}
+ .shell .main>.content,.shell .main.has-context>.content{padding:20px 16px}
+ .shell .main>.context-nav{top:60px!important;padding:8px 12px;gap:4px}
+ .shell .main>.context-nav .context-link{font-size:13px;padding:10px}
+ .shell .main>.context-nav .icon{display:none}
+ .commerce-tabs,.tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;gap:8px;scrollbar-width:thin}
+ .commerce-tabs>button,.tabs>a{flex:none;white-space:nowrap;min-height:44px}
+ .cardhead,.cardbody{padding:18px}
+ .pagehead{gap:16px}
+ .pagehead>.buttons,.toolbar>.buttons{width:100%}
+ .inbox{grid-template-columns:minmax(0,1fr);height:auto;min-height:0}
+ .chatlist{max-height:340px;border-right:0;border-bottom:1px solid var(--border)}
+ .chatfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ .chatfilters button{min-height:44px;padding:8px 4px;font-size:12px}
+ .conversation{min-height:420px;height:65dvh}
+ .conversationhead,.composerfoot{flex-wrap:wrap;gap:10px}
+ .setup-connections{gap:24px}
+ .notice{overflow-wrap:anywhere}
+ dialog{width:calc(100% - 24px);max-height:calc(100dvh - 24px)}
+ .modalhead,.modalbody{padding:18px}
+ input,select,textarea{font-size:16px}
+ .tablewrap{max-width:100%;overscroll-behavior-x:contain}
+}
+@media(max-width:360px){.shell .topbar .header-whatsapp{display:none}}
