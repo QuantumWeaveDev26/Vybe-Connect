@@ -161,6 +161,7 @@ class Handler(BaseHTTPRequestHandler):
             files={'/widget-preview.js':'widget-preview.js','/extensions.js':'extensions.js','/growth.js':'growth.js','/growth.css':'growth.css','/interactions.js':'interactions.js','/password-visibility.js':'password-visibility.js','/auth-entry.js':'auth-entry.js','/connectors.js':'connectors.js','/launch-layout.js':'launch-layout.js','/visuals.js':'visuals.js','/world-dots.json':'world-dots.json','/launch.js':'launch.js','/services.js':'services.js','/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
             files.update({'/api-tokens.js':'api-tokens.js','/customer-template-portraits.webp':'customer-template-portraits.webp','/specialist-agents.webp':'specialist-agents.webp','/inbox-filters.js':'inbox-filters.js','/metric-characters-clean.png':'metric-characters-clean.png','/concept-theme.css':'concept-theme.css','/approved-concept.png':'approved-concept.png','/terms':'terms.html','/privacy':'privacy.html','/data-deletion':'data-deletion.html','/whatsapp-connect.js':'whatsapp-connect.js'})
             files['/startup-guard.js']='startup-guard.js'
+            files['/workspace-loader.js']='workspace-loader.js'
             if path not in files: raise Problem('Not found.',404)
             p=ROOT/'static'/files[path]
             if not p.exists(): raise Problem('UI is not installed.',404)
@@ -296,12 +297,16 @@ class Handler(BaseHTTPRequestHandler):
         except Exception: self.respond(500,{'error':'An internal error occurred.'})
 
 
+class WorkspaceHTTPServer(ThreadingHTTPServer):
+    request_queue_size=128
+
+
 def make_server(port=8787,path=None):
     migrated=embedded_signup.migrate_credentials()
     if embedded_signup.credential_vault.keys() is not None:print(f'Credential vault validated; {migrated} files migrated or rotated.',flush=True)
     deployment=configuration();store=Store(path or Path(os.environ.get('TW_DATA_DIR',str(ROOT/'data')))/'teamwave.db')
     if deployment.production and not store.initialized() and (not 32<=len(deployment.setup_token)<=256 or deployment.setup_token.startswith('REPLACE_')):raise ValueError('Fresh production setup requires a replaced TW_SETUP_TOKEN with 32–256 characters.')
-    server=ThreadingHTTPServer((deployment.bind,port),Handler);server.daemon_threads=True
+    server=WorkspaceHTTPServer((deployment.bind,port),Handler);server.daemon_threads=True
     server.deployment=deployment;server.store=store
     server.review=None
     if os.environ.get('TW_PUBLIC_REVIEW','false').lower()=='true':

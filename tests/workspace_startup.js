@@ -4,7 +4,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync('static/app.js', 'utf8');
 const refresh = source.slice(source.indexOf('async function refresh('), source.indexOf('async function act('));
-const startup = source.slice(source.indexOf('async function retryStartupRequest('), source.indexOf('\nboot();'));
+const startup = source.slice(source.indexOf('async function retryStartupRequest('), source.indexOf("\nif(!document.getElementById"));
 
 function harness(stateResponse) {
   const app = {innerHTML: 'Loading'};

@@ -18,7 +18,7 @@ const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Se
  document:{querySelector(){return node},querySelectorAll(){return []},addEventListener(){}},window:{addEventListener(){}},location:{hash:''},
  localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},clearInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
 const index=fs.readFileSync(path.join(root,'static/index.html'),'utf8');
-for(const [,url] of index.matchAll(/<script src="\/([^"/]+)" defer><\/script>/g)){
+for(const [,url] of (index+JSON.parse(index.match(/id="workspace-scripts">(.*?)<\/script>/)[1]).map(url=>'<script src="'+url+'" defer></script>').join('')).matchAll(/<script src="\/([^"/]+)" defer><\/script>/g)){
  if(url.startsWith('launch'))continue;
  vm.runInContext(fs.readFileSync(path.join(root,'static',url.split('?')[0]),'utf8'),context,{filename:url});
 }

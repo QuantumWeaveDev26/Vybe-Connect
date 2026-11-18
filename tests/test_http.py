@@ -36,6 +36,7 @@ class HttpTests(unittest.TestCase):
         status, _, body = self.request('GET', '/')
         self.assertEqual(status, 200)
         assets = re.findall(r'(?:src|href)="(/[^" ]+\.(?:js|css)(?:\?v=[a-zA-Z0-9-]+)?)"', body.decode())
+        assets += json.loads(re.search(r'id="workspace-scripts">(.*?)</script>', body.decode()).group(1))
         self.assertTrue(any(asset.startswith('/agent-directory.js?v=') for asset in assets))
         for asset in assets:
             with self.subTest(asset=asset):
@@ -43,6 +44,15 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(code, 200)
                 self.assertTrue(content)
                 self.assertIn('javascript' if asset.split('?')[0].endswith('.js') else 'text/css', headers['Content-Type'])
+
+    def test_parallel_browser_asset_requests(self):
+        import re
+        from concurrent.futures import ThreadPoolExecutor
+        _, _, body = self.request('GET', '/')
+        assets = json.loads(re.search(r'id="workspace-scripts">(.*?)</script>', body.decode()).group(1))
+        with ThreadPoolExecutor(max_workers=32) as pool:
+            responses = list(pool.map(lambda path:self.request('GET',path),assets*2))
+        self.assertTrue(all(status==200 and content for status,_,content in responses))
 
     def test_terms_and_pdf_knowledge_assets_are_served(self):
         status,headers,body=self.request('GET','/terms')

@@ -28,6 +28,7 @@ class DeploymentTests(unittest.TestCase):
         status,_,html=self.request('/')
         self.assertEqual(status,200)
         urls=re.findall(rb'(?:src|href)="(/[^"?#]+\.(?:js|css)(?:\?v=[a-zA-Z0-9-]+)?)"',html)
+        urls += [url.encode() for url in json.loads(re.search(rb'id="workspace-scripts">(.*?)</script>',html).group(1))]
         self.assertTrue(any(url.split(b'?')[0]==b'/interactions.js' for url in urls))
         for url in urls:
             status,headers,body=self.request(url.decode())

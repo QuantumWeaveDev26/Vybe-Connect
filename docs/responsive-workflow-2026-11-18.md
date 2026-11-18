@@ -8,8 +8,8 @@ The developer page now links directly to WhatsApp and built-in AI. External agen
 
 ## Verification
 
-- 37 JavaScript suites passed, including setup workflow, all 30 routes, subscription gates, connector interactions and membership checks.
-- 32 HTTP tests and 12 team-operation tests passed against isolated local stores.
+- 38 JavaScript suites passed, including setup workflow, all 30 routes, subscription gates, connector interactions and membership checks.
+- 33 HTTP tests and 12 team-operation tests passed against isolated local stores.
 - Browser checks covered all 30 routes, four sizes each (120 route/viewport checks), from 320 px phone width through 2560 px desktop width. No page-level horizontal overflow or missing heading was observed.
 - Mobile drawer open/Escape close and optional integration disclosure were exercised. The reported 1191 px laptop layout was inspected with expanded navigation.
 - Existing font warning from the design detector was retained to preserve the approved theme.
@@ -17,3 +17,7 @@ The developer page now links directly to WhatsApp and built-in AI. External agen
 ## External setup remains necessary
 
 The production offline preflight reports platform AI and Meta onboarding configuration present, while subscription checkout and Google connections need setup. Razorpay activation, verified plan IDs and private keys; Google OAuth web-client credentials; and Meta Tech Provider approval cannot be replaced with a UI success badge. No paid prompts, messages, charges, provider activation or new integration credentials were submitted for this release. Browser viewport tests do not establish physical-device acceptance or live-provider acceptance.
+
+## Startup follow-up during live acceptance
+
+Chrome reproduced the pre-existing missing-dependency crash after the first deployment. Application scripts now load in their original order through an explicit manifest; a network failure is retried twice before application boot. Persistent failure offers a reload action, and timed-out scripts are not run twice. The HTTP server backlog is increased to accommodate browser asset bursts. A new bounded-loader test covers successful retry and stopping before app startup; a 32-worker HTTP test covers concurrent asset delivery. The original upstream cause of intermittent 502 responses is not established. Header/loading text encoding was also corrected.
