@@ -17,6 +17,8 @@ class RecoveryMailTests(unittest.TestCase):
             context=connection.call_args.kwargs['context'];self.assertTrue(context.check_hostname);self.assertEqual(context.verify_mode,ssl.CERT_REQUIRED)
             smtp.starttls.assert_not_called();smtp.login.assert_called_once_with('mailer','synthetic-password')
             message=smtp.send_message.call_args.args[0];self.assertEqual(message['To'],'owner@example.test');self.assertIn('/#reset=test-link',message.get_content())
+            self.assertTrue(message['Date']);self.assertTrue(message['Message-ID'])
+            self.assertEqual(message['Auto-Submitted'],'auto-generated')
     def test_starttls_happens_before_credentials_or_message(self):
         with patch.dict(os.environ,{'TW_SMTP_SECURITY':'starttls'}),patch('recovery_mail.smtplib.SMTP') as connection:
             smtp=connection.return_value.__enter__.return_value;smtp.send_message.return_value={}

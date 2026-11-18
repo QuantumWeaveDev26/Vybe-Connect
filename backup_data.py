@@ -60,7 +60,37 @@ def restore(source,target):
     return {'files':len(actual)}
 
 
+def drill(source,target):
+    """Restore a private backup into a new isolated directory; never replace active data."""
+    source=Path(source).resolve();target=Path(target).resolve()
+    result=restore(source,target)
+    healthy(target/'teamwave.db')
+    original=source/'payload'
+    expected={file.relative_to(original).as_posix():digest(file) for file in files(original)}
+    actual={file.relative_to(target).as_posix():digest(file) for file in files(target) if file.relative_to(target).as_posix() not in ('teamwave.db-wal','teamwave.db-shm')}
+    if expected!=actual:raise ValueError('Restored file verification failed.')
+    with closing(sqlite3.connect((target/'teamwave.db').as_uri()+'?mode=ro',uri=True)) as db:
+        if db.execute('PRAGMA foreign_key_check').fetchone() is not None:raise ValueError('Restored database relationships failed verification.')
+        tables=db.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchone()[0]
+    return {'restored':True,'database_integrity':'ok','files_verified':result['files'],'tables_verified':tables,'credential_key_ring':'Required separately from data backup'}
+
+
+def verify_credentials(root):
+    """Verify restored encrypted credentials with the separately supplied key ring."""
+    import credential_vault
+    root=Path(root).resolve();files(root);checked=0;encrypted=0
+    for kind in ('meta','ai','google_sheets','google_calendar'):
+        directory=root/(kind+'-credentials')
+        if not directory.exists():continue
+        for path in directory.glob('*.json'):
+            value=json.loads(path.read_text(encoding='utf-8'))
+            credential_vault.unseal(value,path.stem,kind)
+            encrypted+=value.get('vault')==1
+            checked+=1
+    return {'credential_files_verified':checked,'encrypted_files_verified':encrypted,'unencrypted_files':checked-encrypted,'private_values_returned':False}
+
+
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('operation',choices=['backup','restore']);parser.add_argument('--source',type=Path,required=True);parser.add_argument('--target',type=Path,required=True);parser.add_argument('--offline-confirmed',action='store_true');args=parser.parse_args()
-    if not args.offline_confirmed:parser.error('Stop the application first and pass --offline-confirmed.')
-    print((backup if args.operation=='backup' else restore)(args.source,args.target))
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('operation',choices=['backup','restore','drill']);parser.add_argument('--source',type=Path,required=True);parser.add_argument('--target',type=Path,required=True);parser.add_argument('--offline-confirmed',action='store_true');args=parser.parse_args()
+    if args.operation!='drill' and not args.offline_confirmed:parser.error('Stop the application first and pass --offline-confirmed.')
+    print(json.dumps({'backup':backup,'restore':restore,'drill':drill}[args.operation](args.source,args.target)))

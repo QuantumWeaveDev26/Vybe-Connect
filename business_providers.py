@@ -15,7 +15,7 @@ def config(tenant, provider):
 def status(tenant, provider):
     c = config(tenant, provider)
     required = ['KEY_ID','KEY_SECRET','WEBHOOK_SECRET','ACCOUNT_ID'] if provider != 'shipping' else ['TOKEN','PICKUP_LOCATION','PICKUP_POSTCODE']
-    present = {key: bool(c[key]) for key in required}
+    present = {key: bool(c[key].strip()) and not c[key].strip().upper().startswith(('REPLACE_','YOUR_','ENTER_')) for key in required}
     allowed = provider == 'shipping' or c['KEY_ID'].startswith('rzp_test_') or c['ALLOW_LIVE'].lower() == 'true'
     return {'provider': 'Shiprocket' if provider == 'shipping' else 'Razorpay', 'prefix': c['prefix'],
             'present': present, 'configured': all(present.values()), 'enabled': c['ENABLED'].lower() == 'true',
@@ -46,9 +46,13 @@ def plans():
     try: values = json.loads(os.environ.get('TW_BILLING_PLANS', '{}'))
     except ValueError: return {}
     if not isinstance(values, dict): return {}
-    return {key: value for key, value in values.items() if re.fullmatch(r'[a-z0-9_-]{1,40}', key) and isinstance(value, dict)
+    valid = {key: value for key, value in values.items() if re.fullmatch(r'[a-z0-9_-]{1,40}', key) and isinstance(value, dict)
             and re.fullmatch(r'plan_[A-Za-z0-9]+', str(value.get('plan_id','')))
             and isinstance(value.get('name'), str) and 1 <= len(value['name']) <= 80
             and type(value.get('amount_minor')) is int and 0 < value['amount_minor'] < 100000000
             and value.get('currency') == 'INR' and value.get('interval') in ('monthly','yearly')
-            and type(value.get('cycles',12)) is int and 1 <= value.get('cycles',12) <= 120}
+            and type(value.get('cycles',12)) is int and 1 <= value.get('cycles',12) <= 120
+            and type(value.get('ai_requests',50)) is int and 1 <= value.get('ai_requests',50) <= 1000}
+    from collections import Counter
+    identities=Counter(value['plan_id'] for value in valid.values())
+    return {key:value for key,value in valid.items() if identities[value['plan_id']]==1}

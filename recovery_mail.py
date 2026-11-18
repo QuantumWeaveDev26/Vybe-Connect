@@ -4,6 +4,7 @@ import re
 import smtplib
 import ssl
 from email.message import EmailMessage
+from email.utils import formatdate,make_msgid
 from urllib.parse import urlsplit
 
 
@@ -29,6 +30,7 @@ def send_recovery(recipient,link):
     if not cfg['ready']:raise ValueError('Recovery email is disabled or incomplete.')
     if not link.startswith(cfg['origin']+'/#reset='):raise ValueError('Unexpected recovery origin.')
     message=EmailMessage();message['From']=cfg['sender'];message['To']=recipient;message['Subject']='Reset your VYBE Connect password'
+    message['Date']=formatdate(usegmt=True);message['Message-ID']=make_msgid(domain=cfg['sender'].rsplit('@',1)[1]);message['Auto-Submitted']='auto-generated'
     message.set_content('A password reset was requested for your VYBE Connect account.\n\nOpen this link within 15 minutes:\n'+link+'\n\nThis link works once. If you did not request it, ignore this email. Your password has not changed. MFA remains required if enabled.\n')
     context=ssl.create_default_context()
     transport=smtplib.SMTP_SSL if cfg['security']=='ssl' else smtplib.SMTP
