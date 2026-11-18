@@ -1,7 +1,18 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const c=vm.createContext({Date,JSON,Object,Array,String,Number,Math,document:{addEventListener(){}},S:{data:{context:{role:'admin'},ai:{platform_managed:true,enabled:true,allowance:{active:true,remaining:3,limit:5}},services:{platform_ai_mode:true,platform_admin:false,subscription_active:true,plans:[],connections:{billing:{ready:false}}}}},badge:x=>x,esc:x=>String(x??'').replace(/</g,'&lt;'),pagehead:(a,b)=>`<h1>${a}</h1><p>${b}</p>`,btn:(a,b,d)=>`<button data-do="${b}" ${d||''}>${a}</button>`});
 vm.runInContext(fs.readFileSync('static/business.js','utf8'),c);vm.runInContext(fs.readFileSync('static/services.js','utf8'),c);
+vm.runInContext('ownedCommerceMoney=(amount,currency)=>new Intl.NumberFormat("en-IN",{style:"currency",currency,maximumFractionDigits:0}).format(amount/100)',c);
 let card=vm.runInContext('aiConnectionCard()',c);assert.match(card,/No API key needed/);assert.doesNotMatch(card,/data-ai-connection|type="password"|Connect OpenAI/);
 let page=vm.runInContext('servicesPage()',c);assert.match(page,/Your subscription/);assert.doesNotMatch(page,/KEY SECRET|WEBHOOK|Server configuration|Check openai|Client onboarding|TW_BILLING/);
 vm.runInContext('S.data.ai.enabled=false;S.data.ai.allowance={active:false};S.data.services.subscription_active=false',c);card=vm.runInContext('aiConnectionCard()',c);assert.match(card,/Choose your subscription/);
 console.log('Customers see subscription and included AI, without platform credential controls.');
+page=vm.runInContext('customerSubscriptionPage(S.data.services)',c);
+for(const name of ['Starter','Growth','Scale'])assert.match(page,new RegExp(name));
+for(const amount of ['499','999','1,499'])assert.ok(page.includes(amount));
+for(const allowance of ['50','150','300'])assert.match(page,new RegExp(allowance+' included AI requests'));
+assert.match(page,/Preview pricing/);assert.equal((page.match(/Checkout coming soon/g)||[]).length,3);
+assert.equal((page.match(/data-do="service-subscribe"[^>]*disabled/g)||[]).length,3);
+vm.runInContext('S.data.services.plans=[{key:"configured",name:"Configured plan",amount_minor:79900,currency:"INR",interval:"monthly",ai_requests:75}];S.data.services.connections.billing.ready=true',c);
+page=vm.runInContext('customerSubscriptionPage(S.data.services)',c);assert.match(page,/Configured plan/);assert.match(page,/75 included AI requests/);assert.doesNotMatch(page,/Preview pricing|Starter|Checkout coming soon/);
+assert.match(page,/data-plan="configured"/);assert.doesNotMatch(page,/data-do="service-subscribe"[^>]*disabled/);
+vm.runInContext('S.data.services.subscription_active=true',c);page=vm.runInContext('customerSubscriptionPage(S.data.services)',c);assert.match(page,/Subscription active/);assert.match(page,/data-do="service-subscribe"[^>]*disabled/);

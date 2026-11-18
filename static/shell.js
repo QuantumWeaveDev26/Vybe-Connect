@@ -70,7 +70,7 @@ function navigationToggleMarkup(expanded){
  return btn('<b class="nav-toggle-mark" aria-hidden="true">&#9776;</b><span>Navigation</span>','nav-toggle',`aria-label="${expanded?'Collapse':'Expand'} navigation" title="${expanded?'Collapse':'Expand'} navigation" aria-expanded="${expanded}"`,'navlink ghost');
 }
 function applyNavigationPreference(){
- const preference=localStorage.getItem('vybe-nav-expanded');const narrow=typeof innerWidth!=='undefined'&&innerWidth<=1050;const expanded=narrow?mobileNavigationOpen:preference!=='false';
+ const preference=workspaceStorage.getItem('vybe-nav-expanded');const narrow=typeof innerWidth!=='undefined'&&innerWidth<=1050;const expanded=narrow?mobileNavigationOpen:preference!=='false';
  document.querySelector('.shell')?.classList?.toggle('nav-expanded',expanded);
  const bottom=document.querySelector('.sidebar-bottom');
  if(bottom&&!bottom.querySelector('[data-do="nav-toggle"]'))bottom.insertAdjacentHTML('afterbegin',navigationToggleMarkup(expanded));
@@ -78,7 +78,7 @@ function applyNavigationPreference(){
  const button=document.querySelector('[data-do="nav-toggle"]');
  if(button){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse':'Expand')+' navigation');button.setAttribute('title',(expanded?'Collapse':'Expand')+' navigation')}
 }
-function toggleNavigation(){if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else localStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference()}
+function toggleNavigation(){if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else workspaceStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference()}
 
 if(typeof document!=='undefined'){
 document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar .navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]'))){mobileNavigationOpen=false;applyNavigationPreference()}});

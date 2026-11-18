@@ -35,7 +35,7 @@ function clearAccountSession(){
   clearHelpWidget();
   accountSecurityGeneration++;
   G.id=null;G.graph=null;G.dirty=false;G.scope='';
-  S.data=null;S.workspace='';S.chat=null;S.draft='';localStorage.removeItem('tw_workspace');clearAnalyticsReport();
+  S.data=null;S.workspace='';S.chat=null;S.draft='';workspaceStorage.removeItem('tw_workspace');clearAnalyticsReport();
   A.scope=null;A.chat=null;A.agent=null;A.draft='';A.busy=false;$('#workspace-ai')?.remove();
 }
 function accountPasswordForm(){

@@ -114,9 +114,23 @@ async function startOutboundVoice(contact_id,scope){
  }catch(error){if(same()){stopVoiceLocal();toast(error.message);await refresh()}}finally{if(same())VOICE.busy=false}
 }
 
+function subscriptionPlanCards(data){
+ const configured=Array.isArray(data.plans)&&data.plans.length>0,admin=S.data.context.role==='admin';
+ const plans=configured?data.plans:[
+  {key:'starter',name:'Starter',amount_minor:49900,currency:'INR',interval:'monthly',ai_requests:50},
+  {key:'growth',name:'Growth',amount_minor:99900,currency:'INR',interval:'monthly',ai_requests:150},
+  {key:'scale',name:'Scale',amount_minor:149900,currency:'INR',interval:'monthly',ai_requests:300}
+ ];
+ return `${!configured?'<p class="hint">Preview pricing · Secure checkout is being prepared.</p>':''}<div class="service-grid subscription-plans">${plans.map(p=>{
+  const available=configured&&data.connections.billing?.ready&&!data.subscription_active&&admin&&!S.review;
+  const included=Number.isInteger(p.ai_requests)&&p.ai_requests>=1&&p.ai_requests<=1000?p.ai_requests:50;
+  return `<section class="card subscription-plan"><div class="cardbody"><h2>${esc(p.name)}</h2><p class="subscription-price"><strong>${esc(ownedCommerceMoney(p.amount_minor,p.currency))}</strong><span> / ${p.interval==='yearly'?'year':'month'}</span></p><p>${included} included AI requests per billing cycle</p><ul><li>Shared inbox and CRM</li><li>Campaigns and automations</li><li>Platform-provided AI</li></ul>${btn(data.subscription_active?'Subscription active':available?'Subscribe':'Checkout coming soon','service-subscribe',`data-plan="${esc(p.key)}" ${available?'':'disabled'}`,'primary')}</div></section>`
+ }).join('')}</div><p class="hint">Connect your own WhatsApp account. Messaging provider charges are separate.</p>`;
+}
+
 function customerSubscriptionPage(data){
  const a=S.data.ai||{},allowance=a.allowance||{},admin=S.data.context.role==='admin',job=data.subscription;
- return pagehead('Your subscription','CRM and AI in one plan. Connect only your own WhatsApp account.')+`<section class="card"><div class="cardbody"><h2>${data.subscription_active?'Your plan is active':'Choose your plan'}</h2><p>${data.subscription_active?'Your CRM is unlocked. AI uses your included allowance.':'Subscribe to unlock your workspace and included AI.'}</p>${allowance.active?`<p>${esc(allowance.remaining)} AI requests remaining this billing cycle.</p>`:''}<a class="button" href="#settings">Connect WhatsApp</a></div></section><div class="service-grid">${(data.plans||[]).map(p=>`<section class="card"><div class="cardbody"><h2>${esc(p.name)}</h2><strong>${esc(ownedCommerceMoney(p.amount_minor,p.currency))} / ${esc(p.interval)}</strong><p>CRM, automations and platform-provided AI. Provider messaging charges are separate.</p>${btn('Subscribe','service-subscribe',`data-plan="${esc(p.key)}" ${!admin||!data.connections.billing?.ready||data.subscription_active||S.review?'disabled':''}`,'primary')}</div></section>`).join('')||'<section class="card"><div class="cardbody"><h2>Subscriptions are being prepared</h2><p>We will enable secure checkout when billing setup is complete. You do not need to supply payment-provider or OpenAI keys.</p></div></section>'}</div>${job?'<section class="card"><div class="cardbody"><h2>Subscription activity</h2>'+serviceJobCard(job)+(admin&&job.result?.provider_id&&!['cancelled','completed','expired'].includes(job.result?.provider_status)?btn('Cancel at cycle end','service-cancel-subscription',`data-id="${esc(job.id)}"`,'small'):'')+'</div></section>':''}`;
+ return pagehead('Your subscription','CRM and AI in one plan. Connect only your own WhatsApp account.')+`<section class="card"><div class="cardbody"><h2>${data.subscription_active?'Your plan is active':'Choose your plan'}</h2><p>${data.subscription_active?'Your CRM is unlocked. AI uses your included allowance.':'Subscribe to unlock your workspace and included AI.'}</p>${allowance.active?`<p>${esc(allowance.remaining)} AI requests remaining this billing cycle.</p>`:''}<a class="button" href="#settings">Connect WhatsApp</a></div></section>${subscriptionPlanCards(data)}${job?'<section class="card"><div class="cardbody"><h2>Subscription activity</h2>'+serviceJobCard(job)+(admin&&job.result?.provider_id&&!['cancelled','completed','expired'].includes(job.result?.provider_status)?btn('Cancel at cycle end','service-cancel-subscription',`data-id="${esc(job.id)}"`,'small'):'')+'</div></section>':''}`;
 }
 
 function voiceCallDetails(call){

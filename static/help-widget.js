@@ -24,7 +24,7 @@ function helpPanel(){
 }
 function renderHelpWidget(){
  if(!S.data)return clearHelpWidget();const scope=helpScope();
- if(HELP.scope!==scope){clearHelpWidget();HELP.scope=scope;HELP.surveyDismissed=localStorage.getItem('vybe-survey:'+scope)==='dismissed'}
+ if(HELP.scope!==scope){clearHelpWidget();HELP.scope=scope;HELP.surveyDismissed=workspaceStorage.getItem('vybe-survey:'+scope)==='dismissed'}
  let root=document.querySelector('#help-widget');if(!root){root=document.createElement('div');root.id='help-widget';document.body.append(root)}
  const survey=false; // Feedback opens on demand, without covering the agent directory.
  root.innerHTML=(survey?`<section class="help-survey" aria-label="Product feedback"><button type="button" class="help-survey-close" data-do="help-dismiss-survey" aria-label="Dismiss feedback prompt">×</button><h3>How satisfied are you with Astra / Custom AI?</h3><p>Your feedback helps improve this workspace.</p>${helpStars()}<div class="help-rating-labels"><span>Unsatisfied</span><span>Satisfied</span></div>${btn('Share feedback','help-feedback','','small')}</section>`:'')+(HELP.open?helpPanel():'')+`<button type="button" class="help-launcher" data-do="help-toggle" aria-expanded="${HELP.open}" aria-label="Open VYBE Connect help and feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M7 8h10M7 12h7"/></svg></button>`;
@@ -37,7 +37,7 @@ async function submitHelpFeedback(event){
  const submit=event.target.querySelector('[type="submit"]');submit.disabled=true;
  try{
   const report=await act('feedback.save',{rating,body:values.body,category:values.category,page:S.route});if(scope!==helpScope())return;
-  HELP.draft='';HELP.rating=0;HELP.tab='reports';HELP.surveyDismissed=true;localStorage.setItem('vybe-survey:'+scope,'dismissed');await refresh();if(scope!==helpScope())return;renderHelpWidget();toast('Feedback saved. Reference '+report.id+'.');
+  HELP.draft='';HELP.rating=0;HELP.tab='reports';HELP.surveyDismissed=true;workspaceStorage.setItem('vybe-survey:'+scope,'dismissed');await refresh();if(scope!==helpScope())return;renderHelpWidget();toast('Feedback saved. Reference '+report.id+'.');
  }catch(error){if(scope===helpScope()){const box=document.querySelector('#help-feedback-error');if(box)box.textContent=error.message;submit.disabled=false}}
 }
 function renderGuidedTour(){
@@ -56,7 +56,7 @@ async function helpAction(action,el){
  if(action==='help-feedback'){HELP.open=true;HELP.tab='feedback'}
  if(action==='help-reports'){HELP.open=true;HELP.tab='reports'}
  if(action==='help-rate'){HELP.rating=Number(el.dataset.rating);if(!HELP.open){HELP.open=true;HELP.tab='feedback'}}
- if(action==='help-dismiss-survey'){HELP.surveyDismissed=true;localStorage.setItem('vybe-survey:'+scope,'dismissed')}
+ if(action==='help-dismiss-survey'){HELP.surveyDismissed=true;workspaceStorage.setItem('vybe-survey:'+scope,'dismissed')}
  if(action==='help-astra'){HELP.open=false;location.hash='external-agents'}
  if(action==='help-ai'){HELP.open=false;showAI('ask')}
  if(action==='help-tour'){HELP.open=false;HELP.tour=0}

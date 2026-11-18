@@ -16,7 +16,7 @@ function harness(stateResponse) {
     AbortSignal,
     AbortController,
     location: {hash: '', pathname: '/'},
-    localStorage: {setItem() {}, removeItem() {}},
+    workspaceStorage: {setItem() {}, removeItem() {}},
     hasPasswordResetHash: () => false,
     hasInvitationHash: () => false,
     empty: (title, body, button) => title + body + button,

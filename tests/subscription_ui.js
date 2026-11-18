@@ -3,8 +3,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
  const c=vm.createContext({document:{addEventListener(){}},S:{workspace:'customer',data:{context:{role:'admin',user:{id:'owner'}},ai:{},services:{plans:[],connections:{billing:{ready:false}}}}},esc:String,ownedCommerceMoney:()=> 'INR 499',pagehead:()=>'',badge:String,btn:(label,action,attrs)=>`<button ${attrs}>${label}</button>`});
  vm.runInContext(fs.readFileSync('static/services.js','utf8'),c);
  const render=()=>vm.runInContext('customerSubscriptionPage(S.data.services)',c);
- assert.match(render(),/Subscriptions are being prepared/);
- assert.doesNotMatch(render(),/data-plan=/);
+ assert.match(render(),/Preview pricing/);
+ assert.equal((render().match(/Checkout coming soon/g)||[]).length,3);
  await assert.rejects(()=>vm.runInContext("serviceAction('service-subscribe',{dataset:{plan:'missing'}})",c),/not available/);
  c.S.data.services.plans=[{key:'starter',name:'Starter',amount_minor:49900,currency:'INR',interval:'monthly'}];
  c.S.data.services.subscription_active=true;c.S.data.services.connections.billing.ready=true;

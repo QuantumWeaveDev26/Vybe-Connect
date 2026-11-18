@@ -1,4 +1,13 @@
 'use strict';
+// Storage restrictions must not prevent sign-in or workspace rendering.
+const workspaceStorage=(()=>{
+ const memory=new Map();
+ return {
+  getItem(key){if(memory.has(key))return memory.get(key);try{return globalThis.localStorage.getItem(key)}catch{return null}},
+  setItem(key,value){value=String(value);memory.set(key,value);try{globalThis.localStorage.setItem(key,value)}catch{}},
+  removeItem(key){memory.set(key,null);try{globalThis.localStorage.removeItem(key)}catch{}}
+ };
+})();
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const paths={services:'M3 5h18v14H3z M3 9h18 M6 15h4',astra:'M12 2l9 5v10l-9 5-9-5V7z M3 7l9 5 9-5 M12 12v10 M7 5l10 5','ai-agents':'M5 7h14v13H5z M9 11h.01 M15 11h.01 M9 16h6 M12 3v4 M2 11v5 M22 11v5','external-agents':'M8 8H3V3 M3 8l6-6 M16 16h5v5 M21 16l-6 6 M8 16h8V8H8z',pipeline:'M3 4h5v16H3z M10 4h5v10h-5z M17 4h5v6h-5z',commerce:'M3 8h18l-2-5H5z M4 8v13h16V8 M9 21v-8h6v8',developers:'M8 6l-6 6 6 6 M16 6l6 6-6 6 M14 3l-4 18',campaigns:'M3 11l17-7v16L3 13z M7 14l2 7h3l-1-6',inbox:'M4 4h16v15H4z M4 12h5l2 3h2l2-3h5',contacts:'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M2 21v-3a6 6 0 0 1 12 0v3 M17 4a4 4 0 0 1 0 8 M18 15a5 5 0 0 1 4 5',templates:'M5 3h11l4 4v14H5z M15 3v5h5 M9 12h7 M9 16h7',rules:'M5 12h5 M14 5v14 M10 12l4-7 M10 12l4 7 M14 5h5 M14 19h5 M2 10h3v4H2z M19 3h3v4h-3z M19 17h3v4h-3z',flows:'M2 3h7v5H2z M15 16h7v5h-7z M2 16h7v5H2z M5 8v8 M5 12h13v4',analytics:'M4 20h17 M7 16V9 M12 16V4 M17 16v-5',team:'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M2 20v-2a6 6 0 0 1 12 0v2 M16 4a3 3 0 0 1 0 6 M17 14a4 4 0 0 1 4 4v2',settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M9 3h6l1 4 4 1 1 6-4 2-1 4H9l-1-4-4-1-1-6 4-2z',replies:'M3 4h18v13H9l-5 4v-4H3z M7 9h10 M7 12h6',sequences:'M4 4h16v4H4z M4 11h16v4H4z M4 18h16v4H4z',roadmap:'M4 21V3l15 4-15 4',plus:'M12 4v16 M4 12h16',check:'M4 12l5 5L20 6',arrow:'M5 12h14 M14 7l5 5-5 5',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18 M12 7v5l3 2',search:'M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14 M15 15l6 6',logout:'M9 4H4v16h5 M9 12h12 M16 7l5 5-5 5',calendar:'M4 5h16v16H4z M4 10h16 M8 3v4 M16 3v4'};
@@ -13,7 +22,7 @@ const tags=list=>(list||[]).map(t=>`<span class="tag ${t==='Priority'?'vip':''}"
 const date=t=>new Date(t*1000).toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const clock=t=>new Date(t*1000).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
 const names={'working-hours':'Working hours & SLA','google-connections':'Google connections','semantic-knowledge':'Semantic knowledge',recipes:'Integration recipes','support-tools':'Support tools',branches:'Branches',attribution:'Lead attribution','help-centre':'Help centre','whatsapp-forms':'WhatsApp forms','ai-agents':'AI Agents',webhooks:'Webhooks',services:'Services & billing','customer-assistant':'Customer support AI',segments:'Contact segments','external-agents':'Custom AI Agents',developers:'Developers',commerce:'Commerce & Integrations',pipeline:'Sales Pipeline',findings:'AI Findings',campaigns:'Campaigns',inbox:'Team Inbox',contacts:'Contacts',templates:'Template Messages',rules:'Rules',flows:'Chatbot Builder',sequences:'Sequences & Drip',replies:'Reply Material',analytics:'Analytics',team:'Team & Workspaces',settings:'Meta Connection',roadmap:'Feature Roadmap'};
-const S={review:false,reviewAvailable:false,passwordRecoveryAvailable:false,signupAvailable:false,data:null,initialized:true,setupTokenRequired:false,deployment:'local',workspace:localStorage.getItem('tw_workspace')||'',route:location.hash.startsWith('#invite=')?'inbox':location.hash.slice(1)||'campaigns',chat:null,search:'',filter:'all',campaignView:'list',preview:null,draft:'',mode:'reply'};
+const S={review:false,reviewAvailable:false,passwordRecoveryAvailable:false,signupAvailable:false,data:null,initialized:true,setupTokenRequired:false,deployment:'local',workspace:workspaceStorage.getItem('tw_workspace')||'',route:location.hash.startsWith('#invite=')?'inbox':location.hash.slice(1)||'campaigns',chat:null,search:'',filter:'all',campaignView:'list',preview:null,draft:'',mode:'reply'};
 let formSubmit=null,toastTimer;
 function toast(message){$('#toast').textContent=message;$('#toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').style.display='none',6000)}
 async function api(path,options={}){if(S.review&&path.startsWith('/api/')){const name=path.split('?')[0];if((options.method||'GET')!=='GET'||!['/api/state','/api/analytics','/api/chat-source','/api/knowledge-source','/api/export'].includes(name))throw new Error('Live review is read-only. Complete owner setup to save changes or connect providers.');path='/api/review/'+path.slice(5)}const r=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(S.workspace?{'X-Workspace':S.workspace}:{}),...(options.headers||{})}});let data;try{data=await r.json()}catch(error){if(options.signal?.aborted)throw options.signal.reason||error;const e=new Error([502,503,504].includes(r.status)?'The service is restarting. Try again in a moment.':'The server returned an unreadable response. Refresh and try again.');e.status=r.status;throw e}if(!r.ok){const e=new Error(data.error||'Request failed');e.status=r.status;throw e}return data}
@@ -24,7 +33,7 @@ async function refresh({starting=false, signal}={}) {
     const changed=JSON.stringify(next)!==JSON.stringify(S.data);
     S.data=next;
     S.workspace=next.context.tenant_id;
-    localStorage.setItem('tw_workspace',S.workspace);
+    workspaceStorage.setItem('tw_workspace',S.workspace);
     if (starting||changed) render();
     return true;
   } catch (error) {
@@ -38,7 +47,7 @@ async function refresh({starting=false, signal}={}) {
       S.data=null;
       S.workspace='';
       clearAnalyticsReport();
-      localStorage.removeItem('tw_workspace');
+      workspaceStorage.removeItem('tw_workspace');
       $('#workspace-ai')?.remove();
       if (hadWorkspace) return refresh({starting,signal});
       renderAuth();
@@ -311,7 +320,7 @@ if(e.target.id==='composer'){e.preventDefault();const body=$('#compose').value.t
 let typingPresenceTimer=null;
 document.addEventListener('input',e=>{if(e.target.id==='compose'){S.draft=e.target.value;if(S.chat){clearTimeout(typingPresenceTimer);if(e.target.value.trim()){typingPresenceTimer=setTimeout(()=>{void act('chat.presence',{contact_id:S.chat,status:'typing'})},500)}else{void act('chat.presence',{contact_id:S.chat,status:'viewing'})}}}if(e.target.matches('[data-search]')){S.search=e.target.value;const caret=e.target.selectionStart;render();const target=$('[data-search]');target.focus();target.setSelectionRange(caret,caret)}});
 document.addEventListener('change',async e=>{try{if(e.target.dataset.chatStatus){await act('chat.update',{id:e.target.dataset.chatStatus,status:e.target.value});await refresh()}if(e.target.dataset.chatAssignee){await act('chat.update',{id:e.target.dataset.chatAssignee,assignee:e.target.value});await refresh()}if(e.target.id==='message-mode'){S.mode=e.target.value;render()}if(e.target.id==='csvfile'){const file=e.target.files[0];if(file){if(file.size>1000000)throw new Error('CSV file is too large (maximum 1 MB).');$('#f-csv').value=await file.text()}}}catch(err){toast(err.message)}});
-window.addEventListener('hashchange',()=>{if(hasPasswordResetHash())return openPasswordReset();if(location.hash==='#signup'&&S.signupAvailable){S.data=null;return renderAuth(true)}if(RECOVERY.mode)return;if(hasInvitationHash())return openInvitation();if(INV.token)return;S.route=location.hash.slice(1)||'campaigns';S.search='';S.preview=null;if(window.innerWidth<=700)localStorage.setItem('vybe-nav-expanded','false');render();window.scrollTo({top:0,behavior:'auto'})});
+window.addEventListener('hashchange',()=>{if(hasPasswordResetHash())return openPasswordReset();if(location.hash==='#signup'&&S.signupAvailable){S.data=null;return renderAuth(true)}if(RECOVERY.mode)return;if(hasInvitationHash())return openInvitation();if(INV.token)return;S.route=location.hash.slice(1)||'campaigns';S.search='';S.preview=null;if(window.innerWidth<=700)workspaceStorage.setItem('vybe-nav-expanded','false');render();window.scrollTo({top:0,behavior:'auto'})});
 $('#modal').addEventListener('cancel',()=>formSubmit=null);
 $('#modal').addEventListener('close',clearSecurityDialog);
 async function retryStartupRequest(request) {
