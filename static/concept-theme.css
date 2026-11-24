@@ -352,3 +352,31 @@ body.navigation-drawer-open #help-widget{visibility:hidden}
  .ai-header .buttons{gap:4px}.ai-header button{min-height:44px}
  .ai-body{padding:16px}.ai-compose{margin:10px;padding:12px}.ai-compose .buttons{flex-wrap:wrap}
 }
+
+/* Quiet workspace theme: neutral surfaces and a single green action colour. */
+:root{--border:#dfe7e3;--soft:#f0f6f3;--muted:#60756a}
+body{background:#f6f8f7;color:#19372b}
+.shell .main>.content{background:#f7f9f8}
+.shell .topbar{background:#fff;border-bottom:1px solid #dfe7e3;box-shadow:none}
+.shell .main>.context-nav{background:#fff;border-color:#dfe7e3}
+.card,.stat,.astra-agent,.owned-product,.deal-card,.finding-card,.agent-preset-card,.saved-agent-card{background:#fff;border-color:#dfe7e3;border-radius:14px;box-shadow:0 2px 6px #163c2905}
+.cardhead{background:#fff;border-bottom-color:#edf1ee}
+.primary{background:#00875a;border-color:#00875a;box-shadow:none}
+.primary:hover{background:#006d49;border-color:#006d49}
+.notice{background:#f0f7f3;border-color:#dce9e1;color:#3c5d4b;border-radius:12px}
+.pagehead h1,.ai-page-title h2{color:#16362a;letter-spacing:-.5px}
+.hint,.muted,.pagehead p{color:#60756a}
+.business-hero{background:#fff!important;border:1px solid #dfe7e3;border-radius:16px;box-shadow:none}
+.business-hero h1{color:#16362a}.business-hero p{color:#526c5e}
+.context-link.selected{background:#eaf4ee;color:#006d49}
+.stat-featured,.stat.stat-featured{background:#fff!important;box-shadow:none}
+.header-whatsapp{background:#eaf6ef;border-color:#d4eadc}
+.header-profile-menu{border-color:#dfe7e3;box-shadow:0 8px 24px #193c2b14}
+.mobile-section-picker select{border-color:#dfe7e3;background:#fff}
+.help-home .help-panel-body{background:#edf6f0}
+@media(max-width:650px){
+ .shell.nav-expanded>.sidebar{background:#fff}
+ .shell.nav-expanded .sidebar nav .navlink.active{background:#e6f3ec!important}
+ .cardhead,.cardbody{padding:16px}
+ .agent-preset-card,.saved-agent-card{border-radius:14px}
+}
