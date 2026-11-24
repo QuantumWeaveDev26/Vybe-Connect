@@ -8,7 +8,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   document:{addEventListener(name,fn){handlers[name]=fn},querySelector(){return null}},window:{FB,addEventListener(name,fn){handlers['window:'+name]=fn}},
   act(){return Promise.resolve({state:'nonce',app_id:'123',config_id:'456',version:'v25.0'})},
   refresh(){state.refreshes++;return Promise.resolve()},render(){state.renders++;state.html=vm.runInContext('settingsPage()',context)},toast(){}});
- vm.runInContext(fs.readFileSync('static/whatsapp-connect.js','utf8'),context);
+ vm.runInContext(fs.readFileSync('static/manual-whatsapp.js','utf8'),context);
+vm.runInContext(fs.readFileSync('static/whatsapp-connect.js','utf8'),context);
  function click(){const button={disabled:false,hasAttribute(name){return name==='data-wa-connect'}};return handlers.click({target:{closest(){return button}}})}
  await click();
  assert.match(state.html,/Continue with Meta/);assert.match(state.html,/data-wa-connect >Continue/);

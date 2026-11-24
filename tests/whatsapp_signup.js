@@ -5,6 +5,7 @@ const context=vm.createContext({console,JSON,String,Boolean,Object,Array,Promise
  S:{workspace:'workspace',data:{context:{role:'admin',user:{id:'owner'}},meta:{},whatsapp_connection:{status:'not_connected',signup_available:true}}},
  document:{addEventListener(){},querySelector(){return null}},window:{addEventListener(name,fn){listeners[name]=fn}},
  act(operation,data){calls.push({operation,data});return Promise.resolve({})},refresh(){return Promise.resolve()},toast(){}});
+vm.runInContext(fs.readFileSync('static/manual-whatsapp.js','utf8'),context);
 vm.runInContext(fs.readFileSync('static/whatsapp-connect.js','utf8'),context);
 let html=vm.runInContext('settingsPage()',context);assert.match(html,/data-wa-connect >Connect WhatsApp/);
 vm.runInContext('S.data.context.role="agent"',context);html=vm.runInContext('settingsPage()',context);assert.match(html,/data-wa-connect disabled/);
