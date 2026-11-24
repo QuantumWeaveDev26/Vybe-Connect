@@ -8,7 +8,7 @@ import platform_ai
 class InternalAccessTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.path=Path(self.tmp.name)/'app.db'
-        env={'TW_PLATFORM_AI_MANAGED':'false','TW_DATA_DIR':self.tmp.name,'TW_PLATFORM_AI_DB':str(self.path),'TW_AI_ENABLED':'true','TW_AI_PROVIDER':'openai','TW_AI_MODEL':'gpt-6-luna','TW_OPENAI_API_KEY':'unit-test-key'}
+        env={'TW_PLATFORM_AI_MANAGED':'false','TW_DATA_DIR':self.tmp.name,'TW_PLATFORM_AI_DB':str(self.path),'TW_AI_ENABLED':'true','TW_AI_PROVIDER':'openai','TW_AI_MODEL':'gpt-6-luna','TW_OPENAI_API_KEY':'unit-test-key','TW_INTERNAL_AI_BUDGET_PAISE':'29900'}
         self.env=patch.dict(os.environ,env,clear=True);self.env.start();self.addCleanup(self.env.stop)
         self.s=Store(self.path);self.ctx=self.s.auth(self.s.setup('Team','team@example.test','long-test-password','Internal Team')['token']);self.t=self.ctx['tenant_id']
         self.member=self.s.action(self.ctx,'member.add',{'name':'Teammate','email':'member@example.test','password':'long-agent-password','role':'agent'})
@@ -57,3 +57,25 @@ class InternalAccessTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=4) as pool:self.assertEqual(sum(pool.map(reserve,range(4))),1)
         for invalid in ('0','-1','1001','unlimited','True'):
             with patch.dict(os.environ,{'TW_INTERNAL_AI_ENABLED':'true','TW_INTERNAL_AI_REQUESTS_PER_MONTH':invalid}):self.assertFalse(ai_status(self.t)['enabled'])
+
+    def test_rupee_budget_reserves_atomically_and_blocks_before_provider(self):
+        from concurrent.futures import ThreadPoolExecutor
+        def reserve(_):
+            try:platform_ai.reserve(self.t,str(self.path),'facts','hello',[]);return True
+            except ValueError:return False
+        # Each minimal request reserves 339 paise. Exactly one fits 500 paise.
+        with patch.dict(os.environ,{'TW_INTERNAL_AI_ENABLED':'true','TW_INTERNAL_AI_REQUESTS_PER_MONTH':'1000','TW_INTERNAL_AI_BUDGET_PAISE':'500'}):
+            with ThreadPoolExecutor(max_workers=5) as pool:self.assertEqual(sum(pool.map(reserve,range(5))),1)
+            allowance=platform_ai.entitlement(self.t)
+            self.assertEqual(allowance['reserved_paise'],339)
+            self.assertEqual(allowance['remaining'],0)
+            with self.s.db() as db:
+                self.assertEqual(db.execute('SELECT requests FROM platform_ai_usage WHERE tenant=?',(self.t,)).fetchone()[0],1)
+        for invalid in ('','-1','0','299.00','unlimited'):
+            with patch.dict(os.environ,{'TW_INTERNAL_AI_ENABLED':'true','TW_INTERNAL_AI_BUDGET_PAISE':invalid}):self.assertFalse(ai_status(self.t)['enabled'])
+
+    def test_large_request_budget_failure_does_not_consume_request_or_cross_cap(self):
+        with patch.dict(os.environ,{'TW_INTERNAL_AI_ENABLED':'true','TW_INTERNAL_AI_BUDGET_PAISE':'500'}):
+            with self.assertRaisesRegex(ValueError,'spending limit'):platform_ai.reserve(self.t,str(self.path),'x'*29000,'hello',[])
+            self.assertEqual(platform_ai.entitlement(self.t)['used'],0)
+            self.assertEqual(platform_ai.entitlement(self.t)['reserved_paise'],0)
