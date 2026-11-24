@@ -353,30 +353,40 @@ body.navigation-drawer-open #help-widget{visibility:hidden}
  .ai-body{padding:16px}.ai-compose{margin:10px;padding:12px}.ai-compose .buttons{flex-wrap:wrap}
 }
 
-/* Quiet workspace theme: neutral surfaces and a single green action colour. */
-:root{--border:#dfe7e3;--soft:#f0f6f3;--muted:#60756a}
-body{background:#f6f8f7;color:#19372b}
-.shell .main>.content{background:#f7f9f8}
-.shell .topbar{background:#fff;border-bottom:1px solid #dfe7e3;box-shadow:none}
-.shell .main>.context-nav{background:#fff;border-color:#dfe7e3}
-.card,.stat,.astra-agent,.owned-product,.deal-card,.finding-card,.agent-preset-card,.saved-agent-card{background:#fff;border-color:#dfe7e3;border-radius:14px;box-shadow:0 2px 6px #163c2905}
-.cardhead{background:#fff;border-bottom-color:#edf1ee}
-.primary{background:#00875a;border-color:#00875a;box-shadow:none}
-.primary:hover{background:#006d49;border-color:#006d49}
-.notice{background:#f0f7f3;border-color:#dce9e1;color:#3c5d4b;border-radius:12px}
-.pagehead h1,.ai-page-title h2{color:#16362a;letter-spacing:-.5px}
-.hint,.muted,.pagehead p{color:#60756a}
-.business-hero{background:#fff!important;border:1px solid #dfe7e3;border-radius:16px;box-shadow:none}
-.business-hero h1{color:#16362a}.business-hero p{color:#526c5e}
-.context-link.selected{background:#eaf4ee;color:#006d49}
-.stat-featured,.stat.stat-featured{background:#fff!important;box-shadow:none}
-.header-whatsapp{background:#eaf6ef;border-color:#d4eadc}
-.header-profile-menu{border-color:#dfe7e3;box-shadow:0 8px 24px #193c2b14}
-.mobile-section-picker select{border-color:#dfe7e3;background:#fff}
-.help-home .help-panel-body{background:#edf6f0}
+/* Lively workspace theme: mint, lilac, peach and sky surfaces with clear actions. */
+:root{--border:#dde7e3;--soft:#edf8f1;--muted:#587363}
+body{background:#f5f4fa;color:#163b30}
+.shell .main>.content{background:linear-gradient(150deg,#f4faf6 0%,#f8f5fc 62%,#fff8f0 100%)}
+.shell .topbar{background:#fff;border-bottom:1px solid #dcebe3;box-shadow:0 2px 10px #1b574408}
+.shell .main>.context-nav{background:#f3faf6;border-color:#dcebe3}
+.card,.stat,.astra-agent,.owned-product,.deal-card,.finding-card,.agent-preset-card,.saved-agent-card{background:#fff;border-color:#dce8e2;border-radius:18px;box-shadow:0 5px 16px #244a3810}
+.cardhead{background:#fbfefc;border-bottom-color:#eaf1ed}
+.primary{background:linear-gradient(120deg,#00a875,#00875c);border-color:#008e62;box-shadow:0 4px 10px #00875d18}
+.primary:hover{background:#00774f;border-color:#00774f}
+.notice{background:#e9f8f0;border-color:#cfe9dc;color:#345c46;border-radius:14px}
+.pagehead h1,.ai-page-title h2{color:#153e30;letter-spacing:-.5px}
+.hint,.muted,.pagehead p{color:#587363}
+.business-hero{background:linear-gradient(115deg,#c4f5de,#d3f4ee 55%,#e2dafa)!important;border:1px solid #bee7d4;border-radius:20px;box-shadow:0 8px 20px #27845712}
+.business-hero h1{color:#103f31}.business-hero p{color:#315d4d}
+.context-link.selected{background:#d8f1e3;color:#006542}
+.stat-featured:nth-child(4n+1){background:#e9f9f0!important;border-color:#caead8}
+.stat-featured:nth-child(4n+2){background:#f1edfd!important;border-color:#e0d6f5}
+.stat-featured:nth-child(4n+3){background:#fff1e4!important;border-color:#f0ddc9}
+.stat-featured:nth-child(4n){background:#eaf5ff!important;border-color:#d1e5f5}
+.agent-preset-card:nth-child(6n+1){background:#f0fbf5}
+.agent-preset-card:nth-child(6n+2){background:#f5f0fd}
+.agent-preset-card:nth-child(6n+3){background:#fff5eb}
+.agent-preset-card:nth-child(6n+4){background:#edf8fd}
+.agent-preset-card:nth-child(6n+5){background:#fdf0f4}
+.agent-preset-card:nth-child(6n){background:#fff9e9}
+.agent-categories button[aria-pressed="true"]{background:#5d46a0;color:#fff;border-color:#5d46a0;box-shadow:none}
+.header-whatsapp{background:#daf7e7;border-color:#bcebd1}
+.header-profile-menu{border-color:#d8e7de;box-shadow:0 8px 24px #193c2b18}
+.mobile-section-picker select{border-color:#cee6d9;background:#fff}
+.help-home .help-panel-body{background:#e7f7ee}
 @media(max-width:650px){
- .shell.nav-expanded>.sidebar{background:#fff}
- .shell.nav-expanded .sidebar nav .navlink.active{background:#e6f3ec!important}
+ .shell.nav-expanded>.sidebar{background:#f6fcf8}
+ .shell.nav-expanded .sidebar nav .navlink.active{background:#cff0de!important}
  .cardhead,.cardbody{padding:16px}
- .agent-preset-card,.saved-agent-card{border-radius:14px}
+ .agent-preset-card,.saved-agent-card{border-radius:16px}
 }
