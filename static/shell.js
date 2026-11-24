@@ -31,7 +31,7 @@ if(section==='settings'){title='Settings';items=[['settings','WhatsApp Cloud API
 if(section==='inbox'){title='Team Inbox';items=[['inbox','Conversations'],['support-tools','Support tools']]}
 if(section==='pipeline'){title='Sales CRM';items=[['pipeline','Pipeline'],['branches','Branches & routing']]}
 if(section==='analytics'){title='Analytics';items=[['analytics','Message reports'],['attribution','Lead attribution']]}
-if(!items.length)return '';return `<aside class="context-nav" data-section="${section}"><h2>${title}</h2>${section==='campaigns'?btn('+ Create New Campaign','new-campaign','','primary'):''}${section==='automations'?'<div class="navlabel">TRIGGERS & ACTIONS LIBRARY</div>':''}${items.map(([route,label])=>`<a href="#${route}" ${S.route===route?'aria-current="page"':''} class="context-link ${S.route===route?'selected':''}">${icon(route)}<span>${label}</span></a>`).join('')}</aside>`}
+if(!items.length)return '';return `<aside class="context-nav ${items.length>3?'has-mobile-picker':''}" data-section="${section}"><h2>${title}</h2>${items.length>3?`<label class="mobile-section-picker"><span>${esc(title)}</span><select aria-label="${esc(title)} section" data-section-route>${items.map(([route,label])=>`<option value="${route}" ${S.route===route?'selected':''}>${esc(label)}</option>`).join('')}</select></label>`:''}${section==='campaigns'?btn('+ Create New Campaign','new-campaign','','primary'):''}${section==='automations'?'<div class="navlabel">TRIGGERS & ACTIONS LIBRARY</div>':''}${items.map(([route,label])=>`<a href="#${route}" ${S.route===route?'aria-current="page"':''} class="context-link ${S.route===route?'selected':''}">${icon(route)}<span>${label}</span></a>`).join('')}</aside>`}
 function workspaceSearchEntries(query){
  const q=String(query||'').trim().toLocaleLowerCase();if(!q)return [];
  const routes=Object.entries(names).filter(([route,label])=>(route+' '+label).toLocaleLowerCase().includes(q)).map(([route,label])=>({route,label,kind:'Page'}));
@@ -63,7 +63,7 @@ function installConceptHeader(){
  const toggle=bar.querySelector('#header-profile-toggle');if(toggle)toggle.onclick=event=>{event.stopPropagation();const menu=bar.querySelector('#header-profile-menu');menu.hidden=!menu.hidden;toggle.setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button')?.focus()};
 }
 function upgradeShell(){if(!S.data)return;installConceptHeader();closeConnectorMenu();applyNavigationPreference();const sidebar=$('.sidebar nav');if(!sidebar)return;const section=shellSection();sidebar.setAttribute("aria-label","Main navigation");sidebar.innerHTML=primaryNavigation();
-const main=$('.main'),content=$('.content');main.querySelector('.context-nav')?.remove();const menu=contextMenu();main.classList.toggle('has-context',!!menu);if(menu)content.insertAdjacentHTML('beforebegin',menu); }
+const main=$('.main'),content=$('.content');main.querySelector('.context-nav')?.remove();const menu=contextMenu();main.classList.toggle('has-context',!!menu);if(menu)content.insertAdjacentHTML('beforebegin',menu);prepareMobileTables(); }
 
 function navigationToggleMarkup(expanded){
  return btn('<b class="nav-toggle-mark" aria-hidden="true">&#9776;</b><span>Navigation</span>','nav-toggle',`aria-label="${expanded?'Collapse':'Expand'} navigation" title="${expanded?'Collapse':'Expand'} navigation" aria-expanded="${expanded}"`,'navlink ghost');
@@ -97,3 +97,18 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeHeader
 document.addEventListener('click',event=>{if(!event.target.closest?.('#header-profile-toggle'))closeHeaderProfile();if(!event.target.closest?.('.workspace-search')){const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
 
 }
+
+function prepareMobileTables(){
+ const headings=new Set(['contact','customer','team member','teammate','name','rule','rule name','template','team','agent','product','order']);
+ for(const table of document.querySelectorAll('.content .tablewrap table')){
+  const labels=[...(table.tHead?.rows[0]?.cells||[])].map(cell=>cell.textContent.trim());
+  const rows=[...table.tBodies].flatMap(body=>[...body.rows]);
+  if(rows.length===0||rows.length===1&&rows[0].cells.length===1&&rows[0].cells[0].colSpan>1){table.classList.add('mobile-empty-table');continue}
+  if(!headings.has(labels[0]?.toLowerCase()))continue;
+  table.classList.add('mobile-card-table');
+  for(const body of table.tBodies)for(const row of body.rows)for(const [index,cell] of [...row.cells].entries())if(cell.colSpan===1)cell.setAttribute('data-label',labels[index]||'');
+ }
+}
+if(typeof document!=='undefined')document.addEventListener('change',event=>{
+ if(event.target.matches?.('[data-section-route]'))location.hash=event.target.value;
+});
