@@ -384,6 +384,103 @@ body{background:#f5f4fa;color:#163b30}
 .header-profile-menu{border-color:#d8e7de;box-shadow:0 8px 24px #193c2b18}
 .mobile-section-picker select{border-color:#cee6d9;background:#fff}
 .help-home .help-panel-body{background:#e7f7ee}
+/* Focused AI workspace: one dialog, one navigation row, no page-splitting drawer. */
+#workspace-ai{inset:0;margin:auto;width:min(820px,calc(100vw - 48px));max-width:none;height:min(760px,calc(100dvh - 48px));max-height:none;border:0;border-radius:18px;padding:0;background:#fcfdfb;box-shadow:0 20px 70px #122e3540;overflow:hidden;color:#173b30}
+#workspace-ai:not([open]){display:none}
+#workspace-ai::backdrop{background:#142f365e;backdrop-filter:none}
+#workspace-ai.ai-expanded{width:calc(100vw - 32px);height:calc(100dvh - 32px)}
+html:has(#workspace-ai[open]){overflow:hidden}
+#workspace-ai .ai-header{flex:none;height:auto;min-height:68px;padding:14px 22px;background:#e8f6ed;border-bottom:1px solid #d3e7da;gap:12px}
+#workspace-ai .ai-heading{min-width:0;flex-wrap:wrap;gap:10px}
+#workspace-ai .ai-heading strong{font-size:18px;white-space:nowrap}
+#workspace-ai .ai-heading-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#fff;color:#08744c}
+#workspace-ai .ai-header button{min-height:40px;white-space:nowrap}
+#workspace-ai .ai-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 22px;background:#fff;border-bottom:1px solid #e1e8e3;flex:none}
+#workspace-ai .ai-tabs{margin:0;gap:6px}
+#workspace-ai .ai-tabs button{min-height:40px;padding:8px 13px}
+#workspace-ai .ai-history-menu{position:relative;margin-left:auto}
+#workspace-ai .ai-history-menu>summary{cursor:pointer;min-height:40px;align-content:center;padding:8px;color:#405b4c;font-size:13px}
+#workspace-ai .ai-history-menu>summary{white-space:nowrap;list-style:none}
+#workspace-ai .ai-history-menu>div{position:absolute;right:0;top:44px;z-index:5;width:250px;max-height:300px;overflow:auto;padding:10px;background:white;border:1px solid #d8e5dd;border-radius:12px;box-shadow:0 10px 24px #183c2b20}
+#workspace-ai .ai-history{margin:3px 0;min-height:40px;font-size:13px;overflow-wrap:anywhere}
+#workspace-ai .ai-layout,#workspace-ai.ai-collapsed .ai-layout{display:flex;flex:1;min-height:0}
+#workspace-ai .ai-body{width:100%;padding:20px 24px;gap:12px;flex:1;overflow:auto}
+#workspace-ai .ai-transcript{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain}
+#workspace-ai .ai-welcome{min-height:0;justify-content:flex-start;gap:10px;background:none;padding:18px 0}
+#workspace-ai .ai-welcome>span{display:none}
+#workspace-ai .ai-welcome h2{font-size:24px;margin:0}
+#workspace-ai .ai-welcome p{margin:0 0 8px;max-width:65ch;color:#50695c}
+#workspace-ai .ai-suggestion{padding:12px 14px;font-size:14px;background:#f1edfa;color:#463968;min-height:44px}
+#workspace-ai .ai-compose{flex:none;margin:0;padding:12px 14px;border-radius:12px;box-shadow:none;background:#fff}
+#workspace-ai .ai-compose textarea{min-height:64px;max-height:120px;font-size:15px;resize:vertical}
+#workspace-ai .ai-compose-tools{margin-top:6px}
+#workspace-ai .ai-compose .tag{font-size:12px;margin-bottom:6px}
+#workspace-ai .ai-message{font-size:14px;line-height:1.7;white-space:normal}
+#workspace-ai .ai-message p{white-space:pre-wrap}
+/* Inbox owns the available screen height; messages scroll and reply controls stay visible. */
+.shell .main:has(.content>.inbox){height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.shell .main:has(.inbox)>.topbar,.shell .main:has(.inbox)>.context-nav{flex:none}
+.shell .main:has(.inbox)>.content{flex:1;min-height:0;display:flex;flex-direction:column;padding:18px 22px 16px}
+.content:has(>.inbox)>.pagehead{flex:none;margin-bottom:14px;gap:10px}
+.content:has(>.inbox)>.pagehead h1{font-size:24px}
+.content:has(>.inbox)>.pagehead p{display:none}
+.content:has(>.inbox)>.footerline{display:none}
+.content>.inbox{position:relative;flex:1;min-height:0;height:auto;grid-template-columns:280px minmax(0,1fr);border-radius:14px;overflow:hidden}
+.inbox>.chatlist{max-height:none;min-height:0;overflow:auto}
+.inbox>.conversation{height:100%;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.inbox .conversationhead{flex:none;padding:12px 16px;gap:10px;flex-wrap:nowrap}
+.inbox .conversationhead .person{flex:1;min-width:0}
+.inbox .conversationhead .person strong{overflow-wrap:anywhere}
+.inbox .conversationhead select{width:100px;min-width:80px}
+.inbox .messages{flex:1;min-height:0;overflow:auto;padding:18px;background:#f5f9f6;background-image:none}
+.inbox .composer{flex:none;padding:12px 16px;background:white}
+.inbox .composer textarea{min-height:62px;max-height:110px;font-size:14px;padding:10px;resize:vertical}
+.inbox .composer>.buttons{gap:10px;margin-bottom:8px}
+.inbox .manual-whatsapp-hint{font-size:12px;line-height:1.4;margin:0 0 6px;color:#536e60}
+.inbox .composerfoot{margin-top:8px;gap:10px;flex-wrap:nowrap}
+.inbox .composerfoot select{width:auto;flex:1;min-width:0}
+.inbox .composerfoot button{flex:none;min-height:42px}
+.inbox .chatfilters{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.inbox .chatfilters button{font-size:12px;padding:8px 4px;min-height:40px}
+.inbox>.contactpanel{display:none}
+.inbox.contact-details-open>.contactpanel{display:block;position:absolute;inset:0 0 0 auto;width:min(320px,100%);z-index:4;overflow:auto;background:#fff;box-shadow:-10px 0 30px #163d2b20;border:0;padding:16px}
+.inbox .contact-details-close{display:block;margin:0 0 16px auto}
+body:has(.inbox) #help-widget>.help-launcher{display:none}
+@media(max-width:1500px){.shell .main:has(.inbox)>.context-nav{position:relative;top:0!important}}
+@media(min-width:1501px){.shell .main:has(.inbox)>.content{padding-left:24px;margin-left:230px}}
+@media(max-width:950px){.content>.inbox{grid-template-columns:240px minmax(0,1fr)}.inbox .conversationhead{flex-wrap:wrap}.inbox .conversationhead .person{flex-basis:100%}}
+@media(max-width:650px){
+ #workspace-ai,#workspace-ai.ai-expanded{inset:0;width:100%;height:100dvh;margin:0;border-radius:0}
+ #workspace-ai .ai-header{min-height:62px;padding:10px 12px;gap:6px}
+ #workspace-ai .ai-header .badge,#workspace-ai .ai-heading-icon{display:none}
+ #workspace-ai .ai-header [data-do="ai-expand"]{display:none}
+ #workspace-ai .ai-header button{min-height:44px}
+ #workspace-ai .ai-toolbar{padding:8px 10px;gap:4px}
+ #workspace-ai .ai-tabs{gap:3px}#workspace-ai .ai-tabs button{padding:8px;font-size:12px;min-height:44px}
+ #workspace-ai .ai-tabs{min-width:0;overflow:auto;flex:1;scrollbar-width:none}#workspace-ai .ai-tabs button{flex:none}
+ #workspace-ai .ai-history-menu>summary{font-size:12px;padding:8px 4px;min-height:44px}
+ #workspace-ai .ai-body{padding:14px 12px  calc(12px + env(safe-area-inset-bottom));gap:10px}
+ #workspace-ai .ai-welcome{padding:8px 0}#workspace-ai .ai-welcome h2{font-size:22px}
+ #workspace-ai .ai-compose{padding:10px}#workspace-ai .ai-compose textarea{font-size:16px;min-height:56px}
+ #workspace-ai .ai-compose-tools select{margin-left:auto;max-width:170px}
+ .shell .main:has(.inbox)>.content{padding:12px 10px calc(10px + env(safe-area-inset-bottom))}
+ .content:has(>.inbox)>.pagehead{flex-direction:row;align-items:center;margin-bottom:10px}
+ .content:has(>.inbox)>.pagehead h1{font-size:20px}
+ .content:has(>.inbox)>.pagehead>.buttons{width:auto}
+ .content:has(>.inbox)>.pagehead>.buttons>a,.content:has(>.inbox)>.pagehead [data-do="open-csv-importer"]{display:none}
+ .content>.inbox{display:grid;grid-template-columns:minmax(0,1fr);min-height:0}
+ .inbox>.chatlist{overflow:auto;min-height:0}
+ .inbox>.conversation{display:none}
+ .inbox.mobile-chat-open>.conversation{height:100%;min-height:0;display:flex}
+ .inbox.mobile-chat-open .mobile-chat-back{min-height:36px;font-size:12px;margin:0;padding:6px 12px;flex:none}
+ .inbox .conversationhead{padding:8px 12px;gap:6px}
+ .inbox .conversationhead .person{flex-basis:auto}
+ .inbox .conversationhead>.small{font-size:12px;min-height:38px;padding:7px 9px}
+ .inbox .conversationhead select{width:80px;font-size:14px;min-height:38px;padding:6px}
+ .inbox .composer{padding:10px 12px}.inbox .composer textarea{font-size:16px;min-height:56px}
+ .inbox .messages{padding:12px}.inbox .bubble{max-width:90%}
+ body:has(.inbox.mobile-chat-open) .help-launcher{display:none}
+}
 @media(max-width:650px){
  .shell.nav-expanded>.sidebar{background:#f6fcf8}
  .shell.nav-expanded .sidebar nav .navlink.active{background:#cff0de!important}

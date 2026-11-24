@@ -1,0 +1,14 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const nodes=new Map(),created=[];
+const doc={body:{append(e){nodes.set('#'+e.id,e)}},activeElement:null,createElement(tag){created.push(tag);return {open:false,classList:{toggle(){}},setAttribute(){},addEventListener(n,f){this[n]=f},showModal(){this.open=true},remove(){nodes.delete('#'+this.id)}}}};
+const c=vm.createContext({document:doc,setInterval(){},location:{hash:''},S:{route:'ai-agents',data:{context:{tenant_id:'one',user:{id:'owner'}},ai:{enabled:true,configured:true},aichats:[],airuns:[],aiagents:[{id:'digest',name:'Daily Digest'}]}},$:q=>nodes.get(q),esc:String,icon:()=>'',badge:x=>x,btn:(a,b,d='')=>`<button data-do="${b}" ${d}>${a}</button>`,filterAgentDirectory(){},render(){}});
+vm.runInContext(fs.readFileSync('static/assistant.js','utf8'),c);
+assert.equal(vm.runInContext("aiCanSubmit({enabled:true,configured:true,platform_managed:true,allowance:{remaining:5,internal_use:true,budget_remaining_paise:338}})",c),false,'UI must respect the same minimum reservation as the server');
+vm.runInContext("aiAskPage=()=>'<textarea></textarea>';renderAI()",c);
+assert.equal(created.length,0,'Rendering the agent page must not open an unsolicited AI window');
+vm.runInContext("showAI('ask')",c);let panel=nodes.get('#workspace-ai');assert.equal(created[0],'dialog');assert.equal(panel.open,true);assert.match(panel.innerHTML,/aria-label="AI workspace"/);assert.match(panel.innerHTML,/ai-history-menu/);assert.doesNotMatch(panel.innerHTML,/class="ai-nav"/);
+panel.close();vm.runInContext('renderAI()',c);assert.equal(nodes.has('#workspace-ai'),false,'Closing remains closed across page refreshes');
+(async()=>{await vm.runInContext("aiAction('ai-use-agent',{dataset:{id:'digest'}})",c);assert.equal(nodes.get('#workspace-ai').open,true);await vm.runInContext("aiAction('ai-tab',{dataset:{tab:'agents'}})",c);assert.equal(nodes.has('#workspace-ai'),false);assert.equal(c.location.hash,'ai-agents');let reject;c.refresh=async()=>{};c.act=()=>new Promise((_,r)=>reject=r);
+const running=vm.runInContext("aiAction('ai-run-agent',{dataset:{id:'digest'}})",c);assert.match(nodes.get('#workspace-ai').innerHTML,/Running Daily Digest/);reject(new Error('Provider unavailable'));await running;assert.match(nodes.get('#workspace-ai').innerHTML,/role="alert">Provider unavailable/);assert.equal(vm.runInContext('A.busy',c),false);
+let resolve;c.act=()=>new Promise(r=>resolve=r);const again=vm.runInContext("aiAction('ai-run-agent',{dataset:{id:'digest'}})",c);nodes.get('#workspace-ai').close();resolve({id:'new-run'});await again;assert.equal(nodes.has('#workspace-ai'),false,'Completing a run must not reopen a closed window');
+console.log('AI dialog, explicit opening, persistent close, run progress and provider error recovery passed.');})().catch(e=>{console.error(e);process.exitCode=1});
