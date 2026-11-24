@@ -241,3 +241,59 @@ body.navigation-drawer-open #help-widget{visibility:hidden}
  .shell .sidebar-bottom .navlink{min-height:44px}
 }
 @media(max-width:420px){.shell .topbar .header-whatsapp{display:none}.workspace-symbol{display:none}}
+
+/* Phone task layouts: one navigation list and one conversation at a time. */
+.mobile-chat-back{display:none}
+@media(max-width:650px){
+ .shell.nav-expanded>.sidebar{top:0!important;bottom:0;width:min(320px,88vw)!important;height:100dvh!important;max-height:100dvh!important;background:#f4faf6;padding:16px 12px calc(12px + env(safe-area-inset-bottom));border-radius:0 18px 18px 0;z-index:60}
+ .shell.nav-expanded .mobile-drawer-heading{padding:0 4px 12px;border-bottom:1px solid #dce9e1;margin-bottom:8px}
+ .mobile-drawer-heading strong{padding-left:8px;font-size:18px}
+ .shell.nav-expanded .sidebar nav{gap:3px;flex:1;min-height:0}
+ .shell.nav-expanded .sidebar nav .navlink{display:flex!important;align-items:center;gap:14px;min-height:46px;padding:10px 12px;background:none!important;border-radius:10px;font-size:14px}
+ .shell.nav-expanded .sidebar nav .navlink:before{display:none}
+ .shell.nav-expanded .sidebar nav .navlink.active{background:#d6f1e4!important;box-shadow:none}
+ .shell.nav-expanded .sidebar .rail-glyph{position:static;width:24px;height:24px;flex:none;margin:0;transform:none;color:#247456;background:none}
+ .shell.nav-expanded .sidebar nav .navlink.active .rail-glyph,.shell.nav-expanded .sidebar nav .navlink:hover .rail-glyph{background:none;color:#08613f}
+ .shell.nav-expanded .sidebar nav .icon{color:#247456;width:22px;height:22px}
+ .shell.nav-expanded .sidebar nav .nav-text{display:block!important;padding:0!important;font-size:14px}
+ .shell.nav-expanded .sidebar-bottom{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;margin:10px 0 0;border-top:1px solid #dce9e1;flex:none}
+ .shell.nav-expanded .sidebar-bottom .navlink{background:#e6f2eb;min-width:44px;width:44px;padding:10px;gap:0}
+ .shell.nav-expanded .sidebar-bottom .navlink .icon{color:#247456}
+ .shell.nav-expanded .sidebar-bottom .navlink span:not(.icon),.shell.nav-expanded .sidebar-bottom [data-do="nav-toggle"]{display:none!important}
+ .nav-backdrop{z-index:59}
+ .shell .topbar>.header-account-host{width:44px!important;min-width:44px}
+ .shell .header-bell{display:none}
+ .shell .main>.context-nav{position:relative;top:0!important;z-index:1;padding:8px 12px;scrollbar-width:none;min-height:0}
+ .shell .main>.context-nav::-webkit-scrollbar{display:none}
+ .shell .main>.context-nav .context-link{min-height:40px;padding:8px 12px}
+ .shell .main.has-context .content>.tabs,.shell .main.has-context .content>.commerce-tabs{display:none}
+ .shell .main>.content{padding:18px 14px}
+ .pagehead{gap:12px;margin-bottom:18px}.pagehead h1{font-size:23px;line-height:1.2;letter-spacing:-.5px}.pagehead p{margin:7px 0 0}
+ .pagehead>.buttons{display:flex;gap:8px}.pagehead>.buttons>button,.pagehead>.buttons>a{min-height:44px;padding:10px 12px;font-size:13px}
+ .inbox .chatlist{max-height:none;min-height:260px;border:0;overflow:visible}
+ .inbox>.conversation,.inbox>.contactpanel{display:none}
+ .inbox.mobile-chat-open>.chatlist{display:none}
+ .inbox.mobile-chat-open>.conversation{display:flex;min-height:480px;height:calc(100dvh - 180px)}
+ .inbox .mobile-chat-back{display:block;align-self:flex-start;min-height:44px;margin:6px 12px;padding:8px 4px;color:#08744d}
+ .inbox .chatlist>.empty{padding:32px 20px;min-height:180px}
+ .inbox .listhead{padding:14px}.inbox .chatfilters{gap:5px}
+ .inbox .chatfilters button{font-size:13px;min-height:44px;padding:8px 4px}
+ .footerline{padding-bottom:58px}
+ #help-widget{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:48}
+ #help-widget .help-launcher{width:46px;height:46px;padding:12px}
+ #help-widget:has(.help-panel)>.help-launcher{display:none}
+ #help-widget .help-panel{position:fixed;inset:auto 8px 8px;width:auto;max-height:calc(100dvh - 80px);height:auto;border-radius:18px;box-shadow:0 10px 40px #102e3030}
+ #help-widget .help-panel header{padding:12px 16px;min-height:64px;flex:none}
+ #help-widget .help-panel header button{min-width:44px;min-height:44px}
+ #help-widget .help-home .help-panel-body{padding:0 16px 16px;background:#eef9f3}
+ #help-widget .help-greeting{padding:18px 0 14px}
+ #help-widget .help-greeting p{font-size:16px;margin:0 0 4px}
+ #help-widget .help-greeting h3{font-size:23px;line-height:1.25}
+ #help-widget .help-characters{display:none}
+ #help-widget .help-home-card{padding:15px 16px;border-radius:12px;box-shadow:none}
+ #help-widget .help-home-cards{gap:10px}
+ #help-widget .help-illustration{display:none}
+ #help-widget .help-card-link{margin:4px 0 0;padding:8px 0;min-height:44px}
+ #help-widget .help-tabs{padding:8px;gap:4px;flex:none;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+ #help-widget .help-tabs button{min-height:44px;font-size:12px}
+}
