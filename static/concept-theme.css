@@ -214,3 +214,30 @@ dialog{border-radius:22px;border-color:#d8e7dc;background:#fffefa;box-shadow:0 2
  .tablewrap{max-width:100%;overscroll-behavior-x:contain}
 }
 @media(max-width:360px){.shell .topbar .header-whatsapp{display:none}}
+
+.nav-backdrop{position:fixed;inset:0;z-index:44;background:#102e304d;border:0;border-radius:0;cursor:pointer;padding:0;min-height:100dvh}
+.nav-backdrop[hidden]{display:none}
+button.nav-backdrop:hover,button.nav-backdrop:focus{background:#102e304d;border:0}
+.mobile-drawer-heading{display:none}
+body.navigation-drawer-open{overflow:hidden}
+body.navigation-drawer-open #help-widget{visibility:hidden}
+@media(max-width:1050px){
+ .shell.nav-expanded .mobile-drawer-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 8px 12px;color:#244536;flex:none}
+ .mobile-drawer-heading strong{padding-left:70px;font-size:14px}
+ .mobile-drawer-heading button{font-size:12px;min-height:44px;padding:8px;white-space:nowrap}
+ .shell.nav-expanded>.sidebar{z-index:45;overflow:hidden}
+ .shell.nav-expanded>.sidebar nav{overflow-y:auto;overscroll-behavior:contain}
+}
+@media(max-width:650px){
+ .shell .topbar .header-mobile-menu{width:44px;min-width:44px;min-height:44px!important;height:44px}
+ .shell .topbar>.header-account-host{width:88px!important;min-width:88px}
+ .shell .header-account{gap:0}
+ .shell .header-bell,.shell .header-profile-toggle{width:44px;min-width:44px;min-height:44px!important;height:44px;padding:6px!important}
+ .shell .topbar>.header-workspace{height:44px}
+ .shell .topbar .header-workspace .workselect{min-height:44px;font-size:16px}
+ .shell .topbar .header-whatsapp{width:44px;min-width:44px;min-height:44px;height:44px}
+ .shell .topbar{gap:4px;padding-inline:8px!important}
+ .shell .context-nav .context-link{min-height:44px}
+ .shell .sidebar-bottom .navlink{min-height:44px}
+}
+@media(max-width:420px){.shell .topbar .header-whatsapp{display:none}.workspace-symbol{display:none}}

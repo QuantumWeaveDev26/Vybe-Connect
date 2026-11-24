@@ -38,6 +38,8 @@ def action(store,ctx,operation,data):
             lambda job:razorpay(tenant,'payments','POST','payment_links',dict(payload,reference_id=job)),
             lambda result,job:payment_project(result,job,order))
     if operation=='billing.subscribe':
+        from internal_access import is_internal
+        if is_internal(tenant):raise ServiceError('Internal team workspaces do not require a subscription.',409)
         if not status(tenant,'billing')['ready']:raise ServiceError('Configure and enable platform subscription billing first.')
         from platform_ai import grant
         with store.db() as db:

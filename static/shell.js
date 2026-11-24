@@ -54,7 +54,7 @@ function closeHeaderProfile(restoreFocus=false){
 }
 function installConceptHeader(){
  const bar=document.querySelector('.topbar');if(!bar||bar.querySelector('.header-brand'))return;
- bar.insertAdjacentHTML('afterbegin','<a class="header-brand" href="#campaigns" aria-label="VYBE Connect home"><span class="header-brand-v" aria-hidden="true">V</span><span>VYBE Connect</span></a><button type="button" class="header-mobile-menu ghost" data-do="nav-toggle" aria-label="Toggle navigation">☰</button>');
+ bar.insertAdjacentHTML('afterbegin','<a class="header-brand" href="#campaigns" aria-label="VYBE Connect home"><span class="header-brand-v" aria-hidden="true">V</span><span>VYBE Connect</span></a><button type="button" class="header-mobile-menu ghost" data-do="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="workspace-navigation">☰</button>');
  const picker=bar.querySelector('.buttons');picker?.classList.add('header-workspace');
  picker?.insertAdjacentHTML('afterbegin','<span class="workspace-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 21V3h12v18M16 8h5v13H3M8 7h1m3 0h1M8 11h1m3 0h1M8 15h1m3 0h1M9 21v-3h3v3"/></svg></span>');
  picker?.insertAdjacentHTML('afterend',`<div class="workspace-search"><label for="workspace-search" class="sr-only">Search workspace</label>${icon('search')}<input id="workspace-search" type="search" autocomplete="off" placeholder="Search conversations, contacts, agents…" aria-controls="workspace-search-results"><div id="workspace-search-results" class="workspace-search-results" hidden></div></div><a class="header-whatsapp" href="#settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-12 7.8L3 21l1.7-5a8.5 8.5 0 1 1 15.3-4.5Z"/><path d="m8 7 2 3-1 1q1.5 3 4 3l1-1 3 2q-1 3-4 2-6-2-7-7 0-2 2-3Z" stroke-width="1.2"/></svg><span>${S.data.meta?.configured?'WhatsApp settings':'Connect WhatsApp'}</span></a>`);
@@ -70,18 +70,28 @@ function navigationToggleMarkup(expanded){
 }
 function applyNavigationPreference(){
  const preference=workspaceStorage.getItem('vybe-nav-expanded');const narrow=typeof innerWidth!=='undefined'&&innerWidth<=1050;const expanded=narrow?mobileNavigationOpen:preference==='true';
- document.querySelector('.shell')?.classList?.toggle('nav-expanded',expanded);
+ if(!narrow)mobileNavigationOpen=false;
+ const shell=document.querySelector('.shell');shell?.classList?.toggle('nav-expanded',expanded);
+ const drawer=narrow&&expanded,sidebar=document.querySelector('.sidebar');
+ if(sidebar&&!sidebar.querySelector('.mobile-drawer-heading'))sidebar.insertAdjacentHTML?.('afterbegin','<div class="mobile-drawer-heading"><strong>Navigation</strong><button type="button" data-do="nav-toggle">Close menu</button></div>');
+ sidebar?.setAttribute('id','workspace-navigation');
+ if(drawer){sidebar?.setAttribute('role','dialog');sidebar?.setAttribute('aria-modal','true');sidebar?.setAttribute('aria-label','Workspace navigation')}else{sidebar?.removeAttribute('role');sidebar?.removeAttribute('aria-modal');sidebar?.removeAttribute('aria-label')}
+ for(const selector of ['.content','.context-nav','#help-widget']){const element=document.querySelector(selector);if(element)element.inert=drawer}
+ document.body?.classList?.toggle('navigation-drawer-open',drawer);
+ let backdrop=document.querySelector('.nav-backdrop');
+ if(drawer&&!backdrop){shell?.insertAdjacentHTML?.('beforeend','<button type="button" class="nav-backdrop" data-do="nav-toggle" aria-label="Close navigation" tabindex="-1"></button>');backdrop=document.querySelector('.nav-backdrop')}
+ if(backdrop)backdrop.hidden=!drawer;
  const bottom=document.querySelector('.sidebar-bottom');
  if(bottom&&!bottom.querySelector('[data-do="nav-toggle"]'))bottom.insertAdjacentHTML('afterbegin',navigationToggleMarkup(expanded));
- const button=document.querySelector('[data-do="nav-toggle"]');
- if(button){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse':'Expand')+' navigation');button.setAttribute('title',(expanded?'Collapse':'Expand')+' navigation')}
+ for(const button of document.querySelectorAll('[data-do="nav-toggle"]')){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-controls','workspace-navigation');if(!button.classList?.contains('nav-backdrop')){button.setAttribute('aria-label',(expanded?'Close':'Open')+' navigation');button.setAttribute('title',(expanded?'Close':'Open')+' navigation')}}
 }
-function toggleNavigation(){if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else workspaceStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference()}
+function closeMobileNavigation(restoreFocus=false){mobileNavigationOpen=false;applyNavigationPreference();if(restoreFocus)document.querySelector('.header-mobile-menu')?.focus()}
+function toggleNavigation(){const wasOpen=mobileNavigationOpen;if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else workspaceStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference();if(mobileNavigationOpen)document.querySelector('.sidebar')?.querySelector('a.navlink,button.navlink')?.focus();else if(wasOpen)document.querySelector('.header-mobile-menu')?.focus()}
 
 if(typeof document!=='undefined'){
 if(typeof window!=='undefined')window.addEventListener('resize',applyNavigationPreference);
-document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar .navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]'))){mobileNavigationOpen=false;applyNavigationPreference()}});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&mobileNavigationOpen){mobileNavigationOpen=false;applyNavigationPreference()}});
+document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar a.navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]')))closeMobileNavigation()});
+document.addEventListener('keydown',event=>{if(!mobileNavigationOpen)return;if(event.key==='Escape'){closeMobileNavigation(true);return}if(event.key==='Tab'){const items=[...document.querySelector('.sidebar').querySelectorAll('a[href],button:not([disabled])')].filter(el=>!el.hidden&&el.getClientRects().length),first=items[0],last=items.at(-1);if(!first)return;if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}});
 
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeHeaderProfile();const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
 document.addEventListener('click',event=>{if(!event.target.closest?.('#header-profile-toggle'))closeHeaderProfile();if(!event.target.closest?.('.workspace-search')){const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});

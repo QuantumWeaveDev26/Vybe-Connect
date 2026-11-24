@@ -8,6 +8,7 @@ function serviceJobActions(job){
 function serviceJobCard(job){return `<article class="ai-agent"><strong>${esc(job.kind)}</strong> ${badge(job.status,job.status==='unknown'?'amber':'gray')}<p class="hint">${esc(new Date(job.created*1000).toLocaleString())} · ${esc(job.result?.provider_id||job.result?.shipment_id||'No verified resource ID')} · Provider status: ${esc(job.result?.provider_status||job.result?.status||'not returned')}</p>${job.error?`<p class="error">${esc(job.error)}</p>`:''}${serviceJobActions(job)}</article>`}
 function servicesPage(){
  const data=serviceData(),tab=S.servicesTab||'billing',admin=S.data.context.role==='admin';
+ if(data.internal_use)return internalTeamPage();
  if(data.platform_ai_mode&&!data.platform_admin)return customerSubscriptionPage(data);
  const nav=`<nav class="commerce-tabs" aria-label="Service sections">${[['connections','Connections'],['billing','Subscription'],['clients','Client onboarding'],['calls','WhatsApp calls']].map(([id,label])=>btn(label,'service-tab',`data-tab="${id}" aria-pressed="${tab===id}"`,tab===id?'primary':'')).join('')}</nav>`;
  let body='';
@@ -131,6 +132,11 @@ function subscriptionPlanCards(data){
 function customerSubscriptionPage(data){
  const a=S.data.ai||{},allowance=a.allowance||{},admin=S.data.context.role==='admin',job=data.subscription;
  return pagehead('Your subscription','CRM and AI in one plan. Connect only your own WhatsApp account.')+`<section class="card"><div class="cardbody"><h2>${data.subscription_active?'Your plan is active':'Choose your plan'}</h2><p>${data.subscription_active?'Your CRM is unlocked. AI uses your included allowance.':'Subscribe to unlock your workspace and included AI.'}</p>${allowance.active?`<p>${esc(allowance.remaining)} AI requests remaining this billing cycle.</p>`:''}<a class="button" href="#settings">Connect WhatsApp</a></div></section>${subscriptionPlanCards(data)}${job?'<section class="card"><div class="cardbody"><h2>Subscription activity</h2>'+serviceJobCard(job)+(admin&&job.result?.provider_id&&!['cancelled','completed','expired'].includes(job.result?.provider_status)?btn('Cancel at cycle end','service-cancel-subscription',`data-id="${esc(job.id)}"`,'small'):'')+'</div></section>':''}`;
+}
+
+function internalTeamPage(){
+ const allowance=S.data.ai?.allowance||{};
+ return pagehead('Internal team','Your team workspace is included at no subscription charge.')+`<section class="card"><div class="cardbody"><h2>No subscription required</h2><p>Your invited teammates can use this workspace’s CRM, inbox, sales and automation tools.</p><p class="hint">External customer workspaces keep their own subscription requirements. WhatsApp and AI provider usage have separate controls and costs.</p><div class="buttons"><a class="button primary" href="#team">Manage teammates</a><a class="button" href="#settings">WhatsApp & AI settings</a></div></div></section><section class="card"><div class="cardbody"><h2>Platform AI</h2><p>${allowance.active?esc(allowance.remaining)+' of '+esc(allowance.limit)+' requests remaining this month.':'AI usage is paused until the platform operator approves provider usage.'}</p><a class="button" href="#ai-agents">Open AI agents</a></div></section>`;
 }
 
 function voiceCallDetails(call){
