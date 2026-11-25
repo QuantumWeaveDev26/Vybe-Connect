@@ -54,7 +54,8 @@ class NoResponseRuleTests(unittest.TestCase):
         self.assertEqual(sum(results),1);self.assertEqual(len(self.s.state(self.ctx)['tasks']),1)
     def test_live_text_acceptance_arms_but_delivery_upgrade_does_not_reset(self):
         from reply_tracking import accepted
-        self.rule();self.s.inbound(self.ctx['tenant_id'],{'id':'real','from':'919000000001','text':{'body':'Hi'}})
+        with patch('store.now',return_value=self.stamp):
+            self.rule();self.s.inbound(self.ctx['tenant_id'],{'id':'real','from':'919000000001','text':{'body':'Hi'}})
         with patch('store.meta_status',return_value={'live':True}),patch('store.send_text',return_value='wamid.test'),patch('store.now',return_value=self.stamp):
             message=self.s._live_reply(self.ctx,{'contact_id':self.contact['id'],'body':'Hello'})
         with self.s.db() as db:

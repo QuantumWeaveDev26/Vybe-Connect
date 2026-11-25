@@ -22,8 +22,11 @@ def ai_grant(db,tenant):
     now=datetime.now(timezone.utc);month=now.month%12+1;year=now.year+(now.month==12)
     end=int(datetime(year,month,1,tzinfo=timezone.utc).timestamp())
     cycle='internal:'+now.strftime('%Y-%m')
-    row=db.execute('SELECT requests FROM platform_ai_usage WHERE tenant=? AND cycle=?',(tenant,cycle)).fetchone();used=row[0] if row else 0
-    row=db.execute('SELECT reserved_paise FROM internal_ai_budget WHERE tenant=? AND cycle=?',(tenant,cycle)).fetchone();reserved=row[0] if row else 0
+    # All approved internal workspaces share one monthly ceiling. Keep charges
+    # from removed workspaces in the pool as well, so allowlist changes cannot
+    # reset the spend or request count. Customer cycles never use this prefix.
+    used=db.execute('SELECT COALESCE(SUM(requests),0) FROM platform_ai_usage WHERE cycle=?',(cycle,)).fetchone()[0]
+    reserved=db.execute('SELECT COALESCE(SUM(reserved_paise),0) FROM internal_ai_budget WHERE cycle=?',(cycle,)).fetchone()[0]
     budget_left=max(0,int(budget)-reserved)
     return {'active':True,'internal_use':True,'cycle':cycle,'limit':int(limit),'used':used,'remaining':max(0,int(limit)-used) if budget_left>=339 else 0,'expires':end,'budget_paise':int(budget),'reserved_paise':reserved,'budget_remaining_paise':budget_left}
 

@@ -79,3 +79,28 @@ class InternalAccessTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'spending limit'):platform_ai.reserve(self.t,str(self.path),'x'*29000,'hello',[])
             self.assertEqual(platform_ai.entitlement(self.t)['used'],0)
             self.assertEqual(platform_ai.entitlement(self.t)['reserved_paise'],0)
+
+    def test_two_internal_workspaces_share_one_atomic_rupee_ceiling(self):
+        from concurrent.futures import ThreadPoolExecutor
+        other=self.customer['id']
+        with patch.dict(os.environ,{'TW_INTERNAL_WORKSPACES':self.t+','+other,'TW_INTERNAL_AI_ENABLED':'true','TW_INTERNAL_AI_REQUESTS_PER_MONTH':'1000','TW_INTERNAL_AI_BUDGET_PAISE':'500'}):
+            def reserve(tenant):
+                try:platform_ai.reserve(tenant,str(self.path),'facts','hello',[]);return True
+                except ValueError:return False
+            with ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(reserve,[self.t,other,self.t,other]))
+            self.assertEqual(sum(results),1,'Concurrent workspaces must not each obtain a separate budget')
+            a,b=platform_ai.entitlement(self.t),platform_ai.entitlement(other)
+            self.assertEqual(a['reserved_paise'],b['reserved_paise'])
+            self.assertLessEqual(a['reserved_paise'],500)
+            self.assertEqual(a['used'],b['used'])
+            with self.s.db() as db:
+                cycle=a['cycle'];db.execute('INSERT INTO internal_ai_budget VALUES(?,?,?)',('removed-workspace',cycle,20))
+            self.assertEqual(platform_ai.entitlement(self.t)['reserved_paise'],a['reserved_paise']+20)
+
+    def test_two_internal_workspaces_share_request_limit_and_keep_customer_gate(self):
+        other=self.customer['id']
+        with patch.dict(os.environ,{'TW_INTERNAL_WORKSPACES':self.t+','+other,'TW_INTERNAL_AI_ENABLED':'true','TW_INTERNAL_AI_REQUESTS_PER_MONTH':'1'}):
+            platform_ai.reserve(self.t,str(self.path),'facts','hello',[])
+            self.assertEqual(platform_ai.entitlement(other)['remaining'],0)
+            with self.assertRaises(ValueError):platform_ai.reserve(other,str(self.path),'facts','hello',[])
+            self.assertFalse(ai_status('1234567890abcdef')['paid_allowed'])

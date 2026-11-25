@@ -385,6 +385,24 @@ body{background:#f5f4fa;color:#163b30}
 .mobile-section-picker select{border-color:#cee6d9;background:#fff}
 .help-home .help-panel-body{background:#e7f7ee}
 /* Focused AI workspace: one dialog, one navigation row, no page-splitting drawer. */
+.agent-workspace .business-hero{min-height:142px;padding:24px 28px;margin-bottom:24px;border-radius:16px;box-shadow:none}
+.agent-workspace .business-hero h1{font-size:28px;letter-spacing:-.7px;line-height:1.2}
+.agent-workspace .business-hero p{font-size:14px;line-height:1.6;margin:10px 0 0}
+.agent-workspace .hero-world{opacity:.32}
+.agent-workspace .quick-setup{border-radius:16px;box-shadow:none;padding:24px}
+.agent-workspace .quick-setup h2{margin:0 0 8px;font-size:20px;letter-spacing:-.4px}
+.agent-workspace .quick-setup>p{font-size:14px;line-height:1.6;color:#50695c}
+.agent-workspace .quick-setup ol{margin:20px 0}
+.agent-workspace .quick-setup li a,.agent-workspace .quick-setup li button{border-radius:12px;box-shadow:none}
+.agent-workspace .setup-character{height:108px;background-size:contain}
+.agent-workspace .agent-catalog-heading{display:flex;justify-content:space-between;align-items:baseline;margin:28px 0 14px}
+.agent-workspace .agent-catalog-heading h3{font-size:18px;margin:0;color:#183c30}
+.agent-workspace .ai-page-title{align-items:center;gap:14px;margin-bottom:18px}
+.agent-workspace .ai-page-title .buttons{gap:8px;flex-wrap:wrap}
+.agent-workspace .agent-preset-card,.agent-workspace .saved-agent-card{border-radius:16px;box-shadow:none;border-color:#d6e4dc}
+.agent-workspace .agent-preset-card:hover{border-color:#91bda5;box-shadow:0 8px 20px #123d2d0c}
+.agent-workspace .agent-card-summary,.agent-workspace .agent-preset-card>p{color:#50695c;line-height:1.6}
+@media(max-width:650px){.agent-workspace .business-hero{min-height:126px;padding:20px;margin-bottom:22px}.agent-workspace .business-hero h1{font-size:24px}.agent-workspace .ai-page-title{align-items:flex-start}.agent-workspace .ai-page-title>.buttons{width:100%}.agent-workspace .quick-setup{padding:20px}.agent-workspace .setup-character{display:none}}
 #workspace-ai{inset:0;margin:auto;width:min(820px,calc(100vw - 48px));max-width:none;height:min(760px,calc(100dvh - 48px));max-height:none;border:0;border-radius:18px;padding:0;background:#fcfdfb;box-shadow:0 20px 70px #122e3540;overflow:hidden;color:#173b30}
 #workspace-ai:not([open]){display:none}
 #workspace-ai::backdrop{background:#142f365e;backdrop-filter:none}

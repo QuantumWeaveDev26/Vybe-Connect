@@ -98,6 +98,10 @@ class Store:
         self.path.parent.mkdir(parents=True,exist_ok=True)
         self._presence={}
         with self.db() as db:
+            # Readers (including workspace snapshots) must not block worker and
+            # shared AI-budget commits. Configure once, before workers start.
+            mode=db.execute('PRAGMA journal_mode=WAL').fetchone()[0]
+            if mode.lower()!='wal':raise RuntimeError('Workspace storage requires write-ahead logging.')
             db.executescript('''
             CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT,email TEXT UNIQUE,salt TEXT,password TEXT);
             CREATE TABLE IF NOT EXISTS tenants(id TEXT PRIMARY KEY,name TEXT);
