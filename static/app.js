@@ -60,7 +60,7 @@ async function refresh({starting=false, signal}={}) {
     return false;
   }
 }
-async function act(action,data){return api('/api/action',{method:'POST',body:JSON.stringify({action,data})})}
+async function act(action,data,workspace){return api('/api/action',{method:'POST',body:JSON.stringify({action,data}),...(workspace?{headers:{'X-Workspace':workspace}}:{})})}
 function pagehead(title,description,buttons=''){return `<div class="pagehead"><div><h1>${title}</h1><p>${description}</p></div><div class="buttons">${buttons}</div></div>`}
 function tabs(items){return `<div class="tabs">${items.map(([route,label])=>`<a href="#${route}" class="${S.route===route?'active':''}">${label}</a>`).join('')}</div>`}
 function campaignTabs(){return tabs([['campaigns','Campaign overview'],['templates','Your templates']])}
@@ -118,20 +118,35 @@ function smartRepliesBar(messages){
   return `<div class="smart-replies-bar"><span class="smart-label">💡 AI Suggestions:</span>${suggestions.map(s => `<button type="button" class="smart-chip" data-do="use-smart-chip" data-val="${esc(s)}">${esc(s.length > 38 ? s.slice(0, 35) + '…' : s)}</button>`).join('')}</div>`;
 }
 
-async function sendConversationMessage({contactId,scope,mode,body,resolve=false}){
- if(S.data?.context.tenant_id!==scope||S.chat!==contactId)throw new Error('Conversation changed. Reopen your reply.');
+async function sendConversationMessage({contactId,scope,workspace=S.workspace,mode,body,resolve=false}){
+ const inWorkspace=()=>S.data?.context.tenant_id===scope&&S.workspace===workspace;
+ const inConversation=()=>inWorkspace()&&S.chat===contactId;
+ if(!inConversation())throw new Error('Conversation changed. Reopen your reply.');
  if(S.messageSending)return;
  S.messageSending=true;
+ const modal=$('#modal');
+ const closeSendModal=()=>{if(inConversation()&&modal?.open&&$('#modal')===modal)modal.close()};
  for(const button of document.querySelectorAll('.composerfoot button[type="submit"]'))button.disabled=true;
  try{
-  await act('message.send',{contact_id:contactId,body,note:mode==='note',live:mode==='live'});
-  if(S.data?.context.tenant_id!==scope||S.chat!==contactId)return;
-  S.draft='';
-  if(resolve){try{await act('chat.update',{id:contactId,status:'solved'})}catch{ $('#modal')?.close();await refresh();throw new Error('Your message was saved, but the conversation could not be resolved. Do not resend it; check its status.')}}
-  void act('chat.presence',{contact_id:contactId,status:'viewing'}).catch(()=>{});
-  $('#modal')?.close();await refresh();
- }finally{S.messageSending=false;if(S.data?.context.tenant_id===scope&&S.chat===contactId&&!$('#modal')?.open)render()}
+  await act('message.send',{contact_id:contactId,body,note:mode==='note',live:mode==='live'},workspace||scope);
+  if(inConversation()&&S.draft.trim()===body)S.draft='';
+  if(resolve){
+   try{await act('chat.update',{id:contactId,status:'solved'},workspace||scope)}
+   catch{
+    closeSendModal();
+    if(inWorkspace())await refresh().catch(()=>{});
+    throw new Error('Your message was saved, but the conversation could not be resolved. Do not resend it; check its status.');
+   }
+  }
+  if(inConversation())void act('chat.presence',{contact_id:contactId,status:'viewing'},workspace||scope).catch(()=>{});
+  closeSendModal();
+  if(inWorkspace())await refresh();
+ }finally{
+  S.messageSending=false;
+  if(inConversation()&&!$('#modal')?.open)render();
+ }
 }
+
 function inboxDayLabel(stamp){
  const day=new Date(Number(stamp)*1000);if(!Number.isFinite(day.getTime()))return '';
  const today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);
@@ -312,7 +327,7 @@ if(a==='new-member')return entityForm('Add a local team account','member.add',[[
 if(a==='new-workspace')return showModal('Create a business workspace',field('name','Business name'),async data=>{const w=await act('workspace.create',data);S.workspace=w.id;S.chat=null;$('#modal').close();await refresh();toast('New isolated workspace created.');});
 if(a==='delete')return showModal('Delete local record','<p>This removes the selected record from this local workspace.</p>',async()=>{await act('entity.delete',{kind:el.dataset.kind,id});$('#modal').close();await refresh()},'Delete record');
 if(a==='campaign-view'){S.campaignView=el.dataset.view;return render()}
-if(a==='open-chat'){S.mobileChatOpen=true;const searchBox=$('#workspace-search-results');if(searchBox)searchBox.hidden=true;S.chat=id;S.search='';S.filter='all';location.hash='inbox';if(S.route==='inbox')render();return}
+if(a==='open-chat'){if(S.chat!==id)S.draft='';S.mobileChatOpen=true;const searchBox=$('#workspace-search-results');if(searchBox)searchBox.hidden=true;S.chat=id;S.search='';S.filter='all';location.hash='inbox';if(S.route==='inbox')render();return}
 if(a==='inbox-details'){const shown=S.contactDetailsOpen??(window.innerWidth>=1100);S.contactDetailsOpen=!shown;return render()}
 if(a==='inbox-mode'){if(!['note','reply','live'].includes(el.dataset.mode))return;S.mode=el.dataset.mode;return render()}
 if(a==='inbox-assign-me'){await act('chat.update',{id,assignee:S.data.context.user.id});await refresh();return}
@@ -328,9 +343,14 @@ if(a==='export-contacts'){const r=await fetch('/api/export?workspace='+encodeURI
 }catch(e){toast(e.message)}}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-do]');if(el){e.preventDefault();handleAction(el)}});
 document.addEventListener('submit',async e=>{if(e.target.id==='dialog-form'){e.preventDefault();const f=e.target;const submit=e.submitter||f.querySelector('button[type=submit]');if(submit)submit.disabled=true;try{const data=Object.fromEntries(new FormData(f));for(const input of f.querySelectorAll('input[type=checkbox]'))data[input.name]=input.checked;for(const input of f.querySelectorAll('[data-json]'))data[input.name]=JSON.parse(input.value);await formSubmit(data)}catch(err){const errorBox=$('#formerror');if(errorBox)errorBox.textContent=err.message;else toast(err.message);if(submit)submit.disabled=false}}
-if(e.target.id==='composer'){e.preventDefault();const body=$('#compose').value.trim();if(!body)return;const contactId=S.chat,scope=S.data.context.tenant_id,mode=S.mode,resolve=e.submitter?.dataset.resolve==='true';const send=()=>sendConversationMessage({contactId,scope,mode,body,resolve});try{if(S.mode==='live'&&S.data.contacts.find(c=>c.id===S.chat)?.channel!=='website')showModal('Send a real WhatsApp message',`<p>This sends to <strong>${esc(S.data.contacts.find(c=>c.id===S.chat)?.name)}</strong>.</p><div class="code">${esc(body)}</div>`,send,'Send live message');else await send()}catch(err){toast(err.message)}}});
+if(e.target.id==='composer'){e.preventDefault();const body=$('#compose').value.trim();if(!body)return;const contactId=S.chat,scope=S.data.context.tenant_id,workspace=S.workspace,mode=S.mode,resolve=e.submitter?.dataset.resolve==='true';const send=()=>sendConversationMessage({contactId,scope,workspace,mode,body,resolve});try{if(S.mode==='live'&&S.data.contacts.find(c=>c.id===S.chat)?.channel!=='website')showModal('Send a real WhatsApp message',`<p>This sends to <strong>${esc(S.data.contacts.find(c=>c.id===S.chat)?.name)}</strong>.</p><div class="code">${esc(body)}</div>`,send,'Send live message');else await send()}catch(err){toast(err.message)}}});
 let typingPresenceTimer=null;
-document.addEventListener('input',e=>{if(e.target.id==='compose'){S.draft=e.target.value;if(S.chat&&!S.review){clearTimeout(typingPresenceTimer);if(e.target.value.trim()){typingPresenceTimer=setTimeout(()=>{void act('chat.presence',{contact_id:S.chat,status:'typing'}).catch(()=>{})},500)}else{void act('chat.presence',{contact_id:S.chat,status:'viewing'}).catch(()=>{})}}}if(e.target.matches('[data-search]')){S.search=e.target.value;const caret=e.target.selectionStart;render();const target=$('[data-search]');target.focus();target.setSelectionRange(caret,caret)}});
+document.addEventListener('input',e=>{if(e.target.id==='compose'){S.draft=e.target.value;if(S.chat&&!S.review){clearTimeout(typingPresenceTimer);if(e.target.value.trim()){const contactId=S.chat,workspace=S.workspace,scope=S.data?.context.tenant_id;
+ typingPresenceTimer=setTimeout(()=>{
+  if(S.route==='inbox'&&S.chat===contactId&&S.workspace===workspace&&S.data?.context.tenant_id===scope&&!S.review){
+   void act('chat.presence',{contact_id:contactId,status:'typing'},workspace||scope).catch(()=>{});
+  }
+ },500)}else{void act('chat.presence',{contact_id:S.chat,status:'viewing'}).catch(()=>{})}}}if(e.target.matches('[data-search]')){S.search=e.target.value;const caret=e.target.selectionStart;render();const target=$('[data-search]');target.focus();target.setSelectionRange(caret,caret)}});
 document.addEventListener('change',async e=>{try{if(e.target.dataset.chatStatus){await act('chat.update',{id:e.target.dataset.chatStatus,status:e.target.value});await refresh()}if(e.target.dataset.chatAssignee){await act('chat.update',{id:e.target.dataset.chatAssignee,assignee:e.target.value});await refresh()}if(e.target.id==='message-mode'){S.mode=e.target.value;render()}if(e.target.id==='csvfile'){const file=e.target.files[0];if(file){if(file.size>1000000)throw new Error('CSV file is too large (maximum 1 MB).');$('#f-csv').value=await file.text()}}}catch(err){toast(err.message)}});
 window.addEventListener('hashchange',()=>{if(hasPasswordResetHash())return openPasswordReset();if(location.hash==='#signup'&&S.signupAvailable){S.data=null;return renderAuth(true)}if(RECOVERY.mode)return;if(hasInvitationHash())return openInvitation();if(INV.token)return;S.route=location.hash.slice(1)||'inbox';S.search='';S.preview=null;if(window.innerWidth<=700)workspaceStorage.setItem('vybe-nav-expanded','false');render();window.scrollTo({top:0,behavior:'auto'})});
 $('#modal').addEventListener('cancel',()=>formSubmit=null);
