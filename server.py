@@ -162,6 +162,7 @@ class Handler(BaseHTTPRequestHandler):
             files.update({'/api-tokens.js':'api-tokens.js','/customer-template-portraits.webp':'customer-template-portraits.webp','/specialist-agents.webp':'specialist-agents.webp','/inbox-filters.js':'inbox-filters.js','/metric-characters-clean.png':'metric-characters-clean.png','/concept-theme.css':'concept-theme.css','/approved-concept.png':'approved-concept.png','/terms':'terms.html','/privacy':'privacy.html','/data-deletion':'data-deletion.html','/whatsapp-connect.js':'whatsapp-connect.js'})
             files.update({'/manifest.webmanifest':'manifest.webmanifest','/service-worker.js':'service-worker.js','/pwa.js':'pwa.js','/manual-whatsapp.js':'manual-whatsapp.js','/app-icon-192.png':'app-icon-192.png','/app-icon-512.png':'app-icon-512.png'})
             files['/reference-theme.css']='reference-theme.css'
+            files['/workspace-layout.css']='workspace-layout.css'
             files['/startup-guard.js']='startup-guard.js'
             files['/workspace-loader.js']='workspace-loader.js'
             if path not in files: raise Problem('Not found.',404)

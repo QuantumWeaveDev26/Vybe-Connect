@@ -10,3 +10,9 @@ vm.runInContext('toggleNavigation()',c);assert.equal(open,true);assert.equal(mai
 for(const handler of handlers.keydown)handler({key:'Escape'});
 assert.equal(open,false);assert.equal(main.inert,false);assert.equal(focused,'toggle');for(const control of controls)assert.equal(control['aria-expanded'],'false');
 console.log('Mobile drawer synchronizes toggles, focuses navigation, protects background and restores focus.');
+
+for(const width of [320,390,658,800,1050]){
+ c.innerWidth=width;vm.runInContext('toggleNavigation()',c);assert.equal(open,true,'Drawer must open at '+width);assert.equal(main.inert,true);
+ vm.runInContext('closeMobileNavigation(true)',c);assert.equal(open,false,'Drawer must close at '+width);assert.equal(main.inert,false);assert.equal(focused,'toggle');
+}
+console.log('Drawer state and background access passed at 320, 390, 658, 800 and 1050 pixels.');
