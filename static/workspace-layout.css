@@ -144,8 +144,7 @@
  .shell>.sidebar,.shell.nav-expanded>.sidebar{top:0!important;bottom:0!important;height:100dvh!important}
  .shell .topbar{left:var(--rail)!important;width:calc(100% - var(--rail))!important}
  .shell .topbar .header-brand{display:none!important}
- .shell .main:has(.inbox){padding-top:0!important;background:#f2f1f7!important}
- body:has(.inbox) .shell .topbar{display:none!important}
+ .shell .main:has(.inbox){padding-top:54px!important}
 }
 .shell .main>.content{background:#f7f7fb!important;min-width:0;padding:24px 28px 34px}
 .shell .main:has(.inbox)>.content{background:#f2f1f7!important}
@@ -334,4 +333,69 @@
 .manual-whatsapp-banner .manual-whatsapp-link:hover,.contact-row-actions .manual-whatsapp-link:hover {background:#ece3fb}
 @media (max-width:800px) {
  .manual-whatsapp-banner .manual-whatsapp-link,.contact-row-actions .manual-whatsapp-link {min-height:44px}
+}
+
+
+/* Workspace surfaces share one visual hierarchy, including the inbox. */
+.shell .main,
+.shell .main > .content,
+.shell .main:has(.inbox) > .content {
+ background:#f3f2f8!important;
+}
+.shell > .sidebar,
+.shell:not(.nav-expanded) > .sidebar,
+.shell.nav-expanded > .sidebar {
+ background:#231839!important;
+ border-color:#3c2e53;
+}
+.shell .sidebar .brand {border-color:#493960}
+.shell.nav-expanded .sidebar .brandname,
+.shell.nav-expanded .rail-user-trigger .nav-text {color:#fff}
+.shell .sidebar nav .navlink {color:#d8cce9}
+.shell .sidebar nav .navlink:hover:not(.active),
+.shell .sidebar-bottom .navlink:hover,
+.shell .rail-user-trigger:hover {background:#413054!important;color:#fff!important}
+.shell .sidebar nav .navlink.active {
+ background:#eadeff!important;
+ color:#382068!important;
+}
+.shell .sidebar-bottom,
+.shell:not(.nav-expanded) .sidebar-bottom {border-color:#493960}
+.shell .sidebar-bottom .navlink,
+.shell:not(.nav-expanded) .sidebar-bottom .navlink {color:#d8cce9!important}
+.shell .mobile-drawer-heading {color:#fff!important;border-color:#493960!important}
+.shell .main > .content > .pagehead {
+ background:#fff;
+ padding:clamp(16px,2vw,28px);
+ border:1px solid #e3deec;
+ border-inline-start:3px solid #7046d7;
+ border-radius:12px;
+ align-items:center;
+}
+.shell .pagehead h1 {font-size:clamp(24px,2.2vw,32px);line-height:1.15}
+.shell .pagehead p {color:#5c5469;max-width:66ch;margin:0}
+.shell .main > .context-nav .context-link.selected {
+ box-shadow:inset 0 -2px #7046d7;
+}
+.content .cardhead {background:#faf8fd!important}
+.content th {background:#f4f0fa!important;color:#514660}
+.content .sales-column {background:#ebe6f3;border-color:#dfd6eb}
+.content .sales-column .sales-empty {color:#625770}
+.content .sales-column h2 .badge {background:#fff;color:#574a68}
+.content .stat strong {font-size:clamp(25px,2vw,34px)}
+.inbox .conversationhead {background:#fff}
+.inbox .messages {background:#f2eff7}
+.inbox .bubble.note {border-color:#eadba6;color:#544522}
+.inbox .chatrow.selected {background:#eee7fc}
+.inbox .composer {border-color:#e5ddf1}
+.authscreen .authstory {background:#261c3d!important;color:#fff}
+.authscreen .authstory h1 {color:#fff!important}
+.authscreen .authstory p,.authscreen .authfeatures span {color:#e8dcf7!important}
+.authscreen .authstory .brand {color:#fff}
+@media (max-width:800px) {
+ .shell .main > .content > .pagehead {align-items:stretch;gap:12px}
+ .shell .pagehead > .buttons {justify-content:flex-start}
+ .shell .pagehead > .buttons:empty {display:none}
+ .shell .pagehead > .buttons button,.shell .pagehead > .buttons a {min-height:44px}
+ .shell .sidebar nav .navlink {min-height:44px}
 }
