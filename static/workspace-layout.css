@@ -233,3 +233,36 @@
  .inbox .contact-detail-section > summary { min-height:44px }
  .inbox.contact-details-open > .contactpanel { width:min(360px,100%) }
 }
+
+.manual-whatsapp-banner {
+ display:flex;
+ flex:none;
+ align-items:center;
+ justify-content:space-between;
+ gap:8px 12px;
+ flex-wrap:wrap;
+ padding:9px 12px;
+ border-bottom:1px solid #eee9f5;
+ background:#faf8fd;
+ color:#352946;
+}
+.manual-whatsapp-banner strong,.manual-whatsapp-banner div > span {display:block}
+.manual-whatsapp-banner strong {font-size:12px}
+.manual-whatsapp-banner div > span {font-size:11px;color:#62586d;margin-top:2px}
+.contact-row-actions {display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.manual-whatsapp-banner .manual-whatsapp-link,.contact-row-actions .manual-whatsapp-link {
+ display:inline-flex;
+ align-items:center;
+ gap:6px;
+ min-height:34px;
+ padding:6px 9px;
+ border:1px solid #ded2f6;
+ border-radius:7px;
+ background:#f3eefb;
+ color:#5534a6;
+ white-space:nowrap;
+}
+.manual-whatsapp-banner .manual-whatsapp-link:hover,.contact-row-actions .manual-whatsapp-link:hover {background:#ece3fb}
+@media (max-width:800px) {
+ .manual-whatsapp-banner .manual-whatsapp-link,.contact-row-actions .manual-whatsapp-link {min-height:44px}
+}
