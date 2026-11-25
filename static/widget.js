@@ -74,7 +74,16 @@
     #vybe-widget-root :focus-visible { outline: 2px solid #6037d6; outline-offset: 2px; }
     @media(max-width: 480px) {
       #vybe-widget-btn { right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); width: 50px; height: 50px; }
-      #vybe-widget-window { inset: 8px 8px max(8px, env(safe-area-inset-bottom)); width: auto; max-width: none; height: auto; max-height: none; border-radius: 14px; }
+      #vybe-widget-window {
+        right: 14px;
+        bottom: max(72px, calc(58px + env(safe-area-inset-bottom)));
+        width: 320px;
+        max-width: calc(100vw - 28px);
+        height: 350px;
+        max-height: min(65dvh, calc(100dvh - max(84px, calc(70px + env(safe-area-inset-bottom)))));
+        border-radius: 14px;
+      }
+      .vw-head, .vw-messages, .vw-form { padding: 10px 12px; }
       .vw-input { font-size: 16px; }
     }
     @media(prefers-reduced-motion: reduce) {
@@ -141,7 +150,8 @@
     clearInterval(historyTimer);
     if(isOpen) historyTimer=setInterval(()=>{if(!isSending && contactId && visitorToken)loadHistory()},5000);
     if (isOpen) {
-      input.focus();
+      const focusTarget = window.matchMedia?.('(max-width: 480px)').matches ? closeBtn : input;
+      focusTarget.focus();
       if (contactId && visitorToken) loadHistory();
     } else {
       btn.focus();
