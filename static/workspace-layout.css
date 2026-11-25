@@ -159,3 +159,77 @@
 @media(max-width:800px){.content .deal-card .buttons button{min-height:40px;font-size:12px;padding:8px}}
 
 .content .deal-card h3,.content .cardhead h2,.content .owned-product h3,.content .agent-preset-card h3{overflow-wrap:anywhere}
+
+/* Inbox workspace: one framed surface with independent scrolling panes. */
+@media (min-width: 1100px) {
+ .shell:has(.inbox) {
+  display:grid;
+  grid-template-columns:var(--rail) minmax(0,1fr);
+  height:calc(100dvh - 32px);
+  min-height:0;
+  margin:16px auto;
+  width:calc(100% - 40px);
+  max-width:1660px;
+  border:1px solid #e9e7ef;
+  border-radius:24px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 8px 28px #29233c12;
+ }
+ .shell:has(.inbox) > .sidebar,
+ .shell.nav-expanded:has(.inbox) > .sidebar {
+  position:relative;
+  inset:auto;
+  top:auto!important;
+  width:auto;
+  height:100%;
+  max-height:none;
+  min-height:0;
+ }
+ .shell:has(.inbox) .sidebar .brand {
+  display:flex;
+  justify-content:center;
+  min-height:48px;
+  padding:0 0 8px;
+  gap:8px;
+ }
+ .shell:has(.inbox) .sidebar .brandmark { width:34px;height:34px }
+ .shell:has(.inbox) .main:has(.inbox) { height:100%;min-height:0;padding:0 }
+ .shell:has(.inbox) .topbar {
+  position:relative!important;
+  inset:auto;
+  height:44px!important;
+  min-height:44px!important;
+  padding:0 14px!important;
+  gap:10px;
+  box-shadow:none;
+ }
+ .shell:has(.inbox) .topbar .header-brand { display:none }
+ .shell:has(.inbox) .topbar > .header-workspace,
+ .shell:has(.inbox) .topbar .workspace-search input { height:32px;min-height:32px;box-shadow:none }
+ .shell:has(.inbox) .topbar .header-whatsapp { min-height:32px;padding:5px 9px;font-size:11px }
+ .shell:has(.inbox) .main:has(.inbox) > .content { padding:0;min-width:0;max-width:none }
+ .content > .inbox:has(>.contactpanel):not(.contact-details-closed) {
+  grid-template-columns:clamp(196px,20%,265px) minmax(0,1fr) clamp(208px,23%,298px);
+ }
+ .inbox .listhead { padding-top:14px;padding-bottom:8px;gap:7px }
+ .inbox-list-title h1 { font-size:20px }
+ .inbox .chatrow { min-height:62px;padding:10px 12px }
+ .inbox .chatrow-time { top:12px }
+ .inbox .conversationhead { min-height:53px;padding:8px 12px }
+ .inbox .messages { margin:8px 10px 0;padding:14px 18px;border-radius:8px 8px 0 0 }
+ .inbox .composer { margin:0 10px 10px;padding:10px 12px }
+ .inbox .composer textarea { min-height:60px }
+ .inbox > .contactpanel { min-width:0 }
+}
+.inbox .contact-panel-heading { min-height:53px;padding:8px 14px }
+.inbox .contact-panel-heading h2 { font-size:13px }
+.inbox .contact-detail-section > summary { min-height:42px;padding:10px 14px;gap:6px }
+.inbox-task-count { margin-inline-start:auto;color:#6a6175;font-size:11px }
+.inbox-tasks article { display:grid;gap:6px;padding:10px;margin-bottom:8px;border:1px solid #e8e6ee;border-radius:7px }
+.inbox-tasks article span { color:#6a6175;font-size:11px }
+.inbox-tasks article button { justify-self:start }
+@media (max-width:800px) {
+ .inbox .contact-detail-section > summary { min-height:44px }
+ .inbox.contact-details-open > .contactpanel { width:min(360px,100%) }
+}
