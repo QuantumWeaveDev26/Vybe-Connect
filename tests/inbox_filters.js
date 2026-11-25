@@ -9,3 +9,7 @@ assert.deepEqual(ids({sort:'oldest'}),['b','c','a']);
 c.data.contacts[0].last_real_inbound=1000-86400;assert.ok(!ids({window:'open'}).includes('a'),'24-hour boundary must be closed');
 c.options={};vm.runInContext('selectInboxContacts(data,options,"all","",1000)',c);assert.deepEqual(c.data.contacts.map(c=>c.id),['a','b','c'],'Filtering must not mutate contact state');
 console.log('Inbox assignment/team/tag/consent/window/attention/search/sort checks passed; drafts and failed sends never count as replies.');
+
+c.S={data:{...c.data,context:{tenant_id:'workspace',user:{id:'me'}}},filter:'mine',search:'',mobileChatOpen:true};c.render=()=>{};
+vm.runInContext('selectInboxQueue("unassigned")',c);assert.equal(c.S.filter,'all');assert.equal(c.S.mobileChatOpen,false);assert.equal(vm.runInContext('ensureInboxView().assignment',c),'unassigned');
+vm.runInContext('selectInboxQueue("invalid")',c);assert.equal(vm.runInContext('ensureInboxView().assignment',c),'unassigned');

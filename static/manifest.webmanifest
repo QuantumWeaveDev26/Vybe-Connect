@@ -3,7 +3,7 @@
   "name": "VYBE Connect",
   "short_name": "VYBE",
   "description": "Your team CRM, conversations and AI workspace.",
-  "start_url": "/#campaigns",
+  "start_url": "/#inbox",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f7f7fa",

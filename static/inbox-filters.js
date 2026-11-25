@@ -58,3 +58,20 @@ document.addEventListener('change',event=>{
 });
 document.addEventListener('click',event=>{if(!event.target.closest?.('[data-inbox-reset]'))return;ensureInboxView();INBOX_VIEW={scope:INBOX_VIEW.scope,expanded:true,...INBOX_VIEW_DEFAULTS};S.filter='all';S.search='';render()});
 document.addEventListener('toggle',event=>{if(event.target.matches?.('.inbox-advanced'))INBOX_VIEW.expanded=event.target.open},true);
+
+function inboxQueueNavigation(){
+ const view=ensureInboxView(),base={...view,assignment:'any'};
+ const count=assignment=>selectInboxContacts(S.data,{...base,assignment},S.filter==='mine'?'all':S.filter,S.search).length;
+ return '<nav class="inbox-queues" aria-label="Conversation queues"><h2>Conversations</h2>'+[['unassigned','Unassigned'],['mine','Assigned to me'],['any','All conversations']].map(([value,label])=>`<button type="button" data-inbox-queue="${value}" aria-pressed="${view.assignment===value}">${icon(value==='any'?'inbox':'contacts')}<span>${label}</span><small>${count(value)}</small></button>`).join('')+'</nav>';
+}
+function selectInboxQueue(value){
+ if(!['any','unassigned','mine'].includes(value))return;
+ ensureInboxView().assignment=value;
+ if(S.filter==='mine')S.filter='all';
+ S.mobileChatOpen=false;
+ render();
+}
+document.addEventListener('click',event=>{
+ const control=event.target.closest?.('[data-inbox-queue]');
+ if(control)selectInboxQueue(control.dataset.inboxQueue);
+});
