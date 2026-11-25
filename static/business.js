@@ -57,6 +57,7 @@ async function businessAction(action,el){
     return showModal(action==='handoff-takeover'?'Take over this conversation':'Resume conversation automation',`<p>${action==='handoff-takeover'?'Assign this chat to you and pause keyword and chatbot processing. Incoming customer messages will still arrive.':'Allow enabled keyword rules and chatbot flows to handle future incoming messages. Any previous flow session starts fresh.'}</p><p class="hint">Campaigns are managed separately.</p>`,async()=>{await act(action==='handoff-takeover'?'chat.takeover':'chat.resume',{id});$('#modal').close();await refresh()},action==='handoff-takeover'?'Take over':'Resume automation');
   }
   if(action==='crm-new-deal')return crmDealForm();
+  if(action==='crm-contact-deal')return crmDealForm({contact_id:id});
   if(action==='crm-edit-deal')return crmDealForm(S.data.deals.find(d=>d.id===id));
   if(action==='crm-new-task')return crmTaskForm();
   if(action==='crm-contact-task')return crmTaskForm({contact_id:id});

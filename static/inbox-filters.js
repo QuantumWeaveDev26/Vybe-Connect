@@ -60,18 +60,32 @@ document.addEventListener('click',event=>{if(!event.target.closest?.('[data-inbo
 document.addEventListener('toggle',event=>{if(event.target.matches?.('.inbox-advanced'))INBOX_VIEW.expanded=event.target.open},true);
 
 function inboxQueueNavigation(){
- const view=ensureInboxView(),base={...view,assignment:'any'};
+ const view=ensureInboxView(),base={...view,assignment:'any',team:''};
  const count=assignment=>selectInboxContacts(S.data,{...base,assignment},S.filter==='mine'?'all':S.filter,S.search).length;
- return '<nav class="inbox-queues" aria-label="Conversation queues"><h2>Conversations</h2>'+[['unassigned','Unassigned'],['mine','Assigned to me'],['any','All conversations']].map(([value,label])=>`<button type="button" data-inbox-queue="${value}" aria-pressed="${view.assignment===value}">${icon(value==='any'?'inbox':'contacts')}<span>${label}</span><small>${count(value)}</small></button>`).join('')+'</nav>';
+ const teamCount=teamId=>selectInboxContacts(S.data,{...base,team:teamId},S.filter==='mine'?'all':S.filter,S.search).length;
+ const teams=(S.data.team_operations?.teams||[]).filter(t=>t.enabled!==false).slice(0,4);
+ return '<details class="inbox-queues-group" open><summary class="inbox-queues-summary"><span>Conversations</span></summary><nav class="inbox-queues" aria-label="Conversation queues"><h2>Conversations</h2>'+[['unassigned','Unassigned'],['mine','Assigned to me'],['any','All']].map(([value,label])=>`<button type="button" data-inbox-queue="${value}" aria-pressed="${view.assignment===value&&!view.team}">${icon(value==='any'?'inbox':'contacts')}<span>${label}</span><small>${count(value)}</small></button>`).join('')+teams.map(t=>`<button type="button" data-inbox-team="${esc(t.id)}" aria-pressed="${view.team===t.id}"><span class="queue-hash" aria-hidden="true">#</span><span>${esc(t.name)}</span><small>${teamCount(t.id)}</small></button>`).join('')+'</nav></details>';
 }
 function selectInboxQueue(value){
  if(!['any','unassigned','mine'].includes(value))return;
- ensureInboxView().assignment=value;
+ const view=ensureInboxView();
+ view.assignment=value;
+ view.team='';
+ if(S.filter==='mine')S.filter='all';
+ S.mobileChatOpen=false;
+ render();
+}
+function selectInboxTeamQueue(teamId){
+ const view=ensureInboxView();
+ view.team=view.team===teamId?'':String(teamId||'');
+ view.assignment='any';
  if(S.filter==='mine')S.filter='all';
  S.mobileChatOpen=false;
  render();
 }
 document.addEventListener('click',event=>{
  const control=event.target.closest?.('[data-inbox-queue]');
- if(control)selectInboxQueue(control.dataset.inboxQueue);
+ if(control){selectInboxQueue(control.dataset.inboxQueue);return}
+ const teamBtn=event.target.closest?.('[data-inbox-team]');
+ if(teamBtn)selectInboxTeamQueue(teamBtn.dataset.inboxTeam);
 });

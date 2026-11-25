@@ -110,7 +110,7 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/api/developer/tokens':self.respond(200,{'tokens':api_tokens.listing(self.server.store,self.context())});return
             if path=='/healthz':self.respond(200,{'status':'ok'});return
             if path in ('/favicon.ico', '/favicon.svg'):
-                favicon='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#19b86b"/><path d="M7 8h5l4 11 4-11h5L18 24h-4Z" fill="#ffffff"/></svg>'
+                favicon='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#5e35d6"/><path d="M7 8h5l4 11 4-11h5L18 24h-4Z" fill="#ffffff"/></svg>'
                 self.respond(200,favicon,'image/svg+xml');return
             if path=='/widget.js':
                 self.respond(200,(ROOT/'static'/'widget.js').read_text(encoding='utf-8'),'application/javascript; charset=utf-8');return
