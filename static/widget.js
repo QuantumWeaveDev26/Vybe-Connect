@@ -72,7 +72,7 @@
     .vw-status { margin: 0; font-size: 12px; color: #62596d; }
     .vw-status:empty { display: none; }
     #vybe-widget-root :focus-visible { outline: 2px solid #6037d6; outline-offset: 2px; }
-    @media(max-width: 480px) {
+    @media (max-width: 480px), (max-height: 480px) {
       #vybe-widget-btn { right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); width: 50px; height: 50px; }
       #vybe-widget-window {
         right: 14px;
@@ -85,6 +85,11 @@
       }
       .vw-head, .vw-messages, .vw-form { padding: 10px 12px; }
       .vw-input { font-size: 16px; }
+    }
+    @media (max-height: 480px) {
+      #vybe-widget-window { bottom: max(14px, env(safe-area-inset-bottom)); }
+      .vw-head, .vw-form { padding-block: 6px; }
+      .vw-close { min-height: 38px; }
     }
     @media(prefers-reduced-motion: reduce) {
       #vybe-widget-window { animation: none; }
@@ -150,7 +155,7 @@
     clearInterval(historyTimer);
     if(isOpen) historyTimer=setInterval(()=>{if(!isSending && contactId && visitorToken)loadHistory()},5000);
     if (isOpen) {
-      const focusTarget = window.matchMedia?.('(max-width: 480px)').matches ? closeBtn : input;
+      const focusTarget = window.matchMedia?.('(max-width: 480px), (max-height: 480px)').matches ? closeBtn : input;
       focusTarget.focus();
       if (contactId && visitorToken) loadHistory();
     } else {
