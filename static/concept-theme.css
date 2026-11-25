@@ -489,6 +489,7 @@ body:has(.inbox) #help-widget>.help-launcher{display:none}
  .content>.inbox{display:grid;grid-template-columns:minmax(0,1fr);min-height:0}
  .inbox>.chatlist{overflow:auto;min-height:0}
  .inbox>.conversation{display:none}
+ .inbox>.inbox-placeholder{display:none}
  .inbox.mobile-chat-open>.conversation{height:100%;min-height:0;display:flex}
  .inbox.mobile-chat-open .mobile-chat-back{min-height:36px;font-size:12px;margin:0;padding:6px 12px;flex:none}
  .inbox .conversationhead{padding:8px 12px;gap:6px}

@@ -104,3 +104,16 @@ class InternalAccessTests(unittest.TestCase):
             self.assertEqual(platform_ai.entitlement(other)['remaining'],0)
             with self.assertRaises(ValueError):platform_ai.reserve(other,str(self.path),'facts','hello',[])
             self.assertFalse(ai_status('1234567890abcdef')['paid_allowed'])
+
+    def test_invited_member_can_chat_and_run_saved_agents_without_admin_access(self):
+        with patch.dict(os.environ,{'TW_INTERNAL_AI_ENABLED':'true'}):
+            configured=self.s.action(self.ctx,'aiagent.save',{'name':'Team digest','instructions':'Summarize supplied facts only.'})
+            job=self.s.action(self.agent,'ai.chat.start',{'question':'Show workspace priorities','agent_id':configured['id']})
+            self.assertEqual(job['status'],'queued')
+            state=self.s.state(self.agent)
+            self.assertTrue(state['ai']['enabled']);self.assertTrue(state['services']['internal_use'])
+            self.assertEqual(state['aichats'][0]['owner'],self.agent['user']['id'])
+            with patch('store.ask_local',return_value=json.dumps({'summary':'No conversations supplied.','findings':[]})):
+                run=self.s.action(self.agent,'ai.run',{'agent_id':configured['id']})
+            self.assertEqual(run['status'],'completed')
+            with self.assertRaises(Problem):self.s.action(self.agent,'aiagent.save',{'name':'Not permitted','instructions':'Configure an agent'})
