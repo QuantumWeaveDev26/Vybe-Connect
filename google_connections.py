@@ -72,7 +72,7 @@ def state(store,db,tenant):
     return result
 
 
-def start(store,ctx,kind):
+def start_authorization(store,ctx,kind):
     admin(store,ctx);c=configuration()
     if kind not in SCOPES:fail('Choose Google Sheets or Calendar.')
     if not c['ready']:fail('Google connection setup is required by the platform owner.',503)
@@ -184,7 +184,7 @@ def period(start,end):
 
 def action(store,ctx,op,data):
     admin(store,ctx);kind=data.get('kind');tenant=ctx['tenant_id']
-    if op=='google.start':return start(store,ctx,kind)
+    if op=='google.start':return start_authorization(store,ctx,kind)
     if kind not in SCOPES:fail('Choose a Google service.')
     if op=='google.disconnect':
         with LOCK:

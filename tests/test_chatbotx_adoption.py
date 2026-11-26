@@ -61,8 +61,8 @@ class AdoptionTests(unittest.TestCase):
 
     def test_google_missing_setup_and_oauth_state_cookie_replay(self):
         with patch.dict(os.environ,{'TW_GOOGLE_ENABLED':'false'}):
-            with self.assertRaises(Problem):google.start(self.s,self.ctx,'google_sheets')
-        started=google.start(self.s,self.ctx,'google_sheets');q=parse_qs(urlsplit(started['authorize_url']).query);cookie=started['_flow_cookie'].split('=',1)[1].split(';')[0]
+            with self.assertRaises(Problem):self.s.action(self.ctx,'google.start',{'kind':'google_sheets'})
+        started=self.s.action(self.ctx,'google.start',{'kind':'google_sheets'});q=parse_qs(urlsplit(started['authorize_url']).query);cookie=started['_flow_cookie'].split('=',1)[1].split(';')[0]
         self.assertIn('code_challenge',q);self.assertIn('SameSite=Lax',started['_flow_cookie']);self.assertIn('Secure',started['_flow_cookie'])
         with self.assertRaises(Problem):google.callback(self.s,{'state':q['state'],'code':['code']},'wrong-cookie')
         def provider(url,*args,**kwargs):
