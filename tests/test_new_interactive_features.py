@@ -213,7 +213,7 @@ class TestHTTPRoutes(unittest.TestCase):
         # 2. GET /widget-preview
         code, headers, body = self.request('/widget-preview')
         self.assertIn(code, (200, 201))
-        self.assertIn('Embed VYBE Connect on Any Website', body)
+        self.assertIn('Website chat setup', body)
 
         # 3. POST /api/widget/message (Cross-origin from external website, no session cookie)
         code, headers, body = self.request(

@@ -3,43 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#5e35d6">
   <title>VYBE Connect · Website chat setup</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f6faf7; color: #1e3327; }
-    .hero { max-width: 800px; margin: 80px auto; padding: 40px 24px; text-align: center; }
-    h1 { font-size: 38px; color: #108449; margin-bottom: 16px; letter-spacing: -0.5px; }
-    p.lead { font-size: 18px; color: #496354; line-height: 1.6; margin-bottom: 32px; }
-    .card { background: #fff; border: 1px solid #d8ebd0; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(16,132,73,0.06); text-align: left; }
-    pre { background: #0f241a; color: #78e8a6; padding: 18px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
-    .badge { display: inline-block; background: #eaf8ef; color: #108449; font-weight: 600; font-size: 12px; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
-    .btn { display: inline-block; background: #108449; color: #fff; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; transition: background 0.15s; }
-    .btn:hover { background: #0d6d3c; }
-    .links { margin-top: 24px; font-size: 14px; }
-    .links a { color: #108449; text-decoration: none; font-weight: 500; }
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f3fa; color: #241b34; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-inline-size: 820px; margin-inline: auto; padding: clamp(24px, 6vw, 72px) clamp(16px, 4vw, 32px) 100px; }
+    .back { color: #4924a6; font-size: 14px; font-weight: 650; text-underline-offset: 4px; }
+    h1 { font-size: clamp(28px, 4.8vw, 42px); line-height: 1.1; letter-spacing: -.035em; margin: 22px 0 10px; }
+    h2 { font-size: 19px; margin: 0 0 12px; }
+    p { line-height: 1.55; margin: 0 0 12px; }
+    .lead { font-size: 16px; max-inline-size: 58ch; margin-bottom: 24px; color: #575066; }
+    .card { background: #fff; border: 1px solid #e2dcea; border-radius: 14px; padding: clamp(16px, 4vw, 28px); }
+    pre { background: #251a39; color: #ede5ff; padding: 14px 16px; border-radius: 9px; margin: 16px 0 20px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.55; }
+    pre:has(code:empty) { display: none; }
+    .preview-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
+    .preview-actions span { color: #5c526d; font-size: 13px; }
+    .btn { min-block-size: 44px; background: #5e35d6; color: #fff; padding: 10px 16px; border: 0; border-radius: 9px; font: inherit; font-weight: 650; cursor: pointer; }
+    .btn:not(:disabled):hover { background: #4825b3; }
+    .btn:disabled { background: #ece7f4; color: #625675; cursor: default; }
+    :focus-visible { outline: 2px solid #5e35d6; outline-offset: 3px; }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <span class="badge">WEBSITE CHAT SETUP</span>
-    <h1>Embed VYBE Connect on Any Website</h1>
-    <p class="lead">Connect your website visitors with your team. Messages and replies stay together in your VYBE Connect inbox.</p>
-
-    <div class="card">
-      <h3>One-Line Embed Code</h3>
-      <p>Paste this script tag before the closing <code>&lt;/body&gt;</code> tag on your website:</p>
-      <p id="widget-preview-notice"></p><pre><code id="widget-embed-code"></code></pre>
-      <div style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
+  <main>
+    <a class="back" href="/">← Back to VYBE Connect</a>
+    <h1>Website chat setup</h1>
+    <p class="lead">Add website chat so your team can answer visitors from Team Inbox.</p>
+    <section class="card" aria-labelledby="widget-embed-heading">
+      <h2 id="widget-embed-heading">Embed code</h2>
+      <p>Paste this script before the closing <code>&lt;/body&gt;</code> tag on your website.</p>
+      <p id="widget-preview-notice"></p>
+      <pre><code id="widget-embed-code"></code></pre>
+      <div class="preview-actions">
         <button class="btn" id="open-widget-preview" type="button">Open website chat</button>
-        <span style="color: #6a8274; font-size: 13px;">Sends to the selected workspace inbox</span>
+        <span>Sends to the selected workspace inbox</span>
       </div>
-    </div>
-
-    <div class="links">
-      <a href="/">← Return to VYBE Connect Workspace</a>
-    </div>
-  </div>
-
-  <!-- Embed Widget Live on this preview page -->
+    </section>
+  </main>
   <script src="/widget-preview.js" defer></script>
   <script src="/widget.js" data-title="VYBE Connect Support" defer></script>
 </body>
