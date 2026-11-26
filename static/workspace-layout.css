@@ -494,3 +494,50 @@
  .inbox.mobile-chat-open .composer {flex:none}
  .inbox.mobile-chat-open .messages {flex:1 1 0;min-height:0}
 }
+
+/* Icon colors distinguish destinations and keep violet as the selected state. */
+.shell .sidebar nav .rail-glyph {
+ width:28px;
+ height:28px;
+ border-radius:8px;
+ color:var(--glyph-light,#ded2ff)!important;
+ background:var(--glyph-dark,#47346a)!important;
+}
+.shell .sidebar nav .rail-glyph .icon,
+.shell .sidebar nav .rail-glyph .icon svg {width:17px;height:17px}
+.shell .sidebar nav .navlink.active .rail-glyph {
+ color:#fff!important;
+ background:#5630bf!important;
+}
+.shell .sidebar nav .rail-glyph:has([data-glyph="inbox"]),
+.shell .sidebar nav .rail-glyph:has([data-glyph="contacts"]),
+.shell .sidebar nav .rail-glyph:has([data-glyph="pipeline"]) {
+ --glyph-light:#b9eaff;
+ --glyph-dark:#234d65;
+}
+.shell .sidebar nav .rail-glyph:has([data-glyph="campaigns"]),
+.shell .sidebar nav .rail-glyph:has([data-glyph="findings"]) {
+ --glyph-light:#f9d3a8;
+ --glyph-dark:#654334;
+}
+.shell .sidebar nav .rail-glyph:has([data-glyph="commerce"]),
+.shell .sidebar nav .rail-glyph:has([data-glyph="analytics"]) {
+ --glyph-light:#c4f1e6;
+ --glyph-dark:#245552;
+}
+.shell .main>.context-nav .context-link>.icon {
+ width:26px;
+ height:26px;
+ border-radius:7px;
+ background:#f1edf8;
+ color:#584578;
+}
+.shell .main>.context-nav .context-link>.icon svg {width:16px;height:16px}
+.shell .main>.context-nav .context-link.selected>.icon {background:#e7ddfa;color:#5028b8}
+.shell .header-mobile-menu .icon svg,
+.shell .conv-icon-pill .icon svg,
+.shell .composer-icon-pill .icon svg {width:17px;height:17px}
+.shell .conv-details-btn[aria-expanded="true"] {background:#ede5fb!important;color:#5028b8!important}
+.shell .composer-icon-pill[data-do="ai-open"] {background:#eee7fc!important;color:#5028b8!important}
+.shell .header-profile-menu > button {gap:9px}
+.shell .header-profile-menu > button .icon svg {width:16px;height:16px}
