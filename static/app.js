@@ -27,9 +27,11 @@ let formSubmit=null,toastTimer;
 function toast(message){$('#toast').textContent=message;$('#toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').style.display='none',6000)}
 async function api(path,options={}){if(S.review&&path.startsWith('/api/')){const name=path.split('?')[0];if((options.method||'GET')!=='GET'||!['/api/state','/api/analytics','/api/chat-source','/api/knowledge-source','/api/export'].includes(name))throw new Error('Live review is read-only. Complete owner setup to save changes or connect providers.');path='/api/review/'+path.slice(5)}const r=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(S.workspace?{'X-Workspace':S.workspace}:{}),...(options.headers||{})}});let data;try{data=await r.json()}catch(error){if(options.signal?.aborted)throw options.signal.reason||error;const e=new Error([502,503,504].includes(r.status)?'The service is restarting. Try again in a moment.':'The server returned an unreadable response. Refresh and try again.');e.status=r.status;throw e}if(!r.ok){const e=new Error(data.error||'Request failed');e.status=r.status;throw e}return data}
 async function refresh({starting=false, signal}={}) {
+  const requestedWorkspace=S.workspace;
   try {
     const next=await api('/api/state',{signal});
     if(signal?.aborted)throw signal.reason||new Error('Workspace request expired.');
+    if(S.workspace!==requestedWorkspace)return false;
     const changed=JSON.stringify(next)!==JSON.stringify(S.data);
     S.data=next;
     S.workspace=next.context.tenant_id;
@@ -38,6 +40,7 @@ async function refresh({starting=false, signal}={}) {
     return true;
   } catch (error) {
     if(signal?.aborted)throw signal.reason||error;
+    if(S.workspace!==requestedWorkspace)return false;
     if (error.status===401) {
       S.data=null;
       if (S.reviewAvailable&&location.pathname!=='/owner') await openPublicReview();
@@ -72,8 +75,23 @@ function nav(n){return `<a class="navlink ${S.route===n?'active':''}" href="#${n
 function page(){return ({'working-hours':workingHoursPage,'google-connections':googleConnectionsPage,'semantic-knowledge':semanticKnowledgePage,recipes:recipesPage,'support-tools':supportToolsPage,branches:branchesPage,attribution:attributionPage,'help-centre':helpCentrePage,'whatsapp-forms':whatsappFormsPage,'ai-agents':agentWorkspacePage,webhooks:webhooksPage,services:servicesPage,'customer-assistant':customerAssistantPage,segments:segmentsPage,'external-agents':externalAgentPage,developers:developerPage,commerce:commercePage,pipeline:pipelinePage,findings:findingsPage,campaigns:campaignPage,inbox:inboxPage,contacts:contactsPage,templates:templatePage,rules:()=>automationPage('rule'),flows:flowPage,sequences:sequencePage,replies:repliesPage,analytics:analyticsPage,team:teamPage,settings:settingsPage}[S.route])()}
 function trend(){const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d});const counts=days.map(d=>{const a=S.data.messages.filter(m=>new Date(m.ts*1000).toDateString()===d.toDateString()&&m.direction!=='note');return [a.filter(m=>m.direction==='out').length,a.filter(m=>m.direction==='in').length]});const max=Math.max(1,...counts.flat());return `<div class="chart">${counts.map(c=>`<div class="chartcol"><div class="bar" style="height:${Math.max(2,c[0]/max*95)}%" title="${c[0]} outbound"></div><div class="bar light" style="height:${Math.max(2,c[1]/max*95)}%" title="${c[1]} inbound"></div></div>`).join('')}</div><div class="chartlabels">${days.map(d=>`<span>${d.toLocaleDateString(undefined,{weekday:'short'})}</span>`).join('')}</div>`}
 function campaignPageBase(){const d=S.data;const all=d.messages.filter(m=>m.direction==='out'&&m.status!=='draft');return pagehead('Campaign overview','Send approved WhatsApp campaigns.',btn('+ Create campaign','new-campaign','','primary'))+campaignTabs()+`<div class="notice campaign-readiness">${icon(d.meta.live&&d.meta.configured?'check':'whatsapp')}<div><strong>${d.meta.live&&d.meta.configured?'WhatsApp sending is on':'Campaign drafts are available'}</strong><p>${d.meta.live&&d.meta.configured?'Use an approved template and an opted-in audience.':d.meta.configured?'Enable sending in WhatsApp settings when your team is ready.':'Connect the WhatsApp Business API to send campaigns to opted-in contacts.'}</p></div>${d.meta.live&&d.meta.configured?'':'<a class="button small" href="#settings">WhatsApp settings</a>'}${d.sandbox&&!d.contacts.length?btn('Load sandbox samples','seed','','small'):''}</div><div class="stats">${stat('Total contacts',d.contacts.length,'Across this business workspace','contacts')}${stat('Campaigns',d.campaigns.length,'Saved campaign records','campaigns')}${stat('Queued messages',(d.queue||[]).filter(m=>m.status==='queued').length,'Persistent outbound queue','inbox')}${stat('Opted-in audience',d.contacts.filter(c=>c.optin).length,'Eligible campaign recipients','check')}</div><div class="grid2"><section class="card"><div class="cardhead"><div><h2>Message activity</h2><p class="sub">Last 7 days · recorded workspace activity</p></div><div class="legend"><span><i class="dot"></i>Outbound</span><span><i class="dot light"></i>Inbound</span></div></div><div class="cardbody">${trend()}</div></section><section class="card"><div class="cardhead"><h2>Delivery overview</h2>${badge('Provider evidence only','gray')}</div><div class="cardbody">${['accepted','delivered','read','failed'].map(status=>`<div class="summaryrow"><span class="muted">${status[0].toUpperCase()+status.slice(1)}</span><strong>${all.filter(m=>m.status===status).length}</strong></div>`).join('')}</div></section></div><section class="card"><div class="cardhead"><div><h2>Campaign planner</h2><p class="sub">Schedules use your selected local time, stored with a timezone offset</p></div><div class="buttons">${btn('List','campaign-view','data-view="list"','small')}${btn('Calendar','campaign-view','data-view="calendar"','small')}</div></div>${S.campaignView==='calendar'?calendar():campaignTable()}</section>`}
-function campaignLaunchBlock(c){if(S.review)return 'Sign in to manage campaigns.';if(S.data.sandbox)return '';if(!S.data.meta.live)return 'Connect WhatsApp and enable sending first.';const t=S.data.templates.find(t=>t.id===c.template_id);return t?.status==='APPROVED'&&t.meta_id?'':'Wait for Meta template approval.'}
-function campaignTable(){return S.data.campaigns.length?`<div class="tablewrap"><table><thead><tr><th>Campaign name</th><th>Audience</th><th>Status</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>${S.data.campaigns.map(c=>`<tr><td><strong>${esc(c.name)}</strong><div class="sub">${esc(S.data.templates.find(t=>t.id===c.template_id)?.name||'Template')}</div></td><td>${c.audience} contacts ${c.tag?tags([c.tag]):''}</td><td>${badge(c.status==='draft'?'Draft':c.status==='demo_complete'?'Sandbox complete':c.status,c.status==='draft'?'amber':'')}</td><td>${c.schedule?esc(c.schedule.replace('T',' ')):'Not scheduled'}</td><td>${c.status==='draft'?btn(S.data.sandbox?'Run sandbox':'Launch campaign','run-campaign',`data-id="${c.id}" ${campaignLaunchBlock(c)?`disabled title="${esc(campaignLaunchBlock(c))}"`:``}`,'small'):(badge(c.mode==='live'?'Live campaign':c.simulated+' simulated','gray')+(c.status==='queued'?btn('Cancel queued','cancel-campaign',`data-id="${c.id}"`,'small'):''))}</td></tr>`).join('')}</tbody></table></div>`:empty('Your first campaign starts here','Create a template, choose an opted-in audience, and preview a campaign.',btn('Create campaign','new-campaign','','primary small'))}
+function campaignLaunchBlock(c){
+ if(S.review)return ['Sign in to manage campaigns.'];
+ const data=S.data,template=data.templates.find(t=>t.id===c.template_id);
+ if(!data.sandbox){
+  if(!data.meta.live)return ['Connect WhatsApp and enable sending first.','#settings','WhatsApp settings'];
+  if(!template)return ['This template is missing. Create a draft with a current template.','#templates','Open templates'];
+  if(template.status!=='APPROVED'||!template.meta_id)return ['Wait for Meta template approval.','#templates','Open templates'];
+ }
+ if(c.audience_block)return [c.audience_block,c.segment_id?'#segments':'#contacts',c.segment_id?'Review segments':'Open contacts'];
+ return [];
+}
+function campaignLaunchControl(c){
+ const [reason,href,label]=campaignLaunchBlock(c);
+ return btn(S.data.sandbox?'Run sandbox':'Launch campaign','run-campaign',`data-id="${esc(c.id)}" ${reason?`disabled aria-describedby="campaign-block-${esc(c.id)}" title="${esc(reason)}"`:''}`,'small')+
+  (reason?`<p class="campaign-block hint" id="campaign-block-${esc(c.id)}">${esc(reason)}${href?` <a href="${href}">${label}</a>`:''}</p>`:'');
+}
+function campaignTable(){return S.data.campaigns.length?`<div class="tablewrap"><table><thead><tr><th>Campaign name</th><th>Audience</th><th>Status</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>${S.data.campaigns.map(c=>`<tr><td><strong>${esc(c.name)}</strong><div class="sub">${esc(S.data.templates.find(t=>t.id===c.template_id)?.name||'Template')}</div></td><td>${c.audience} contacts ${c.tag?tags([c.tag]):''}</td><td>${badge(c.status==='draft'?'Draft':c.status==='demo_complete'?'Sandbox complete':c.status,c.status==='draft'?'amber':'')}</td><td>${c.schedule?esc(c.schedule.replace('T',' ')):'Not scheduled'}</td><td>${c.status==='draft'?campaignLaunchControl(c):(badge(c.mode==='live'?'Live campaign':c.simulated+' simulated','gray')+(c.status==='queued'?btn('Cancel queued','cancel-campaign',`data-id="${c.id}"`,'small'):''))}</td></tr>`).join('')}</tbody></table></div>`:empty('Your first campaign starts here','Create a template, choose an opted-in audience, and preview a campaign.',btn('Create campaign','new-campaign','','primary small'))}
 function calendar(){const today=new Date(),start=new Date(today.getFullYear(),today.getMonth(),1),offset=(start.getDay()+6)%7;const total=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();return `<div class="cardbody"><h3>${today.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</h3><div class="calendar">${['MON','TUE','WED','THU','FRI','SAT','SUN'].map(day=>`<div class="day header">${day}</div>`).join('')}${Array.from({length:Math.ceil((offset+total)/7)*7},(_,i)=>{const n=i-offset+1;return `<div class="day ${n===today.getDate()?'today':''}">${n>0&&n<=total?n:''}${S.data.campaigns.filter(c=>c.schedule&&new Date(c.schedule).getDate()===n&&new Date(c.schedule).getMonth()===today.getMonth()&&new Date(c.schedule).getFullYear()===today.getFullYear()).map(c=>`<div class="calitem">${esc(c.name)} · ${esc(c.status==='draft'?'Draft':c.status)}</div>`).join('')}</div>`}).join('')}</div></div>`}
 function contactsPage(){const list=S.data.contacts.filter(c=>(c.name+' '+c.phone+' '+c.tags.join(' ')).toLowerCase().includes(S.search.toLowerCase()));return pagehead('Contacts','Your customer relationships, organized in one place.',btn('Import CSV','import-contacts')+btn('Export CSV','export-contacts')+btn('+ Add contact','new-contact','','primary'))+`<div class="toolbar"><input class="search" data-search placeholder="Search name, number or tag…" aria-label="Search contacts" value="${esc(S.search)}">${badge(list.length+' contacts','gray')}</div><section class="card">${list.length?`<div class="tablewrap"><table><thead><tr><th>Contact</th><th>Phone number</th><th>Tags / segment</th><th>Consent</th><th>Actions</th></tr></thead><tbody>${list.map(c=>`<tr><td><div class="person"><div class="avatar green">${initials(c.name)}</div><div><strong>${esc(c.name)}</strong><small>${esc(c.source)}</small></div></div></td><td>+${esc(c.phone)}</td><td>${tags(c.tags)||'<span class="muted">No tags</span>'}</td><td>${badge(c.optin?'Opted in':'No consent',c.optin?'':'gray')}</td><td><div class="contact-row-actions">${manualWhatsAppAction(c)}${btn('Edit','edit-contact',`data-id="${c.id}"`,'small')}${btn('Open chat','open-chat',`data-id="${c.id}"`,'small ghost')}</div></td></tr>`).join('')}</tbody></table></div>`:empty('No contacts found','Add a contact or import a CSV to start your workspace.',btn('Add contact','new-contact','','primary small'))}</section><div class="notice">${icon('contacts')}<span>Tags act as dynamic audience segments. Custom contact attributes are stored with each profile. A phone number alone does not establish marketing consent.</span></div>`}
 
@@ -332,7 +350,7 @@ if(a==='new-contact')return contactForm();if(a==='edit-contact')return contactFo
 if(a==='new-template')return templateForm();if(a==='edit-template')return templateForm(S.data.templates.find(t=>t.id===id));
 if(a==='preview-template'||a==='preview-flow'){S.preview=id;return render()}
 if(a==='new-campaign')return campaignForm();
-if(a==='run-campaign'){const c=S.data.campaigns.find(c=>c.id===id);return showModal(S.data.sandbox?'Run a sandbox campaign':'Launch a real WhatsApp campaign',`<p>Campaign: <strong>${esc(c.name)}</strong>.</p><p class="hint">${S.data.sandbox?'Sandbox only.':'This queues real messages for opted-in contacts. A synced Meta-approved text template and enabled server credentials are required. Meta message charges may apply.'}</p>`,async()=>{const r=await act(S.data.sandbox?'campaign.run':'campaign.launch',{id});$('#modal').close();await refresh();toast(r.audience+' recipients '+(S.data.sandbox?'simulated.':'queued.'))},S.data.sandbox?'Run sandbox':'Launch campaign')}
+if(a==='run-campaign'){const c=S.data.campaigns.find(c=>c.id===id);if(!c)return;const [reason]=campaignLaunchBlock(c);if(reason)return toast(reason);return showModal(S.data.sandbox?'Run a sandbox campaign':'Launch a real WhatsApp campaign',`<p>Campaign: <strong>${esc(c.name)}</strong>.</p><p class="hint">${S.data.sandbox?'Sandbox only.':'This queues real messages for opted-in contacts. A synced Meta-approved text template and enabled server credentials are required. Meta message charges may apply.'}</p>`,async()=>{const r=await act(S.data.sandbox?'campaign.run':'campaign.launch',{id});$('#modal').close();await refresh();toast(r.audience+' recipients '+(S.data.sandbox?'simulated.':'queued.'))},S.data.sandbox?'Run sandbox':'Launch campaign')}
 if(a==='new-rule'||a==='new-flow')return ruleForm(a==='new-rule'?'rule':'flow');
 if(a==='edit-rule'||a==='edit-flow'){const kind=a==='edit-rule'?'rule':'flow';return ruleForm(kind,S.data[kind+'s'].find(r=>r.id===id))}
 if(a==='new-sequence'||a==='edit-sequence')return dripSequenceEditor(S.data.sequences.find(s=>s.id===id)||{});
@@ -353,8 +371,13 @@ if(a==='inbox-toggle-resolve'){const target=S.data.contacts.find(x=>x.id===id);i
 if(a==='compose-fmt'){const box=$('#compose');if(!box)return;const start=box.selectionStart??box.value.length,end=box.selectionEnd??box.value.length,selected=box.value.slice(start,end);if(el.dataset.wrap){const w=el.dataset.wrap,inner=selected||'text';box.setRangeText(w+inner+w,start,end,'select');if(!selected)box.setSelectionRange(start+w.length,start+w.length+inner.length)}else if(el.dataset.prefix){const p=el.dataset.prefix;box.setRangeText((start>0&&box.value[start-1]!=='\n'?'\n':'')+p+selected,start,end,'end')}S.draft=box.value;box.focus();return}
 if(a==='inbox-mode'){if(!['note','reply','live'].includes(el.dataset.mode))return;S.mode=el.dataset.mode;return render()}
 if(a==='inbox-assign-me'){await act('chat.update',{id,assignee:S.data.context.user.id});await refresh();return}
-if(a==='mobile-chat-back'){S.mobileChatOpen=false;S.contactDetailsOpen=false;return render()}
-if(a==='select-chat'){S.mobileChatOpen=true;S.chat=id;S.draft='';if(!S.review)void act('chat.presence',{contact_id:id,status:'viewing'}).catch(()=>{});return render()}
+if(a==='mobile-chat-back'){
+ S.mobileChatOpen=false;S.contactDetailsOpen=false;render();
+ const row=[...document.querySelectorAll('.chatrow')].find(item=>item.dataset.id===S.chat);
+ (row||$('.inbox-search-wrap input'))?.focus();
+ return;
+}
+if(a==='select-chat'){S.mobileChatOpen=true;if(S.chat!==id)S.draft='';S.chat=id;if(!S.review)void act('chat.presence',{contact_id:id,status:'viewing'}).catch(()=>{});return render()}
 if(a==='filter'){S.filter=el.dataset.filter;return render()}
 if(a==='simulate-inbound')return showModal('Simulate an incoming message',field('body','Customer message','','textarea')+'<p class="hint">Local simulation only. Keywords may generate a draft. This does not open a real Meta service window.</p>',async data=>{await act('message.simulate',{contact_id:S.chat,body:data.body});$('#modal').close();await refresh()},'Simulate inbound');
 if(a==='use-message'){S.draft=S.data.messages.find(m=>m.id===id).body;S.mode='reply';return render()}
@@ -377,7 +400,24 @@ document.addEventListener('change',async e=>{try{if(e.target.dataset.chatStatus)
 window.matchMedia?.('(min-width: 1100px)').addEventListener?.('change',()=>{
  document.querySelector('.conv-details-btn')?.setAttribute('aria-expanded',String(inboxDetailsVisible()));
 });
-window.addEventListener('hashchange',()=>{if(hasPasswordResetHash())return openPasswordReset();if(location.hash==='#signup'&&S.signupAvailable){S.data=null;return renderAuth(true)}if(RECOVERY.mode)return;if(hasInvitationHash())return openInvitation();if(INV.token)return;S.route=location.hash.slice(1)||'inbox';S.search='';S.preview=null;if(window.innerWidth<=700)workspaceStorage.setItem('vybe-nav-expanded','false');render();window.scrollTo({top:0,behavior:'auto'})});
+function syncInboxViewport(){
+ const viewport=window.visualViewport,active=document.activeElement;
+ if(!viewport||!document.documentElement?.style)return;
+ const composeFocused=window.innerWidth<=800&&S.route==='inbox'&&active?.id==='compose'&&S.mobileChatOpen&&viewport.scale===1;
+ if(composeFocused&&document.documentElement.clientHeight-viewport.height>100){
+  document.documentElement.style.setProperty('--inbox-keyboard-height',Math.round(viewport.height)+'px');
+ }else{
+  document.documentElement.style.removeProperty('--inbox-keyboard-height');
+ }
+}
+if(window.visualViewport){
+ window.visualViewport.addEventListener('resize',syncInboxViewport);
+ document.addEventListener('focusin',syncInboxViewport);
+ document.addEventListener('focusout',event=>{
+  if(event.target?.id==='compose')document.documentElement.style.removeProperty('--inbox-keyboard-height');
+ });
+}
+window.addEventListener('hashchange',()=>{if(hasPasswordResetHash())return openPasswordReset();if(location.hash==='#signup'&&S.signupAvailable){S.data=null;return renderAuth(true)}if(RECOVERY.mode)return;if(hasInvitationHash())return openInvitation();if(INV.token)return;S.route=location.hash.slice(1)||'inbox';S.search='';S.preview=null;syncInboxViewport();if(window.innerWidth<=700)workspaceStorage.setItem('vybe-nav-expanded','false');render();window.scrollTo({top:0,behavior:'auto'})});
 $('#modal').addEventListener('cancel',()=>formSubmit=null);
 $('#modal').addEventListener('close',clearSecurityDialog);
 async function retryStartupRequest(request) {

@@ -481,3 +481,16 @@
  border-radius:9px;
 }
 .cardbody > a.workspace-connection-action.primary {border-color:transparent}
+
+.campaign-block {max-inline-size:25ch;margin:6px 0 0;line-height:1.45;white-space:normal}
+.campaign-block a {display:inline-block;margin-top:3px;color:#4f2bc2;text-decoration:underline;text-underline-offset:2px}
+.analysis-run-result:focus {outline:2px solid #7046d7;outline-offset:2px}
+.analysis-run-result {scroll-margin-block-start:120px}
+@media(max-width:800px){
+ .shell .main:has(.inbox.mobile-chat-open)>.content {
+  height:calc(var(--inbox-keyboard-height,100dvh) - 54px)!important;
+ }
+ .inbox.mobile-chat-open .mobile-chat-back {min-height:44px}
+ .inbox.mobile-chat-open .composer {flex:none}
+ .inbox.mobile-chat-open .messages {flex:1 1 0;min-height:0}
+}

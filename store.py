@@ -24,7 +24,7 @@ from message_analytics import ReportError,report as traffic_report
 from ai import ai_status, ask_local
 from crm import crm_action
 from customer_assistant import CustomerError,action as customer_action,state as customer_state,enqueue as enqueue_customer_reply,process_once as customer_reply_worker
-from contact_segments import SegmentError,action as segment_action,audience as segment_audience
+from contact_segments import SegmentError,action as segment_action,audience as segment_audience,matching_audience
 from external_agents import ExternalError,action as external_action,enqueue as enqueue_event,public_agent,public_event,recent_events,process_once as dispatch_webhook,callback as external_callback
 from drip_sequences import DripError,action as sequence_action,eligible as sequence_eligible,after_submit as sequence_after_submit,run_state as sequence_run_state
 from knowledge_documents import KnowledgeError,upload as upload_document,document_action,retrieve as retrieve_documents,passage as document_passage
@@ -318,6 +318,17 @@ class Store:
         with self.db() as db:
             db.execute('BEGIN')
             data={('replies' if k=='reply' else k+'s'):self._list(db,tenant,k) for k in ['contact','template','campaign','rule','flow','sequence','reply','aichat','aiagent','knowledge','deal','task','airun','finding','aijob','segment']}
+            segments={segment['id']:segment['criteria'] for segment in data['segments']}
+            opted_in=[contact for contact in data['contacts'] if contact['optin']]
+            for campaign in data['campaigns']:
+                if campaign['status']!='draft':continue
+                segment_id=campaign.get('segment_id')
+                if segment_id and segment_id not in segments:
+                    campaign.update(audience=0,audience_block='The saved audience was deleted. Create a draft with a current audience.')
+                    continue
+                campaign['audience']=len(matching_audience(opted_in,campaign,segments.get(segment_id)))
+                if not campaign['audience']:
+                    campaign['audience_block']='No opted-in contacts match this audience.'
             for flow in data['flows']:
                 if ctx['role']=='admin':flow['published_versions']=flow_publishing.history(db,tenant,flow['id'])
                 else:flow.pop('draft',None)

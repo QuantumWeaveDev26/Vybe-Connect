@@ -85,10 +85,17 @@ def matches(contact,criteria):
     except (ValueError,TypeError,OverflowError):return False
 
 
+def matching_audience(contacts,campaign,criteria=None):
+    tag=campaign.get('tag')
+    return [contact for contact in contacts if contact['optin'] and
+            (not tag or tag in contact['tags']) and
+            (not criteria or matches(contact,criteria))]
+
+
 def audience(store,db,tenant,campaign):
     criteria=None
     if campaign.get('segment_id'):criteria=store._get(db,tenant,'segment',campaign['segment_id'])['criteria']
-    return [c for c in store._list(db,tenant,'contact') if c['optin'] and (not campaign.get('tag') or campaign['tag'] in c['tags']) and (not criteria or matches(c,criteria))]
+    return matching_audience(store._list(db,tenant,'contact'),campaign,criteria)
 
 
 def action(store,ctx,operation,data):

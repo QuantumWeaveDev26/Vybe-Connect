@@ -42,8 +42,25 @@ async function businessAction(action,el){
   if(action==='review-run'){
     if(S.analysisBusy||S.review||!aiCanSubmit(S.data.ai||{}))return;
     const agent_id=$('#review-agent')?.value;if(!agent_id)throw new Error('Choose a saved agent first.');
-    S.analysisBusy=true;render();
-    try{await act('ai.run',{agent_id});toast('Analysis saved. Findings are waiting for review.')}catch(err){toast(err.message)}finally{S.analysisBusy=false;await refresh();render()}
+    const workspace=S.workspace,user=S.data.context.user.id;
+    const sameWorkspace=()=>S.workspace===workspace&&S.data?.context.user.id===user;
+    const knownRuns=new Set((S.data.airuns||[]).map(run=>run.id));
+    S.analysisBusy=true;S.analysisFeedback=null;render();
+    let result,error;
+    try{result=await act('ai.run',{agent_id},workspace)}catch(failure){error=failure.message}
+    finally{S.analysisBusy=false}
+    if(!sameWorkspace())return;
+    await refresh();
+    if(!sameWorkspace())return;
+    const failedRun=error&&[...(S.data.airuns||[])].reverse().find(run=>
+      !knownRuns.has(run.id)&&run.agent_id===agent_id&&run.started_by===user&&run.status==='failed');
+    const runId=result?.id||failedRun?.id;
+    if(runId){S.reviewRun=runId;S.findingFilter=result?'pending':'all'}
+    S.analysisFeedback=error?{workspace,user,message:error,runId}:null;
+    if(S.route==='findings'){
+      render();
+      ($('#analysis-run-result')||$('#analysis-run-feedback'))?.focus();
+    }
     return;
   }
   if(action==='review-filter'){S.findingFilter=el.dataset.filter;return render()}
@@ -65,17 +82,28 @@ async function businessAction(action,el){
   if(action==='crm-deal-task'){const deal=S.data.deals.find(d=>d.id===id);return crmTaskForm({deal_id:id,contact_id:deal.contact_id,owner:deal.owner})}
   if(action==='crm-complete-task'){const task=S.data.tasks.find(t=>t.id===id);await act('task.complete',{id,completed:task.status!=='done'});return refresh()}
 }
+function analysisRunResult(run,status){
+ const failed=['failed','interrupted'].includes(run.status);
+ const finished=run.status==='completed';
+ const next=failed?(status.provider_pause?aiPauseGuidance(status):'Check the error above before retrying.'):'';
+ return `<section class="card analysis-run-result" id="analysis-run-result" tabindex="-1" aria-labelledby="analysis-run-heading"><div class="cardhead"><h2 id="analysis-run-heading">${esc(run.agent_name)}</h2>${badge(run.status,failed?'amber':'gray')}</div><div class="cardbody"><p>${esc(run.error||run.summary||'Analysis is running.')}</p>${next?`<p class="hint">${esc(next)}</p>`:''}<p class="hint">${run.sample_contacts} sampled contacts · ${date(run.created)} ${clock(run.created)}${finished&&Number.isInteger(run.finding_count)?` · ${run.finding_count} findings`:''}</p>${run.scope?`<details><summary>Analysis scope</summary><p class="hint">${esc(run.scope)}</p></details>`:''}</div></section>`;
+}
+
 function findingsPage(){
   const runs=[...(S.data.airuns||[])].reverse(),agents=(S.data.aiagents||[]).filter(a=>!a.archived),admin=S.data.context.role==='admin',status=S.data.ai||{};
   let findings=[...(S.data.findings||[])].reverse();
   const filter=S.findingFilter||'pending';if(filter!=='all')findings=findings.filter(f=>f.status===filter);
   if(S.reviewRun&&runs.some(r=>r.id===S.reviewRun))findings=findings.filter(f=>f.run_id===S.reviewRun);
+  const selectedRun=runs.find(run=>run.id===S.reviewRun);
+  const feedback=S.analysisFeedback;
+  const analysisError=feedback?.workspace===S.workspace&&feedback.user===S.data.context.user.id&&
+    (!feedback.runId||feedback.runId!==selectedRun?.id)?feedback.message:'';
   const configured=aiCanSubmit(status);
   const selected=S.findingAgent?.workspace===S.workspace&&agents.some(a=>a.id===S.findingAgent.id)?S.findingAgent.id:'';
   const guidance=!configured?aiSetupGuidance(status):!agents.length?'Set up an agent in the catalog to run an analysis.':'Analysis creates findings for review. An admin approves proposed changes.';
   const needsPlan=status.platform_managed&&!status.allowance?.active&&!status.allowance?.internal_use&&!status.provider_pause;
   return pagehead('AI findings & review','Inspect agent proposals before applying changes to customer records.',btn('Agent catalog','ai-agents-open','','small'))+
-    `<section class="card"><div class="cardhead"><h2>Run an analysis</h2>${badge(aiRuntimeLabel(),configured?'':'gray')}</div><div class="cardbody"><div class="review-run-controls"><label for="review-agent">Saved agent</label><select id="review-agent" ${S.analysisBusy||!agents.length?'disabled':''}><option value="">Choose an agent</option>${agents.map(a=>`<option value="${esc(a.id)}" ${selected===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>${btn(S.analysisBusy?'Analyzing…':'Analyze now','review-run',!configured||S.analysisBusy||S.review||!selected?'disabled':'','primary')}</div><p class="hint">${esc(guidance)}${needsPlan?' Switch to your team workspace if you already have access there.':''}</p>${needsPlan&&admin?'<a href="#services" class="button small">Review subscription</a>':''}</div></section><div class="analysis-history">${btn('All runs','review-select-run','','small')}${runs.slice(0,15).map(r=>btn(esc(r.agent_name)+' · '+esc(r.status),'review-select-run',`data-id="${r.id}"`,'small')).join('')}</div>${runs.filter(r=>r.id===S.reviewRun).map(r=>`<section class="card"><div class="cardbody"><strong>${esc(r.agent_name)} · ${esc(r.status)}</strong><p>${esc(r.summary||r.error||'Analysis is running. If the server restarted, this run may have been interrupted.')}</p><p class="hint">${esc(r.scope)} · ${r.sample_contacts} sampled contacts · ${date(r.created)} ${clock(r.created)}</p></div></section>`).join('')}<div class="buttons">${['pending','applied','dismissed','acknowledged','all'].map(v=>btn(v[0].toUpperCase()+v.slice(1),'review-filter',`data-filter="${v}"`,filter===v?'primary small':'small')).join('')}</div>${findings.map(f=>`<article class="finding-card"><div class="cardhead"><h2>${esc(f.title)}</h2>${badge(f.status,f.status==='pending'?'amber':'gray')}</div><p>${esc(f.details)}</p><p class="hint">${esc(f.agent_name)} · ${esc(crmContact(f.contact_id)?.name||'Workspace observation')} · ${date(f.created)} ${clock(f.created)}</p>${f.action?`<pre class="finding-action">${esc(JSON.stringify(f.action,null,2))}</pre>`:'<p class="hint">Information only. No proposed mutation.</p>'}<details><summary>Supporting messages (${f.evidence_ids.length})</summary>${f.evidence_ids.map(id=>{const m=S.data.messages.find(m=>m.id===id);return `<p class="hint">${m?esc(m.body):'Message no longer in the current message window.'} <code>${esc(id)}</code></p>`}).join('')||'<p class="hint">Workspace-level observation; no contact message references.</p>'}</details><div class="buttons">${f.contact_id?btn('Open conversation','open-chat',`data-id="${f.contact_id}"`,'small'):''}${admin&&f.status==='pending'?btn(f.action?'Review action':'Acknowledge','review-finding',`data-id="${f.id}" data-decision="approve"`,'primary small')+btn('Dismiss','review-finding',`data-id="${f.id}" data-decision="dismiss"`,'small'):''}</div></article>`).join('')||empty('No findings in this view',agents.length?'Run a configured agent or choose another filter.':'Create an agent from the AI catalog to begin.')}${findings.some(f=>f.action&&f.status==='pending')?'<p class="hint">Review proposed actions within 24 hours. If the conversation changes, run a fresh analysis.</p>':''}`;
+    `<section class="card"><div class="cardhead"><h2>Run an analysis</h2>${badge(aiRuntimeLabel(),configured?'':'gray')}</div><div class="cardbody"><div class="review-run-controls"><label for="review-agent">Saved agent</label><select id="review-agent" ${S.analysisBusy||!agents.length?'disabled':''}><option value="">Choose an agent</option>${agents.map(a=>`<option value="${esc(a.id)}" ${selected===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>${btn(S.analysisBusy?'Analyzing…':'Analyze now','review-run',!configured||S.analysisBusy||S.review||!selected?'disabled':'','primary')}</div><p class="hint">${esc(guidance)}${needsPlan?' Switch to your team workspace if you already have access there.':''}</p>${analysisError?`<p class="notice warn" role="alert" id="analysis-run-feedback" tabindex="-1">${esc(analysisError)}</p>`:''}${needsPlan&&admin?'<a href="#services" class="button small">Review subscription</a>':''}</div></section><div class="analysis-history">${btn('All runs','review-select-run','','small')}${runs.slice(0,15).map(r=>btn(esc(r.agent_name)+' · '+esc(r.status),'review-select-run',`data-id="${r.id}"`,'small')).join('')}</div>${selectedRun?analysisRunResult(selectedRun,status):''}<div class="buttons">${['pending','applied','dismissed','acknowledged','all'].map(v=>btn(v[0].toUpperCase()+v.slice(1),'review-filter',`data-filter="${v}"`,filter===v?'primary small':'small')).join('')}</div>${findings.map(f=>`<article class="finding-card"><div class="cardhead"><h2>${esc(f.title)}</h2>${badge(f.status,f.status==='pending'?'amber':'gray')}</div><p>${esc(f.details)}</p><p class="hint">${esc(f.agent_name)} · ${esc(crmContact(f.contact_id)?.name||'Workspace observation')} · ${date(f.created)} ${clock(f.created)}</p>${f.action?`<pre class="finding-action">${esc(JSON.stringify(f.action,null,2))}</pre>`:'<p class="hint">Information only. No proposed mutation.</p>'}<details><summary>Supporting messages (${f.evidence_ids.length})</summary>${f.evidence_ids.map(id=>{const m=S.data.messages.find(m=>m.id===id);return `<p class="hint">${m?esc(m.body):'Message no longer in the current message window.'} <code>${esc(id)}</code></p>`}).join('')||'<p class="hint">Workspace-level observation; no contact message references.</p>'}</details><div class="buttons">${f.contact_id?btn('Open conversation','open-chat',`data-id="${f.contact_id}"`,'small'):''}${admin&&f.status==='pending'?btn(f.action?'Review action':'Acknowledge','review-finding',`data-id="${f.id}" data-decision="approve"`,'primary small')+btn('Dismiss','review-finding',`data-id="${f.id}" data-decision="dismiss"`,'small'):''}</div></article>`).join('')||empty('No findings in this view',agents.length?'Run a configured agent or choose another filter.':'Create an agent from the AI catalog to begin.')}${findings.some(f=>f.action&&f.status==='pending')?'<p class="hint">Review proposed actions within 24 hours. If the conversation changes, run a fresh analysis.</p>':''}`;
 }
 document.addEventListener('change',async e=>{if(e.target.id==='review-agent'){
     S.findingAgent={workspace:S.workspace,id:e.target.value};
