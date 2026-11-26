@@ -556,3 +556,48 @@
  .inbox .composer-icon-pill {min-width:44px;min-height:44px!important}
  .inbox .composerfoot-right button {min-height:44px!important}
 }
+
+.content .operating-notice {display:flex;align-items:flex-start;justify-content:flex-start;gap:12px}
+.content .operating-notice>.icon {flex:none;margin-top:2px}
+.operating-notice strong {display:block;color:#342450}
+.operating-notice p {margin:3px 0 0;line-height:1.5}
+.finding-filters {
+ display:grid;
+ grid-template-columns:auto minmax(0,320px) 1fr;
+ align-items:center;
+ gap:10px 12px;
+ margin:18px 0;
+}
+.finding-filters label {color:#493d5f;font-weight:650}
+.finding-filters select {min-width:0;max-width:100%}
+.finding-filters .buttons {justify-self:end;flex-wrap:wrap}
+.finding-group {margin:18px 0}
+.finding-group>h2 {margin:0 0 5px;font-size:16px}
+.finding-group>h2 span {margin-inline-start:5px;color:#5b4e71}
+.finding-observations {border:1px solid #e1dbe9;border-radius:12px;background:#fff}
+.finding-observations>summary {cursor:pointer;padding:13px 16px;font-weight:680;color:#352447}
+.finding-observations>summary>.badge {margin-inline-start:8px}
+.finding-observation-list {padding:0 10px 10px}
+.content .review-finding-card {
+ border:1px solid #e7e0ec!important;
+ border-radius:10px;
+ padding:15px 16px;
+ margin:9px 0 0;
+ box-shadow:none;
+}
+.content .review-finding-card:hover {transform:none;box-shadow:none}
+.review-finding-card header {display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.review-finding-card h3 {margin:3px 0 0;font-size:15px;overflow-wrap:anywhere}
+.review-finding-card .finding-meta {margin:0;color:#5f566e;font-size:12px}
+.review-finding-card .finding-details {margin:8px 0 0;line-height:1.5;color:#383044;max-inline-size:78ch}
+.review-finding-card .finding-meta+.finding-actions,.finding-actions {margin-top:10px}
+.finding-evidence blockquote {margin:8px 0;padding:8px 12px;border-inline-start:2px solid #d8c9f6;overflow-wrap:anywhere}
+.developer-channel .badge {margin-bottom:4px}
+@media(max-width:1050px){
+ .finding-filters {grid-template-columns:auto minmax(0,1fr)}
+ .finding-filters .buttons {grid-column:1/-1;justify-self:start}
+}
+@media(max-width:480px){
+ .finding-filters {grid-template-columns:1fr}
+ .review-finding-card header {flex-wrap:wrap;gap:6px}
+}

@@ -774,7 +774,7 @@ class Store:
         except Problem:pass
         with self.db() as db:context['knowledge_passages']=retrieve_documents(self,db,ctx['tenant_id'],question)
         context['knowledge_sources']=[{k:source[k] for k in ['id','title','body']} for source in state['knowledges'] if source.get('enabled')]
-        context['connection_configuration']={'meta_configured':state['meta']['configured'],'live_gate_enabled':state['meta']['live'],'provider_health':'not verified','wallet_balance':None}
+        context['connection_configuration']={'meta_configured':state['meta']['configured'],'live_gate_enabled':state['meta']['live'],'sending_ready':bool(state['meta']['configured'] and state['meta']['live']),'provider_health':'not verified','wallet_balance':None}
         context['automation_configuration']=[{'name':r['name'],'keyword':r['keyword'],'enabled':r['enabled'],'executions':r.get('executions',0)} for r in (state['rules']+state['flows'])[:30]]
         context['tag_counts']={tag:sum(tag in c['tags'] for c in state['contacts']) for tag in sorted({tag for c in state['contacts'] for tag in c['tags']})[:100]}
         context['queue_counts']={status:sum(q['status']==status for q in state['queue']) for status in ['queued','sending','accepted','sent','delivered','read','failed','unknown','cancelled']}

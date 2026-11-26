@@ -4,6 +4,13 @@ for(const file of ['connectors','services','extensions','team-operations','shell
 let html=vm.runInContext('developerPage()',ctx);
 assert.match(html,/Optional integrations/,'External agent setup is optional for platform AI');
 assert.match(html,/href="#ai-agents"/);assert.doesNotMatch(html,/Setup needed/);
+vm.runInContext('S.data.meta.live=true',ctx);
+html=vm.runInContext('developerPage()',ctx);
+assert.match(html,/Not connected/);assert.doesNotMatch(html,/Sending enabled/);
+vm.runInContext('S.data.meta={configured:true,live:false}',ctx);
+assert.match(vm.runInContext('developerPage()',ctx),/Sending paused/);
+vm.runInContext('S.data.meta.live=true',ctx);
+assert.match(vm.runInContext('developerPage()',ctx),/Sending enabled/);
 html=vm.runInContext('servicesPage()',ctx);assert.match(html,/Starter/,'Operator billing must also show plan cards');assert.doesNotMatch(html,/TW_BILLING_PLANS/);assert.match(html,/Checkout coming soon/);
 html=vm.runInContext('googleConnectionsPage()',ctx);assert.match(html,/Import CSV/);assert.match(html,/Platform setup required/);assert.doesNotMatch(html,/>Not connected</);
 html=vm.runInContext('teamOperationsPanel()',ctx);assert.match(html,/Availability not chosen/);assert.match(html,/data-do="team-availability"/);
