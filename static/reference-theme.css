@@ -65,7 +65,8 @@ input:not([type="checkbox"]):not([type="radio"]):focus,select:focus,textarea:foc
 /* Badges, Tags & Notices */
 .badge{border-radius:999px;font-size:11px;font-weight:600;padding:3px 9px;background:#f1ecfd;color:#5e35d6;border:1px solid #e4dbfb}
 .badge.gray,.tag{background:#f3f2f7!important;color:#68637a!important;border:1px solid #e7e5ef!important;border-radius:999px}
-.badge.amber{background:#fef7e6!important;color:#a36a00!important;border-color:#f5dfb0!important}
+.badge.amber{background:#fef7e6!important;color:#795016!important;border-color:#f5dfb0!important}
+.badge.green{background:#e6f5ef!important;color:#21604d!important;border-color:#c7e7d9!important}
 .tag.vip{background:#f1ecfd!important;color:#5e35d6!important;border-color:#dfd4fb!important}
 .notice:not(.warn){background:#f7f4fe!important;border:1px solid #e6defa!important;color:#4f436e!important;border-radius:11px}
 .notice.warn{background:#fffbeb!important;border:1px solid #f5e4b8!important;color:#85641e!important;border-radius:11px}
@@ -535,7 +536,7 @@ dialog::backdrop{background:rgba(24,20,43,.32);backdrop-filter:blur(2px)}
  right:0;
  top:2px;
  font-size:10.5px;
- color:#88829b;
+ color:#645b76;
  font-weight:500;
  font-variant-numeric:tabular-nums;
 }
@@ -721,7 +722,7 @@ dialog::backdrop{background:rgba(24,20,43,.32);backdrop-filter:blur(2px)}
 .note-label .sub{margin:0;font-size:11px;color:#786a3a}
 .bubble-meta{
  font-size:10.5px;
- color:#88829a;
+ color:#625a74;
  margin-top:5px;
  padding:0 2px;
  font-variant-numeric:tabular-nums;
@@ -806,7 +807,7 @@ dialog::backdrop{background:rgba(24,20,43,.32);backdrop-filter:blur(2px)}
  box-shadow:none!important;
  resize:vertical;
 }
-.inbox .composer textarea::placeholder{color:#9690a8}
+.inbox .composer textarea::placeholder{color:#736985}
 .inbox .composerfoot{
  display:flex;
  align-items:center;
@@ -991,7 +992,7 @@ dialog::backdrop{background:rgba(24,20,43,.32);backdrop-filter:blur(2px)}
 .activity-item small{display:block;font-size:11px;color:#827c95;margin-top:2px}
 
 /* Responsive 3-Pane Inbox Breakpoints */
-@media(min-width:1100px){
+@media(min-width:1400px){
  .content>.inbox:has(>.contactpanel):not(.contact-details-closed){grid-template-columns:280px minmax(0,1fr) 268px}
  .inbox:not(.contact-details-closed)>.contactpanel{display:block;position:static;inset:auto;width:auto;height:100%;min-height:0;box-shadow:none;overflow-y:auto}
  .inbox.contact-details-closed>.contactpanel{display:none}
@@ -1000,7 +1001,7 @@ dialog::backdrop{background:rgba(24,20,43,.32);backdrop-filter:blur(2px)}
 @media(min-width:1480px){
  .content>.inbox:has(>.contactpanel):not(.contact-details-closed){grid-template-columns:300px minmax(0,1fr) 292px}
 }
-@media(max-width:1099px){
+@media(max-width:1399px){
  .inbox{position:relative}
  .inbox:not(.contact-details-open)>.contactpanel{display:none}
  .inbox.contact-details-open>.contactpanel{

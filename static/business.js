@@ -86,7 +86,7 @@ function analysisRunResult(run,status){
  const failed=['failed','interrupted'].includes(run.status);
  const finished=run.status==='completed';
  const next=failed?(status.provider_pause?aiPauseGuidance(status):'Check the error above before retrying.'):'';
- return `<section class="card analysis-run-result" id="analysis-run-result" tabindex="-1" aria-labelledby="analysis-run-heading"><div class="cardhead"><h2 id="analysis-run-heading">${esc(run.agent_name)}</h2>${badge(run.status,failed?'amber':'gray')}</div><div class="cardbody"><p>${esc(run.error||run.summary||'Analysis is running.')}</p>${next?`<p class="hint">${esc(next)}</p>`:''}<p class="hint">${run.sample_contacts} sampled contacts · ${date(run.created)} ${clock(run.created)}${finished&&Number.isInteger(run.finding_count)?` · ${run.finding_count} findings`:''}</p>${run.scope?`<details><summary>Analysis scope</summary><p class="hint">${esc(run.scope)}</p></details>`:''}</div></section>`;
+ return `<section class="card analysis-run-result" id="analysis-run-result" tabindex="-1" aria-labelledby="analysis-run-heading"><div class="cardhead"><h2 id="analysis-run-heading">${esc(run.agent_name)}</h2>${badge(run.status,failed?'amber':finished?'green':'gray')}</div><div class="cardbody"><p>${esc(run.error||run.summary||'Analysis is running.')}</p>${next?`<p class="hint">${esc(next)}</p>`:''}<p class="hint">${run.sample_contacts} sampled contacts · ${date(run.created)} ${clock(run.created)}${finished&&Number.isInteger(run.finding_count)?` · ${run.finding_count} findings`:''}</p>${run.scope?`<details><summary>Analysis scope</summary><p class="hint">${esc(run.scope)}</p></details>`:''}</div></section>`;
 }
 
 function findingsPage(){

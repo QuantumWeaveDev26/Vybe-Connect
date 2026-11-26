@@ -264,6 +264,11 @@ vm.runInContext('S.data=fixture;S.workspace="business-one";S.route="findings";S.
  const properties=new Map();
  context.document.documentElement={clientHeight:800,style:{setProperty:(k,v)=>properties.set(k,v),removeProperty:k=>properties.delete(k)}};
  context.document.activeElement={id:'compose'};
+ context.window.innerWidth=1280;
+ assert.equal(vm.runInContext('S.contactDetailsOpen=undefined;inboxDetailsVisible()',context),false);
+ context.window.innerWidth=1440;
+ assert.equal(vm.runInContext('inboxDetailsVisible()',context),true);
+ assert.equal(vm.runInContext('S.contactDetailsOpen=false;inboxDetailsVisible()',context),false);
  context.window.innerWidth=390;
  context.window.visualViewport={height:480,scale:1};
  vm.runInContext('S.route="inbox";S.mobileChatOpen=true;syncInboxViewport()',context);

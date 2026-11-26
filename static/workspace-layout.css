@@ -368,7 +368,6 @@
  background:#fff;
  padding:clamp(16px,2vw,28px);
  border:1px solid #e3deec;
- border-inline-start:3px solid #7046d7;
  border-radius:12px;
  align-items:center;
 }
@@ -541,3 +540,19 @@
 .shell .composer-icon-pill[data-do="ai-open"] {background:#eee7fc!important;color:#5028b8!important}
 .shell .header-profile-menu > button {gap:9px}
 .shell .header-profile-menu > button .icon svg {width:16px;height:16px}
+.inbox .fmt-btn .icon svg,
+.inbox .contact-details-close .icon svg {width:16px;height:16px}
+.inbox .composer-format-group:empty {display:none}
+.inbox .bubble-meta,.inbox .chatrow-time {font-size:11px}
+.inbox .chatrow .snippet {color:#615970}
+.inbox .contact-detail-body .sectionlabel {color:#625a73}
+.inbox .contact-panel-tabs>button[role="tab"]:not(.active) {color:#625a74!important}
+.inbox :is(.conv-details-btn,.contact-details-close,.composer-icon-pill,.chatrow):focus-visible {
+ outline:2px solid #6442c5;
+ outline-offset:-2px;
+}
+@media (max-width:800px){
+ .inbox .contact-panel-tabs .contact-details-close {width:44px;height:44px;min-height:44px!important}
+ .inbox .composer-icon-pill {min-width:44px;min-height:44px!important}
+ .inbox .composerfoot-right button {min-height:44px!important}
+}
