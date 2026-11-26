@@ -20,7 +20,7 @@ html=vm.runInContext('page()',context);assert.match(html,/&lt;script&gt;/);asser
 context.fixture.airuns=[{id:'run',agent_name:'Triage',status:'completed',created:1}];
 context.fixture.findings.push({id:'observation',run_id:'run',agent_name:'Triage',title:'Empty sample',details:'No recent conversations',status:'pending',evidence_ids:[],created:1});
 html=vm.runInContext('page()',context);
-assert.match(html,/<select id="finding-run-history"/);
+assert.match(html,/<select id="finding-run-history"/);assert.match(html,/<select id="finding-status"/);
 assert.match(html,/class="finding-group finding-observations"/);assert.match(html,/Acknowledge/);
 assert.doesNotMatch(html,/Supporting messages \(0\)|review-select-run/);
 vm.runInContext('S.data.context.role="agent"',context);html=vm.runInContext('page()',context);assert.doesNotMatch(html,/data-decision="approve"/);
