@@ -31,6 +31,14 @@ class HttpTests(unittest.TestCase):
         c.request(method,path,json.dumps(data).encode() if data is not None else None,h)
         r=c.getresponse(); body=r.read(); result=(r.status,dict(r.getheaders()),body);c.close();return result
 
+    def test_google_callback_explains_expired_authorization(self):
+        status, headers, body = self.request('GET', '/oauth/google/callback')
+        self.assertEqual(status, 403)
+        self.assertIn(b'Google authorization expired. Start again.', body)
+        self.assertIn(b'/#google-connections', body)
+        self.assertIn('Max-Age=0', headers['Set-Cookie'])
+        self.assertEqual(headers['Referrer-Policy'], 'no-referrer')
+
     def test_all_index_scripts_and_styles_are_served(self):
         import re
         status, _, body = self.request('GET', '/')

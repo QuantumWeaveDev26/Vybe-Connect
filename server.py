@@ -4,12 +4,14 @@ site.addsitedir(str(Path(__file__).resolve().parent/'_vendor'))
 """Loopback-only pilot server. Run with Python 3.13: python server.py."""
 from recovery_mail import configuration as recovery_configuration
 import argparse
+from html import escape
 import json
+import logging
 import os
 import time
 import threading
 import secrets
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -91,14 +93,25 @@ class Handler(BaseHTTPRequestHandler):
             if not self.host_ok(): raise Problem('Invalid host.',403)
             path=urlsplit(self.path).path
             if path==google_connections.CALLBACK:
-                cookies=SimpleCookie();cookies.load(self.headers.get('Cookie',''))
-                cookie=cookies.get('tw_google_flow');ok=False
+                cookies=SimpleCookie()
+                try:cookies.load(self.headers.get('Cookie',''))
+                except CookieError:cookies.clear()
+                cookie=cookies.get('tw_google_flow')
+                status,detail=200,'Your account is connected to your workspace.'
                 try:
                     google_connections.callback(self.server.store,parse_qs(urlsplit(self.path).query),cookie.value if cookie else '')
-                    ok=True
-                except Problem:pass
-                content='<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>'+('Google connected' if ok else 'Google connection not completed')+'</h1><p>'+('Your account is connected to your workspace.' if ok else 'Return to your workspace and reconnect. Check that Google permissions and platform setup are complete.')+'</p><a href="/#google-connections">Return to VYBE Connect</a></body></html>'
-                self.respond(200 if ok else 400,content,'text/html; charset=utf-8',cookie='tw_google_flow=; Path='+google_connections.CALLBACK+'; HttpOnly; SameSite=Lax; Secure; Max-Age=0');return
+                except (Problem,embedded_signup.ConnectionError) as error:
+                    status,detail=error.code,str(error)
+                except Exception as error:
+                    logging.error('Google OAuth callback failed: %s',type(error).__name__)
+                    status,detail=500,'VYBE could not save the Google connection. Return to Settings and try again.'
+                title='Google connected' if status==200 else 'Google connection not completed'
+                content=('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                         '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                         f'<title>{title}</title></head><body><main><h1>{title}</h1>'
+                         f'<p>{escape(detail)}</p><a href="/#google-connections">Return to VYBE Connect</a>'
+                         '</main></body></html>')
+                self.respond(status,content,'text/html; charset=utf-8',cookie='tw_google_flow=; Path='+google_connections.CALLBACK+'; HttpOnly; SameSite=Lax; Secure; Max-Age=0');return
             if path.startswith('/help/'):
                 parts=path.strip('/').split('/')
                 if len(parts) not in (2,3):raise Problem('Article not found.',404)
@@ -295,7 +308,14 @@ class Handler(BaseHTTPRequestHandler):
                 ctx=self.context();operation=data.get('action')
                 if isinstance(operation,str) and operation.startswith(('ai.connection.','whatsapp.','payments.','billing.','shipping.','clients.','providers.','services.','calls.','growth.form.','google.','semantic.')) and operation not in ('calls.end','calls.reject','calls.release'):
                     if not auth_attempt(self.server.service_attempts,self.server.service_attempts_lock,self.client_address[0],ctx['user']['id']+':'+operation,time.time()):raise Problem('Too many service requests. Wait a minute.',429)
-                result=self.server.store.action(ctx,operation,payload)
+                try:
+                    result=self.server.store.action(ctx,operation,payload)
+                except (Problem,api_tokens.APIError,ValueError,TypeError,KeyError):
+                    raise
+                except Exception as error:
+                    if operation!='google.start':raise
+                    logging.error('Google OAuth start failed: %s',type(error).__name__)
+                    raise Problem('VYBE could not start Google sign-in. Return to Google connections and try again.',503) from None
                 cookie=result.pop('_flow_cookie',None) if operation=='google.start' else None
                 self.respond(200,result,cookie=cookie);return
             raise Problem('Not found.',404)
