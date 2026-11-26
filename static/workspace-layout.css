@@ -390,8 +390,13 @@
 .inbox .composer {border-color:#e5ddf1}
 .authscreen .authstory {background:#261c3d!important;color:#fff}
 .authscreen .authstory h1 {color:#fff!important}
-.authscreen .authstory p,.authscreen .authfeatures span {color:#e8dcf7!important}
-.authscreen .authstory .brand {color:#fff}
+.authscreen .authstory p {color:#e8dcf7!important}
+.authscreen .authstory .brand {color:#fff!important}
+.authscreen .authstory .authfeatures span {
+ background:#3b2d55!important;
+ border-color:#625080!important;
+ color:#f8f4ff!important;
+}
 @media (max-width:800px) {
  .shell .main > .content > .pagehead {align-items:stretch;gap:12px}
  .shell .pagehead > .buttons {justify-content:flex-start}

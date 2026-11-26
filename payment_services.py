@@ -168,6 +168,12 @@ def webhook(store,tenant,scope,raw,headers):
         return {'received':True,'duplicate':False}
     resource=(body.get('payload',{}).get('payment_link' if scope=='payments' else 'subscription') or {}).get('entity')
     if not isinstance(resource,dict):return {'received':True,'ignored':True}
+    if scope=='billing' and tenant is None:
+        notes=resource.get('notes')
+        tenant=notes.get('workspace_id') if isinstance(notes,dict) else None
+        if not isinstance(tenant,str) or not re.fullmatch(r'[a-f0-9]{16}',tenant):
+            # The platform merchant account may also host unrelated subscriptions.
+            return {'received':True,'ignored':True}
     with store.db() as db:
         jobs=store._list(db,tenant,'servicejob')
         job=next((j for j in jobs if j['kind']==('payments.link' if scope=='payments' else 'billing.subscription') and

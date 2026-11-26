@@ -44,7 +44,7 @@ def setup_details():
         origin=os.environ.get('TW_PUBLIC_ORIGIN','');p=urlsplit(origin)
         valid=p.scheme=='https' and p.hostname and re.fullmatch(r'[A-Za-z0-9.-]+',p.hostname) and not any((p.path,p.query,p.fragment,p.username,p.password)) and (p.port is None or 1<=p.port<=65535)
         if valid:
-            callbacks={'google':origin+'/oauth/google/callback','whatsapp':origin+'/webhook/WORKSPACE_ID','billing':origin+'/razorpay-webhook/billing/WORKSPACE_ID','payments':origin+'/razorpay-webhook/payments/WORKSPACE_ID'}
+            callbacks={'google':origin+'/oauth/google/callback','whatsapp':origin+'/webhook/WORKSPACE_ID','billing':origin+'/razorpay-webhook/billing','payments':origin+'/razorpay-webhook/payments/WORKSPACE_ID'}
     except ValueError:pass
     if not callbacks:
         for service in result.values():service['invalid_fields' if os.environ.get('TW_PUBLIC_ORIGIN') else 'missing_fields'].append('TW_PUBLIC_ORIGIN')

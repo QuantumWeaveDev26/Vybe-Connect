@@ -196,8 +196,12 @@ class Handler(BaseHTTPRequestHandler):
                 from payment_services import webhook
                 from service_jobs import ServiceError
                 parts=path.strip('/').split('/')
-                if len(parts)!=3 or parts[1] not in ('payments','billing'):raise Problem('Invalid payment webhook route.',404)
-                try:result=webhook(self.server.store,parts[2],parts[1],raw,dict(self.headers))
+                if len(parts)==2 and parts[1]=='billing':
+                    tenant=None
+                elif len(parts)==3 and parts[1] in ('payments','billing') and parts[2]:
+                    tenant=parts[2]
+                else:raise Problem('Invalid payment webhook route.',404)
+                try:result=webhook(self.server.store,tenant,parts[1],raw,dict(self.headers))
                 except ServiceError as e:raise Problem(str(e),e.code) from None
                 self.respond(200,result);return
             if path.startswith('/agent-callback/'):
