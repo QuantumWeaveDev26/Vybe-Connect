@@ -15,5 +15,5 @@ function manualWhatsAppBanner(contact){
  return `<div class="manual-whatsapp-banner"><div><strong>Reply in WhatsApp</strong><span>Replies stay in WhatsApp. Use Notes to leave an update for your team.</span></div>${action}</div>`;
 }
 function manualWhatsAppSettings(){
- return '<section class="card"><div class="cardhead"><h2>WhatsApp on your phone</h2><span class="badge gray">Opens WhatsApp</span></div><div class="cardbody"><p>Manage contacts, notes and follow-ups in VYBE. Use the WhatsApp button on a contact to send from your phone account.</p><p class="hint">Phone chats stay in WhatsApp. Connect the WhatsApp Business API for synced conversations and automated sending.</p><a class="primary manual-contacts-action" href="#contacts">Open contacts</a></div></section>';
+ return '<section class="card"><div class="cardhead"><h2>Use the CRM with your existing number</h2></div><div class="cardbody"><p>Open a contact and select <strong>Open in WhatsApp</strong>. Send from WhatsApp, then track notes and follow-ups in VYBE.</p><p class="hint">Messages sent this way stay in WhatsApp.</p><a class="button primary manual-contacts-action" href="#contacts">Open contacts</a></div></section>';
 }

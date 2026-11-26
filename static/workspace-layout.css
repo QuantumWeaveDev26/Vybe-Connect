@@ -399,3 +399,35 @@
  .shell .pagehead > .buttons button,.shell .pagehead > .buttons a {min-height:44px}
  .shell .sidebar nav .navlink {min-height:44px}
 }
+
+/* Messaging readiness, contact details and centered empty states. */
+.owned-product-grid > .empty,.astra-grid > .empty {grid-column:1/-1}
+.campaign-readiness {
+ display:flex;
+ flex-wrap:wrap;
+ justify-content:flex-start;
+ gap:12px;
+ align-items:center;
+}
+.campaign-readiness > .icon {flex:none;width:20px;height:20px}
+.campaign-readiness > div {flex:1 1 230px;min-width:0}
+.campaign-readiness p {margin:3px 0 0}
+.campaign-readiness > .button {margin-inline-start:auto}
+.contact-profile-fields {
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,105px),1fr));
+ column-gap:12px;
+}
+.inbox .contact-detail-body .contact-profile-fields .profileline b {color:#625a73}
+.developer-contract code {overflow-wrap:anywhere}
+.shell.nav-expanded .sidebar nav .navlink:not(.active),
+.shell:not(.nav-expanded) .sidebar nav .navlink:not(.active) {color:#ded3eb}
+.shell.nav-expanded .sidebar nav .navlink .nav-text {color:inherit}
+@media (min-width:801px) {
+ .rail-collapse-pill {right:5px;top:51px;color:#49317d!important}
+ .shell.nav-expanded .rail-collapse-pill {right:10px;top:22px;width:32px;height:32px}
+ .shell.nav-expanded .sidebar .brand {padding-inline-end:36px}
+}
+@media (max-width:480px) {
+ .campaign-readiness > .button {margin-inline-start:0}
+}

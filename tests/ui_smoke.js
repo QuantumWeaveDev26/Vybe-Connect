@@ -119,7 +119,19 @@ html=vm.runInContext('dripSequencePage()',context);assert.match(html,/Run histor
 vm.runInContext('S.data.sequence_runs=[{id:"run",name:"Stopped journey",status:"active",finished:true,audience:1,created:1,counts:{skipped:1,cancelled:1}}]',context);
 html=vm.runInContext('dripSequencePage()',context);assert.match(html,/>Stopped</);assert.doesNotMatch(html,/>Submitted</);
 
-html=vm.runInContext('externalAgentPage()',context);assert.match(html,/Astra \/ Custom AI/);assert.match(html,/New agent/);assert.match(html,/custom agent/);html=vm.runInContext('developerPage()',context);assert.match(html,/unsent reply drafts/);
+html=vm.runInContext('externalAgentPage()',context);assert.match(html,/External agents/);assert.match(html,/New agent/);assert.match(html,/href="#ai-agents"/);html=vm.runInContext('developerPage()',context);assert.match(html,/unsent reply drafts/);
+
+html=vm.runInContext('S.data.aiagents=[{id:"saved",name:"Daily Digest"}];S.data.ai={platform_managed:true,allowance:{active:false}};findingsPage()',context);
+assert.match(html,/Switch to your team workspace/);
+assert.match(html,/data-do="review-run" disabled/);
+html=vm.runInContext('S.data.ai={enabled:true,configured:true,platform_managed:true,allowance:{active:true,remaining:10}};S.review=false;findingsPage()',context);
+assert.match(html,/data-do="review-run" disabled/);
+html=vm.runInContext('S.findingAgent={workspace:S.workspace,id:"saved"};findingsPage()',context);
+assert.match(html,/value="saved" selected/);
+assert.doesNotMatch(html,/data-do="review-run" disabled/);
+html=vm.runInContext('S.data.ai.provider_pause={reason:"rate_limited"};findingsPage()',context);
+assert.match(html,/data-do="review-run" disabled/);
+vm.runInContext('delete S.data.ai.provider_pause;delete S.findingAgent',context);
 
 vm.runInContext('S.data.segments=[{id:"segment",name:"Buyer audience",criteria:{mode:"all",rules:[{field:"tags",operator:"contains",value:"Buyer"}]},updated:1}]',context);html=vm.runInContext('segmentsPage()',context);assert.match(html,/Contact segments/);assert.match(html,/Preview audience/);
 
