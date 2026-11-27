@@ -632,3 +632,11 @@
  .shell .main > .context-nav:is([data-section="automations"],[data-section="settings"]) .mobile-section-picker select {min-height:42px;max-width:100%}
 }
 .content .semantic-empty {grid-column:1/-1}
+
+.contact-extras {margin-block:12px;padding:12px;border:1px solid #e7e0ec;border-radius:10px}
+.contact-extras summary {cursor:pointer;font-weight:650}
+.contact-extras[open] summary {margin-bottom:12px}
+.contact-extra-row {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:8px;margin-bottom:12px}
+.contact-extra-row label {min-width:0}
+.contact-extra-row input {width:100%}
+@media(max-width:520px){.contact-extra-row {grid-template-columns:1fr}.contact-extra-row button {justify-self:start}}

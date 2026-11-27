@@ -147,7 +147,7 @@ context.noResponseFixture={event:"customer_no_response",wait_seconds:60};html=vm
 html=vm.runInContext("noResponseHistoryPanel()",context);assert.match(html,/No-response evaluations/);
 
 context.poolFixture={handoff_strategy:'least_busy',handoff_pool:['removed-member']};
-html=vm.runInContext('customerRoutingFields(poolFixture)',context);assert.match(html,/Least-busy member/);assert.match(html,/no longer have workspace access/);assert.match(html,/not browser presence/);
+html=vm.runInContext('customerRoutingFields(poolFixture)',context);assert.match(html,/Least-busy member/);assert.match(html,/no longer have workspace access/);assert.match(html,/New handoffs stay unassigned/);
 html=vm.runInContext('customerRoutingSummary(poolFixture)',context);assert.match(html,/1 configured members/);
 context.routedHandoff={handoff:{active:true,reason:'Needs help',created:1,routing:{strategy:'least_busy',assigned_load:'<script>bad</script>'}}};html=vm.runInContext('customerHandoffInfo(routedHandoff)',context);assert.match(html,/Least-busy team routing/);assert.doesNotMatch(html,/<script>/);
 

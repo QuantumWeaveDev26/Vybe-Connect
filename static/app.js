@@ -228,7 +228,34 @@ function settingsPage(){const m=S.data.meta;return aiConnectionCard()+pagehead('
 function showModal(title,html,submit,label='Save'){$('#modal').classList.remove('agent-template-modal');formSubmit=submit;$('#modal').innerHTML=`<div class="modalhead"><h2>${esc(title)}</h2>${btn('✕','close','','ghost small')}</div><form id="dialog-form" class="modalbody">${html}<p class="error" id="formerror"></p><div class="modalfoot">${btn('Cancel','close')}<button class="primary" type="submit">${label}</button></div></form>`;$('#modal').showModal()}
 function field(name,label,value='',type='text',options){const id='f-'+name;let input;if(type==='textarea'||type==='json')input=`<textarea id="${id}" name="${name}" ${type==='json'?'data-json':''} required>${esc(type==='json'?JSON.stringify(value||{},null,2):value)}</textarea>`;else if(type==='checkbox')input=`<label class="check" for="${id}"><input id="${id}" name="${name}" type="checkbox" ${value?'checked':''}><span>${esc(label)}</span></label>`;else if(type==='select')input=`<select id="${id}" name="${name}">${options.map(([v,l])=>`<option value="${esc(v)}" ${v===value?'selected':''}>${esc(l)}</option>`).join('')}</select>`;else input=`<input id="${id}" name="${name}" type="${type||'text'}" value="${esc(value)}" ${['tag','tags','schedule','target'].includes(name)?'':'required'} ${name==='password'?'minlength="12" maxlength="256" autocomplete="new-password"':''}>`;if(type==='password')input=passwordControlMarkup(input,id,label);return `<div class="field">${type==='checkbox'?'':`<label for="${id}">${esc(label)}</label>`}${input}</div>`}
 function entityForm(title,action,fields,initial={}){showModal(title,fields.map(f=>field(f[0],f[1],initial[f[0]]??f[4]??'',f[2]||'text',f[3])).join(''),async data=>{if(initial.id)data.id=initial.id;if(data.schedule)data.schedule=new Date(data.schedule).toISOString();await act(action,data);$('#modal').close();await refresh();toast('Saved to this workspace.')})}
-function contactForm(c={}){entityForm(c.id?'Edit contact':'Add a contact','contact.save',[['name','Full name'],['phone','International phone number'],['tags','Tags, separated by commas'],['optin','This contact explicitly opted in to campaigns','checkbox'],['attributes','Custom attributes (JSON)','json']],{...c,tags:(c.tags||[]).join(', ')})}
+function contactForm(c={}){
+ const scope=S.workspace,user=S.data.context.user.id;
+ const entries=Object.entries(c.attributes||{});
+ const valueText=value=>typeof value==='string'?value:JSON.stringify(value);
+ const row=(name='',value='',index=-1)=>`<div class="contact-extra-row" data-extra-index="${index}"><label>Field name<input data-extra-name value="${esc(name)}"></label><label>Value<input data-extra-value value="${esc(value)}"></label><button type="button" class="small" data-extra-remove aria-label="Remove detail">Remove</button></div>`;
+ const fields=[['name','Full name',c.name||''],['phone','International phone number',c.phone||'','tel'],['tags','Tags, separated by commas',(c.tags||[]).join(', ')],['optin','This contact explicitly opted in to campaigns',!!c.optin,'checkbox']];
+ showModal(c.id?'Edit contact':'Add a contact',fields.map(args=>field(...args)).join('')+`<details class="contact-extras"><summary>Extra details</summary><div id="contact-extra-rows">${entries.map(([name,value],i)=>row(name,valueText(value),i)).join('')}</div><button class="small" type="button" id="contact-add-detail">Add detail</button></details>`,async data=>{
+  if(S.workspace!==scope||S.data?.context.user.id!==user)throw new Error('Workspace changed. Reopen this contact.');
+  const values=new Map();
+  for(const el of $('#contact-extra-rows').children){
+   const name=el.querySelector('[data-extra-name]').value.trim();
+   const value=el.querySelector('[data-extra-value]').value;
+   if(!name&&!value)continue;
+   if(!name||values.has(name))throw new Error('Give each detail a unique field name.');
+   const original=entries[Number(el.dataset.extraIndex)];
+   values.set(name,original&&value===valueText(original[1])?original[1]:value);
+  }
+  await act('contact.save',{...data,id:c.id,attributes:Object.fromEntries(values)});
+  if(S.workspace!==scope||S.data?.context.user.id!==user)return;
+  $('#modal').close();await refresh();toast('Contact saved.');
+ });
+ const rows=$('#contact-extra-rows');
+ rows.onclick=event=>event.target.closest('[data-extra-remove]')?.closest('.contact-extra-row').remove();
+ $('#contact-add-detail').onclick=()=>{
+  if(rows.children.length>=50)return toast('Use up to 50 extra details.');
+  rows.insertAdjacentHTML('beforeend',row());rows.lastElementChild.querySelector('input').focus();
+ };
+}
 function templateForm(t={}){return startTemplateEditor(t)}
 function campaignForm(){if(!S.data.templates.length){toast('Create a local template first.');location.hash='templates';return}const options=S.data.templates.map(t=>[t.id,t.name]);entityForm('Create campaign','campaign.save',[['name','Campaign name'],['template_id','Message template','select',options],['segment_id','Saved audience','select',[['','All opted-in contacts'],...(S.data.segments||[]).map(s=>[s.id,s.name])]],['tag','Also require tag (optional)'],['schedule','Scheduled date and local time','datetime-local']],{})}
 function ruleForm(kind,r={}){if(kind==='rule')return richRuleForm(r);if(kind==='flow')return flowSettingsForm(r);entityForm(r.id?'Edit '+kind:'Create '+kind,kind+'.save',[['name','Name'],['keyword','Incoming message contains'],['reply','Suggested reply','textarea'],['enabled','Enable suggested reply drafts','checkbox']],{enabled:true,...r})}
