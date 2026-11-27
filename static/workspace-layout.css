@@ -617,3 +617,18 @@
  .inbox.contact-details-open>.contactpanel {max-height:min(75dvh,650px);overscroll-behavior:contain}
  .inbox .contact-panel-tabs {position:sticky;top:0;z-index:1;background:#fff}
 }
+
+.content .internal-team-actions .button {display:inline-flex;align-items:center;padding:10px 15px;min-height:44px}
+.content .sales-board-empty .sales-column {min-height:0}
+.content .sales-board-empty .sales-column header {margin-bottom:0}
+.content .pipeline-empty {margin:8px 0 20px;color:#5f566e}
+.content .template-preview-card .templatepreview {background:#eee9fb!important}
+.content .template-preview-card .phonebody {background:#e3f3ef!important}
+.content .template-preview-card .phonehead {background:#daf0e9;color:#173f34}
+@media(min-width:1051px) and (max-width:1450px) {
+ .shell .main > .context-nav.has-mobile-picker[data-section="automations"] > :is(.context-link,.navlabel),
+ .shell .main > .context-nav.has-mobile-picker[data-section="settings"] > .context-link {display:none}
+ .shell .main > .context-nav:is([data-section="automations"],[data-section="settings"]) .mobile-section-picker {display:flex;align-items:center;gap:12px}
+ .shell .main > .context-nav:is([data-section="automations"],[data-section="settings"]) .mobile-section-picker select {min-height:42px;max-width:100%}
+}
+.content .semantic-empty {grid-column:1/-1}

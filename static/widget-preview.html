@@ -19,7 +19,10 @@
     pre { background: #251a39; color: #ede5ff; padding: 14px 16px; border-radius: 9px; margin: 16px 0 20px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.55; }
     pre:has(code:empty) { display: none; }
     .preview-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
-    .preview-actions span { color: #5c526d; font-size: 13px; }
+    .secondary { background:#eee8fc; color:#4825a3; }
+    .secondary:not(:disabled):hover { background:#e4d9fa; }
+    details { margin-top:18px; }
+    summary { cursor:pointer; padding:7px 0; font-weight:650; }
     .btn { min-block-size: 44px; background: #5e35d6; color: #fff; padding: 10px 16px; border: 0; border-radius: 9px; font: inherit; font-weight: 650; cursor: pointer; }
     .btn:not(:disabled):hover { background: #4825b3; }
     .btn:disabled { background: #ece7f4; color: #625675; cursor: default; }
@@ -30,16 +33,18 @@
   <main>
     <a class="back" href="/">← Back to VYBE Connect</a>
     <h1>Website chat setup</h1>
-    <p class="lead">Add website chat so your team can answer visitors from Team Inbox.</p>
     <section class="card" aria-labelledby="widget-embed-heading">
-      <h2 id="widget-embed-heading">Embed code</h2>
-      <p>Paste this script before the closing <code>&lt;/body&gt;</code> tag on your website.</p>
-      <p id="widget-preview-notice"></p>
-      <pre><code id="widget-embed-code"></code></pre>
+      <h2 id="widget-embed-heading">Add chat to your website</h2>
+      <p id="widget-preview-notice" role="status"></p>
       <div class="preview-actions">
-        <button class="btn" id="open-widget-preview" type="button">Open website chat</button>
-        <span>Sends to the selected workspace inbox</span>
+        <button class="btn" id="open-widget-preview" type="button">Preview chat</button>
+        <button class="btn secondary" id="copy-widget-code" type="button">Copy install code</button>
       </div>
+      <details id="widget-install-details">
+        <summary>Installation details</summary>
+        <p>Paste the code before <code>&lt;/body&gt;</code> on your website.</p>
+        <pre><code id="widget-embed-code"></code></pre>
+      </details>
     </section>
   </main>
   <script src="/widget-preview.js" defer></script>

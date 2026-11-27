@@ -135,8 +135,7 @@ function customerSubscriptionPage(data){
 }
 
 function internalTeamPage(){
- const allowance=S.data.ai?.allowance||{};
- return pagehead('Internal team','Your team workspace is included at no subscription charge.')+`<section class="card"><div class="cardbody"><h2>No subscription required</h2><p>Your invited teammates can use this workspace’s CRM, inbox, sales and automation tools.</p><p class="hint">External customer workspaces keep their own subscription requirements. WhatsApp and AI provider usage have separate controls and costs.</p><div class="buttons"><a class="button primary" href="#team">Manage teammates</a><a class="button" href="#settings">WhatsApp & AI settings</a></div></div></section><section class="card"><div class="cardbody"><h2>Platform AI</h2><p>${allowance.active?'Shared team AI enabled · ₹'+esc((allowance.budget_paise/100).toFixed(2))+' monthly spending cap. Conservative budget remaining: ₹'+esc((allowance.budget_remaining_paise/100).toFixed(2))+'. Requests stop before exceeding this cap.':'AI usage is paused until the platform operator approves provider usage.'}</p><a class="button" href="#ai-agents">Open AI agents</a></div></section>`;
+ return pagehead('Internal team','No subscription required.')+`<section class="card"><div class="cardbody"><div class="buttons internal-team-actions"><a class="button primary workspace-connection-action" href="#team">Manage teammates</a><a class="button workspace-connection-action" href="#settings">WhatsApp settings</a></div></div></section>`;
 }
 
 function voiceCallDetails(call){

@@ -4,6 +4,6 @@ vm.runInContext(fs.readFileSync('static/services.js','utf8'),c);vm.runInContext(
 let html=vm.runInContext('servicesPage()',c);assert.match(html,/Internal team/);assert.match(html,/No subscription/);assert.doesNotMatch(html,/Subscribe|Choose your plan|Checkout coming soon/);
 html=vm.runInContext('aiConnectionCard()',c);assert.match(html,/AI usage is paused/);assert.doesNotMatch(html,/Choose your subscription|Subscription needed/);
 c.S.data.ai.allowance={active:true,internal_use:true,budget_paise:29900,budget_remaining_paise:28000,remaining:900,limit:1000};
-html=vm.runInContext('servicesPage()',c);assert.match(html,/299\.00 monthly spending cap/);assert.match(html,/280\.00/);assert.doesNotMatch(html,/NaN|Subscription needed/);
+html=vm.runInContext('servicesPage()',c);assert.match(html,/Manage teammates/);assert.doesNotMatch(html,/monthly spending cap|Platform AI/);assert.doesNotMatch(html,/NaN|Subscription needed/);
 c.S.data.ai.enabled=true;assert.equal(vm.runInContext('aiConnectionCard()',c),'');
 console.log('Internal billing is distinct from paid subscriptions and does not promise free provider usage.');

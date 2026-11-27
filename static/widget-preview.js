@@ -6,11 +6,25 @@ window.VYBE_WORKSPACE=validWorkspace?previewWorkspace:'';
 const previewButton=document.querySelector('#open-widget-preview');
 const embedCode=document.querySelector('#widget-embed-code');
 const widgetNotice=document.querySelector('#widget-preview-notice');
+const copyButton=document.querySelector('#copy-widget-code');
 if(validWorkspace){
  embedCode.textContent=`<script src="${location.origin}/widget.js" data-workspace="${previewWorkspace}" data-title="Support chat" defer></script>`;
- widgetNotice.textContent='Messages in this website chat appear in your inbox. WhatsApp messaging and marketing consent stay separate.';
+ widgetNotice.textContent='Website messages go to Team Inbox.';
 }else{
  previewButton.disabled=true;
- widgetNotice.textContent='Open Website chat setup from your workspace’s API tokens page to select the correct inbox.';
+ if(copyButton)copyButton.disabled=true;
+ widgetNotice.textContent='Open this page from your VYBE workspace.';
 }
 previewButton.addEventListener('click',()=>window.VybeWidget?.open());
+
+copyButton?.addEventListener('click',async()=>{
+ if(!validWorkspace)return;
+ try{
+   await navigator.clipboard.writeText(embedCode.textContent);
+   widgetNotice.textContent='Install code copied.';
+ }catch{
+   const details=document.querySelector('#widget-install-details');
+   if(details)details.open=true;
+   widgetNotice.textContent='Copy the install code below.';
+ }
+});
