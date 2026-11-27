@@ -85,9 +85,9 @@ def matches(contact,criteria):
     except (ValueError,TypeError,OverflowError):return False
 
 
-def matching_audience(contacts,campaign,criteria=None):
+def matching_audience(contacts,campaign,criteria=None,*,require_optin=True):
     tag=campaign.get('tag')
-    return [contact for contact in contacts if contact['optin'] and
+    return [contact for contact in contacts if (not require_optin or contact['optin']) and
             (not tag or tag in contact['tags']) and
             (not criteria or matches(contact,criteria))]
 

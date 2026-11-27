@@ -319,14 +319,15 @@ class Store:
             db.execute('BEGIN')
             data={('replies' if k=='reply' else k+'s'):self._list(db,tenant,k) for k in ['contact','template','campaign','rule','flow','sequence','reply','aichat','aiagent','knowledge','deal','task','airun','finding','aijob','segment']}
             segments={segment['id']:segment['criteria'] for segment in data['segments']}
-            opted_in=[contact for contact in data['contacts'] if contact['optin']]
             for campaign in data['campaigns']:
                 if campaign['status']!='draft':continue
                 segment_id=campaign.get('segment_id')
                 if segment_id and segment_id not in segments:
-                    campaign.update(audience=0,audience_block='The saved audience was deleted. Create a draft with a current audience.')
+                    campaign.update(audience=0,audience_excluded=None,audience_block='The saved audience was deleted. Create a draft with a current audience.')
                     continue
-                campaign['audience']=len(matching_audience(opted_in,campaign,segments.get(segment_id)))
+                matched=matching_audience(data['contacts'],campaign,segments.get(segment_id),require_optin=False)
+                campaign['audience']=sum(bool(contact['optin']) for contact in matched)
+                campaign['audience_excluded']=len(matched)-campaign['audience']
                 if not campaign['audience']:
                     campaign['audience_block']='No opted-in contacts match this audience.'
             for flow in data['flows']:

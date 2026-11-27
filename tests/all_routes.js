@@ -48,8 +48,9 @@ let inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/C
 vm.runInContext('S.data.meta.configured=false',context);inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/Connect your WhatsApp account/);
 console.log('Inbox setup guidance reflects the actual connection configuration.');
 
-vm.runInContext('S.data.sandbox=false;S.data.meta.live=false;S.data.templates=[{id:"qa-draft",status:"local_draft"}];S.data.campaigns=[{id:"qa-campaign",name:"QA draft",template_id:"qa-draft",audience:0,status:"draft"}]',context);
+vm.runInContext('S.data.sandbox=false;S.data.meta.live=false;S.data.templates=[{id:"qa-draft",status:"local_draft"}];S.data.campaigns=[{id:"qa-campaign",name:"QA draft",template_id:"qa-draft",audience:0,audience_excluded:2,status:"draft"}]',context);
 let campaign=vm.runInContext('campaignTable()',context);
+assert.match(campaign,/Preview draft/);assert.match(campaign,/Excluded for lack of consent<\/dt><dd>2/);
 assert.match(campaign,/disabled aria-describedby="campaign-block-qa-campaign"/);
 assert.match(campaign,/<p[^>]+>Connect WhatsApp and enable sending first. <a href="#settings"/);
 assert.match(vm.runInContext('templatePageBase()',context),/data-do="submit-template"[^>]+disabled/);

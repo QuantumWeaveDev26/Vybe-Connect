@@ -68,7 +68,7 @@ async function businessAction(action,el){
     const approve=el.dataset.decision==='approve';
     if(el.closest('.finding-observations'))S.findingObservationsOpen=true;
     if(!f.action)return showModal(approve?'Acknowledge observation':'Dismiss observation',`<p><strong>${esc(f.title)}</strong></p><p>${esc(f.details)}</p>`,async()=>{await act('finding.review',{id,decision:approve?'approve':'dismiss'});$('#modal').close();await refresh();toast(approve?'Observation acknowledged.':'Observation dismissed.')},approve?'Acknowledge':'Dismiss observation');
-    return showModal(approve?'Review proposed action':'Dismiss finding',`<p><strong>${esc(f.title)}</strong></p><p>${esc(f.details)}</p><p>Contact: ${esc(crmContact(f.contact_id)?.name||'Workspace observation')}</p><pre class="finding-action">${esc(JSON.stringify(f.action,null,2))}</pre><p class="hint">${approve?'This applies only the local action shown above. A draft reply is not sent.':'No customer record will be changed.'}</p>`,async()=>{await act('finding.review',{id,decision:approve?'approve':'dismiss'});$('#modal').close();await refresh();toast(approve?'Review recorded.':'Finding dismissed.')},approve?'Approve shown action':'Dismiss finding');
+    return showModal(approve?'Review proposed action':'Dismiss finding',`<p><strong>${esc(f.title)}</strong></p><p>${esc(f.details)}</p><p>Contact: ${esc(crmContact(f.contact_id)?.name||'Workspace observation')}</p><p class="finding-change"><strong>Proposed change</strong> ${esc(findingActionSummary(f.action))}</p><p class="hint">${approve?'This applies only the local action shown above. A draft reply is not sent.':'No customer record will be changed.'}</p>`,async()=>{await act('finding.review',{id,decision:approve?'approve':'dismiss'});$('#modal').close();await refresh();toast(approve?'Review recorded.':'Finding dismissed.')},approve?'Approve shown action':'Dismiss finding');
   }
   if(action==='handoff-takeover'||action==='handoff-resume'){
     return showModal(action==='handoff-takeover'?'Take over this conversation':'Resume conversation automation',`<p>${action==='handoff-takeover'?'Assign this chat to you and pause keyword and chatbot processing. Incoming customer messages will still arrive.':'Allow enabled keyword rules and chatbot flows to handle future incoming messages. Any previous flow session starts fresh.'}</p><p class="hint">Campaigns are managed separately.</p>`,async()=>{await act(action==='handoff-takeover'?'chat.takeover':'chat.resume',{id});$('#modal').close();await refresh()},action==='handoff-takeover'?'Take over':'Resume automation');
@@ -89,6 +89,16 @@ function analysisRunResult(run,status){
  return `<section class="card analysis-run-result" id="analysis-run-result" tabindex="-1" aria-labelledby="analysis-run-heading"><div class="cardhead"><h2 id="analysis-run-heading">${esc(run.agent_name)}</h2>${badge(run.status,failed?'amber':finished?'green':'gray')}</div><div class="cardbody"><p>${esc(run.error||run.summary||'Analysis is running.')}</p>${next?`<p class="hint">${esc(next)}</p>`:''}<p class="hint">${run.sample_contacts} sampled contacts · ${date(run.created)} ${clock(run.created)}${finished&&Number.isInteger(run.finding_count)?` · ${run.finding_count} findings`:''}</p>${run.scope?`<details><summary>Analysis scope</summary><p class="hint">${esc(run.scope)}</p></details>`:''}</div></section>`;
 }
 
+function findingActionSummary(action){
+ switch(action.type){
+  case 'tag': return 'Add tag: '+action.tag;
+  case 'assign': return 'Assign to '+(S.data.members?.find(member=>member.id===action.owner)?.name||'the selected teammate')+', set to Pending, and pause automation.';
+  case 'note': return 'Add a private note: '+action.body;
+  case 'draft_reply': return 'Save an unsent reply draft: '+action.body;
+  case 'task': return 'Create a follow-up task for you: '+action.title;
+  default: return 'Review the proposed change.';
+ }
+}
 function findingReviewCard(f,admin,messages){
  const statuses={pending:f.action?'Needs review':'To acknowledge',acknowledged:'Acknowledged',applied:'Applied',dismissed:'Dismissed'};
  const tone=f.status==='pending'&&f.action?'amber':f.status==='applied'?'green':'gray';
@@ -97,7 +107,7 @@ function findingReviewCard(f,admin,messages){
  const actions=(f.contact_id?btn('Open conversation','open-chat',`data-id="${esc(f.contact_id)}"`,'small'):'')+
   (admin&&f.status==='pending'?btn(f.action?'Review action':'Acknowledge','review-finding',`data-id="${esc(f.id)}" data-decision="approve"`,f.action?'primary small':'small')+
   btn('Dismiss','review-finding',`data-id="${esc(f.id)}" data-decision="dismiss"`,'small ghost'):'');
- return `<article class="finding-card review-finding-card"><header><div><p class="finding-meta">${esc(f.agent_name)} · ${date(f.created)} ${clock(f.created)}</p><h3>${esc(f.title)}</h3></div>${badge(statuses[f.status]||f.status,tone)}</header><p class="finding-details">${esc(f.details)}</p>${f.contact_id?`<p class="finding-meta">Contact · ${esc(crmContact(f.contact_id)?.name||'Conversation')}</p>`:''}${evidence}${actions?`<div class="buttons finding-actions">${actions}</div>`:''}</article>`;
+ return `<article class="finding-card review-finding-card"><header><div><p class="finding-meta">${esc(f.agent_name)} · ${date(f.created)} ${clock(f.created)}</p><h3>${esc(f.title)}</h3></div>${badge(statuses[f.status]||f.status,tone)}</header><p class="finding-details">${esc(f.details)}</p>${f.contact_id?`<p class="finding-meta">Contact · ${esc(crmContact(f.contact_id)?.name||'Conversation')}</p>`:''}${f.action?`<p class="finding-change"><strong>Proposed change</strong> ${esc(findingActionSummary(f.action))}</p>`:''}${evidence}${actions?`<div class="buttons finding-actions">${actions}</div>`:''}</article>`;
 }
 
 function findingsPage(){

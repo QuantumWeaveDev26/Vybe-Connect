@@ -603,3 +603,17 @@
  .finding-filters select {padding-inline:8px}
  .review-finding-card header {flex-wrap:wrap;gap:6px}
 }
+
+.review-summary {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr));gap:12px;margin:14px 0}
+.review-summary div {padding:10px 12px;border:1px solid #e7e0ec;border-radius:8px}
+.review-summary dt {font-size:12px;color:#5f566e}
+.review-summary dd {margin:4px 0 0;font-weight:650;overflow-wrap:anywhere}
+.setup-next,.finding-change {color:#423653;overflow-wrap:anywhere}
+.setup-next strong,.finding-change strong {display:block;margin-bottom:4px}
+@media(max-width:800px){
+ .inbox.mobile-chat-open .composer-toolbar {display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+ .inbox.mobile-chat-open .reply-mode-tabs {display:flex;gap:4px}
+ .inbox.mobile-chat-open .reply-mode-tabs button {min-height:44px}
+ .inbox.contact-details-open>.contactpanel {max-height:min(75dvh,650px);overscroll-behavior:contain}
+ .inbox .contact-panel-tabs {position:sticky;top:0;z-index:1;background:#fff}
+}

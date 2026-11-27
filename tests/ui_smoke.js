@@ -16,7 +16,7 @@ assert.match(html,/Real opportunity/);assert.match(html,/Qualified/);assert.matc
 html=vm.runInContext('S.route="findings";page()',context);
 assert.match(html,/No findings in this view/);assert.match(html,/AI not connected/);assert.match(html,/data-do="review-run" disabled/);
 context.fixture.findings=[{id:'finding',run_id:'run',agent_name:'Triage',title:'<script>bad()</script>',details:'Review this inquiry',status:'pending',contact_id:'contact',evidence_ids:[],action:{type:'tag',tag:'Lead'},created:1}];
-html=vm.runInContext('page()',context);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>bad/);assert.match(html,/data-decision="approve"/);
+html=vm.runInContext('page()',context);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>bad/);assert.match(html,/data-decision="approve"/);assert.match(html,/Add tag: Lead/);
 context.fixture.airuns=[{id:'run',agent_name:'Triage',status:'completed',created:1}];
 context.fixture.findings.push({id:'observation',run_id:'run',agent_name:'Triage',title:'Empty sample',details:'No recent conversations',status:'pending',evidence_ids:[],created:1});
 html=vm.runInContext('page()',context);
