@@ -662,7 +662,9 @@ class Store:
             elif action=='campaign.launch':
                 c=self._get(db,t,'campaign',d.get('id'));template=self._get(db,t,'template',c['template_id'])
                 if template.get('status')!='APPROVED' or not template.get('meta_id'):raise Problem('A synced Meta-approved template is required.')
-                if not meta_status(t)['live']:raise Problem('Live sending must be enabled on the server before launching a campaign.')
+                channel=meta_status(t)
+                if not channel['configured']:raise Problem('Connect WhatsApp before launching a campaign.')
+                if not channel['live']:raise Problem('Live sending must be enabled on the server before launching a campaign.')
                 if c['status']!='draft':raise Problem('This campaign has already been launched.',409)
                 audience=segment_audience(self,db,t,c)
                 if not audience:raise Problem('No opted-in contacts match this audience.')

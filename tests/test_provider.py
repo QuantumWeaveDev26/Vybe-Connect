@@ -12,7 +12,7 @@ class ProviderTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory();self.s=Store(Path(self.tmp.name)/'provider.db')
         token=self.s.setup('Owner','owner@example.test','long-enough-password','Real business')['token'];self.ctx=self.s.auth(token);self.t=self.ctx['tenant_id']
         self.prefix='TW_META_'+self.t.upper()+'_'
-        self.env=patch.dict(os.environ,{self.prefix+'TOKEN':'test-only-not-a-real-token',self.prefix+'PHONE_ID':'123',self.prefix+'WABA_ID':'456',self.prefix+'VERSION':'v99.0',self.prefix+'LIVE':'false'})
+        self.env=patch.dict(os.environ,{self.prefix+'TOKEN':'test-only-not-a-real-token',self.prefix+'PHONE_ID':'123',self.prefix+'WABA_ID':'456',self.prefix+'VERSION':'v99.0',self.prefix+'APP_SECRET':'a'*32,self.prefix+'VERIFY_TOKEN':'test-only-webhook',self.prefix+'LIVE':'false'})
         self.env.start()
 
     def tearDown(self): self.env.stop();self.tmp.cleanup()
@@ -29,6 +29,19 @@ class ProviderTests(unittest.TestCase):
         t=self.act('template.save',name='welcome',body='Hello',language='en',category='UTILITY')
         campaign=self.act('campaign.save',name='Campaign',template_id=t['id'])
         with self.assertRaisesRegex(Problem,'Meta-approved'):self.act('campaign.launch',id=campaign['id'])
+
+    def test_unconfigured_channel_cannot_queue_even_with_sending_enabled(self):
+        template={'id':'t123','name':'welcome','language':'en','status':'APPROVED',
+                  'category':'UTILITY','components':[{'type':'BODY','text':'Hello'}]}
+        with patch('store.list_templates',return_value={'data':[template]}):
+            self.act('templates.sync')
+        self.act('contact.save',name='Client',phone='919000000001',optin=True)
+        saved=self.s.state(self.ctx)['templates'][0]
+        campaign=self.act('campaign.save',name='Campaign',template_id=saved['id'])
+        with patch.dict(os.environ,{self.prefix+'LIVE':'true',self.prefix+'VERIFY_TOKEN':''}):
+            with self.assertRaisesRegex(Problem,'Connect WhatsApp'):
+                self.act('campaign.launch',id=campaign['id'])
+        self.assertFalse(self.s.state(self.ctx)['queue'])
 
     def test_durable_queue_rechecks_consent_and_records_provider_ids(self):
         with patch('store.list_templates',return_value={'data':[{'id':'t123','name':'welcome','language':'en','status':'APPROVED','category':'UTILITY','components':[{'type':'BODY','text':'Hello'}]}]}): self.act('templates.sync')
