@@ -9,6 +9,7 @@ function showShareableInvitation(invitation,workspace,same){
   const shareText='Join me in '+workspace+' on VYBE Connect. Open this one-time link to accept your invitation:';
   const shareButton=typeof navigator.share==='function'?'<button id="invite-share" type="button" class="primary">Share invite</button>':'';
   showModal('Share your invitation',`<p>Send this one-time link privately to <strong>${esc(invitation.email)}</strong>.</p><div class="buttons">${shareButton}<button id="invite-copy" type="button">Copy link</button><a class="button" href="https://web.whatsapp.com/" target="_blank" rel="noopener noreferrer">Open WhatsApp Web</a></div><p id="invite-share-status" class="hint" role="status"></p><label for="invite-link">Invitation link</label><input id="invite-link" type="text" readonly value="${esc(link)}"><p class="hint">Expires ${esc(new Date(invitation.expires*1000).toLocaleString())}. Copy it before closing.</p>`,()=>$('#modal').close(),'Close');
+  $('#dialog-form .modalfoot [data-do="close"]')?.remove();
   const field=$('#invite-link'), status=$('#invite-share-status');
   const current=()=>same()&&$('#invite-link')===field&&$('#modal').open;
   $('#invite-copy').onclick=async()=>{
@@ -32,11 +33,11 @@ function showShareableInvitation(invitation,workspace,same){
   };
 }
 async function invitationAction(action,el){
-  const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user;
+  const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user&&S.data.context.role==='admin';
   if(action==='invite-create')return showModal('Invite a workspace teammate',field('email','Recipient email','','email')+field('role','Workspace role','agent','select',[['agent','Agent'],['admin','Administrator']])+field('hours','Link expires after hours',24,'number')+'<p class="hint">An administrator can change workspace configuration and team access. Verify the recipient and role before creating a link. The recipient chooses their password.</p>',async data=>{
     if(!same())throw new Error('Workspace changed.');const invitation=await act('invite.create',{email:data.email,role:data.role,hours:Number(data.hours)});if(!same())return;
-    await refresh();if(!same())return;
     showShareableInvitation(invitation,S.data.context.workspace.name,same);
+    void refresh();
   },'Create one-time link');
   if(action==='invite-revoke')return showModal('Revoke invitation','<p>This invalidates the unredeemed link. It does not remove an existing team membership.</p>',async()=>{
     if(!same())throw new Error('Workspace changed.');await act('invite.revoke',{id:el.dataset.id});if(!same())return;$('#modal').close();await refresh();
