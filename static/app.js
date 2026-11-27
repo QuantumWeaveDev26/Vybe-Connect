@@ -279,9 +279,9 @@ function openSandboxModal(){
 }
 
 function openCsvImporterModal(){
-  let previewData=null;
+  let previewData=null, previewedCsv='';
   showModal('Dynamic CSV Contact Importer',`
-    <p>Upload a CSV file or paste CSV text with dynamic column mappings.</p>
+    <p>Check the name and phone columns before importing. Blank opt-in values preserve existing consent. New contacts need an explicit opt-in.</p>
     <div class="field"><label for="csv-file-input">Choose CSV File</label><input type="file" id="csv-file-input" accept=".csv,text/csv"></div>
     <div class="field"><label for="csv-raw">Or Paste CSV Text</label><textarea id="csv-raw" placeholder="name,phone,City,Plan&#10;Alice,+15550101,New York,Pro&#10;Bob,+15550102,London,Starter" style="height:90px"></textarea></div>
     <div class="buttons" style="margin-bottom:12px"><button type="button" class="button small primary" id="btn-parse-csv">Analyze Columns</button></div>
@@ -296,8 +296,10 @@ function openCsvImporterModal(){
   `,async()=>{
     const raw=$('#csv-raw').value.trim();
     if(!raw)throw new Error('Please provide CSV content.');
+    if(previewedCsv!==raw)throw new Error('Analyze the current CSV before importing.');
     const phoneCol=$('#map-phone').value;
     const nameCol=$('#map-name').value;
+    if(!phoneCol||!nameCol||phoneCol===nameCol)throw new Error('Choose separate phone and name columns.');
     const tag=$('#batch-tag').value.trim();
     const mapping={phone:phoneCol,name:nameCol,attributes:{}};
     if(previewData?.headers){
@@ -316,14 +318,18 @@ function openCsvImporterModal(){
   const parseCsv=async()=>{
     const raw=$('#csv-raw').value.trim();
     if(!raw)return toast('Paste CSV content or select a file first.');
-    const res=await act('contacts.import',{csv:raw,preview:true});
-    previewData=res;
-    const mapArea=$('#csv-mapping-area');
-    mapArea.style.display='block';
-    const phoneSel=$('#map-phone'), nameSel=$('#map-name');
-    phoneSel.innerHTML=res.headers.map(h=>`<option value="${esc(h)}" ${['phone','mobile','whatsapp','number','tel'].includes(h.toLowerCase())?'selected':''}>${esc(h)}</option>`).join('');
-    nameSel.innerHTML=res.headers.map(h=>`<option value="${esc(h)}" ${['name','full_name','customer_name','first_name'].includes(h.toLowerCase())?'selected':''}>${esc(h)}</option>`).join('');
+    const input=$('#csv-raw'), workspace=S.workspace;
+    try{
+      const res=await act('contacts.import',{csv:raw,preview:true});
+      if(workspace!==S.workspace||$('#csv-raw')!==input||input.value.trim()!==raw)return;
+      previewData=res;
+      previewedCsv=raw;
+      $('#csv-mapping-area').style.display='block';
+      const options=key=>'<option value="">Choose a column</option>'+res.headers.map(h=>`<option value="${esc(h)}" ${h===res.mapping?.[key]?'selected':''}>${esc(h)}</option>`).join('');
+      $('#map-phone').innerHTML=options('phone');
+      $('#map-name').innerHTML=options('name');
     $('#csv-preview-table').innerHTML=`<table><thead><tr>${res.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${res.preview.map(r=>`<tr>${res.headers.map(h=>`<td>${esc(r[h]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }catch(error){toast(error.message)}
   };
 
   $('#btn-parse-csv')?.addEventListener('click',parseCsv);

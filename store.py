@@ -542,16 +542,21 @@ class Store:
                 text=required(d.get('csv'),'CSV',1000000)
                 reader=csv.DictReader(io.StringIO(text.lstrip('\ufeff')))
                 if not reader.fieldnames: raise Problem('CSV requires headers.')
+                headers={re.sub(r'[^a-z0-9]+','_',header.strip().lower()).strip('_'):header for header in reader.fieldnames}
+                defaults={
+                    'phone':next((headers[key] for key in ('phone','phone_number','mobile','mobile_number','whatsapp','whatsapp_number','number','tel') if key in headers),''),
+                    'name':next((headers[key] for key in ('name','full_name','contact_name','customer_name','first_name') if key in headers),''),
+                }
                 if d.get('preview'):
                     preview_rows=[]
                     for i,row in enumerate(reader):
                         if i>=5: break
                         preview_rows.append({k:str(v or '')[:100] for k,v in row.items() if k})
-                    result={'headers':reader.fieldnames,'preview':preview_rows}
+                    result={'headers':reader.fieldnames,'preview':preview_rows,'mapping':defaults}
                 else:
                     mapping=d.get('mapping') or {}
-                    phone_col=mapping.get('phone') or next((c for c in reader.fieldnames if c.strip().lower() in ['phone','mobile','whatsapp','number','tel','phone_number']),'phone')
-                    name_col=mapping.get('name') or next((c for c in reader.fieldnames if c.strip().lower() in ['name','full_name','first_name','customer_name']),'name')
+                    phone_col=mapping.get('phone') or defaults['phone']
+                    name_col=mapping.get('name') or defaults['name']
                     attr_mapping=mapping.get('attributes') or {}
                     batch_tags=d.get('tags') or []
                     if not {name_col,phone_col}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
@@ -573,7 +578,12 @@ class Store:
                             for bt in batch_tags:
                                 if bt and bt not in tags_list: tags_list.append(bt)
                             custom_attrs={k:str(row.get(v,''))[:500] for k,v in attr_mapping.items() if v in row and row.get(v)}
-                            contact_data=dict(name=name_val or (existing['name'] if existing else ''),phone=phone_val,tags=','.join(tags_list),optin=str(row.get('optin','')).lower() in ['true','1','yes'])
+                            contact_data=dict(name=name_val or (existing['name'] if existing else ''),phone=phone_val,tags=','.join(tags_list))
+                            consent=(row.get(headers.get('optin')) or '').strip().lower()
+                            if consent:
+                                if consent not in ('true','1','yes','false','0','no'):
+                                    raise Problem('Use yes or no for opt-in, or leave it blank.')
+                                contact_data['optin']=consent in ('true','1','yes')
                             if existing:
                                 contact_data['id']=existing['id']
                                 for et in existing.get('tags',[]):
