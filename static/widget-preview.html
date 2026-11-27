@@ -16,13 +16,11 @@
     p { line-height: 1.55; margin: 0 0 12px; }
     .lead { font-size: 16px; max-inline-size: 58ch; margin-bottom: 24px; color: #575066; }
     .card { background: #fff; border: 1px solid #e2dcea; border-radius: 14px; padding: clamp(16px, 4vw, 28px); }
-    pre { background: #251a39; color: #ede5ff; padding: 14px 16px; border-radius: 9px; margin: 16px 0 20px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.55; }
-    pre:has(code:empty) { display: none; }
     .preview-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
     .secondary { background:#eee8fc; color:#4825a3; }
     .secondary:not(:disabled):hover { background:#e4d9fa; }
-    details { margin-top:18px; }
-    summary { cursor:pointer; padding:7px 0; font-weight:650; }
+    .chat-link { width:100%; margin-top:12px; padding:10px; border:1px solid #e2dcea; border-radius:8px; }
+    [hidden], [hidden].btn { display:none; }
     .btn { min-block-size: 44px; background: #5e35d6; color: #fff; padding: 10px 16px; border: 0; border-radius: 9px; font: inherit; font-weight: 650; cursor: pointer; }
     .btn:not(:disabled):hover { background: #4825b3; }
     .btn:disabled { background: #ece7f4; color: #625675; cursor: default; }
@@ -31,23 +29,19 @@
 </head>
 <body>
   <main>
-    <a class="back" href="/">← Back to VYBE Connect</a>
-    <h1>Website chat setup</h1>
-    <section class="card" aria-labelledby="widget-embed-heading">
-      <h2 id="widget-embed-heading">Add chat to your website</h2>
+    <a class="back" id="widget-back" href="/">← Back to VYBE Connect</a>
+    <h1 id="widget-page-title">Website chat setup</h1>
+    <section class="card" aria-labelledby="widget-chat-heading">
+      <h2 id="widget-chat-heading">Chat with our team</h2>
       <p id="widget-preview-notice" role="status"></p>
       <div class="preview-actions">
-        <button class="btn" id="open-widget-preview" type="button">Preview chat</button>
-        <button class="btn secondary" id="copy-widget-code" type="button">Copy install code</button>
+        <button class="btn" id="open-widget-preview" type="button">Open chat</button>
+        <button class="btn secondary" id="copy-widget-link" type="button" hidden>Copy chat link</button>
       </div>
-      <details id="widget-install-details">
-        <summary>Installation details</summary>
-        <p>Paste the code before <code>&lt;/body&gt;</code> on your website.</p>
-        <pre><code id="widget-embed-code"></code></pre>
-      </details>
+      <input class="chat-link" id="widget-chat-link" type="url" aria-label="Chat link" readonly hidden>
     </section>
   </main>
-  <script src="/widget-preview.js" defer></script>
+  <script src="/widget-preview.js?v=86263e175d85" defer></script>
   <script src="/widget.js" data-title="VYBE Connect Support" defer></script>
 </body>
 </html>

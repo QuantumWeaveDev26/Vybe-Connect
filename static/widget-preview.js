@@ -1,30 +1,29 @@
 'use strict';
-// This page configures a website channel, never a WhatsApp identity or consent.
-const previewWorkspace=new URLSearchParams(location.search).get('workspace')||'';
-const validWorkspace=/^[a-f0-9]{16}$/.test(previewWorkspace);
-window.VYBE_WORKSPACE=validWorkspace?previewWorkspace:'';
-const previewButton=document.querySelector('#open-widget-preview');
-const embedCode=document.querySelector('#widget-embed-code');
-const widgetNotice=document.querySelector('#widget-preview-notice');
-const copyButton=document.querySelector('#copy-widget-code');
-if(validWorkspace){
- embedCode.textContent=`<script src="${location.origin}/widget.js" data-workspace="${previewWorkspace}" data-title="Support chat" defer></script>`;
- widgetNotice.textContent='Website messages go to Team Inbox.';
-}else{
- previewButton.disabled=true;
- if(copyButton)copyButton.disabled=true;
- widgetNotice.textContent='Open this page from your VYBE workspace.';
+const params=new URLSearchParams(location.search);
+const workspace=params.get('workspace')||'';
+const validWorkspace=/^[a-f0-9]{16}$/.test(workspace);
+window.VYBE_WORKSPACE=validWorkspace?workspace:'';
+const open=document.querySelector('#open-widget-preview');
+const copy=document.querySelector('#copy-widget-link');
+const notice=document.querySelector('#widget-preview-notice');
+const field=document.querySelector('#widget-chat-link');
+const customerView=params.get('chat')==='1';
+const link=location.origin+'/widget-preview?workspace='+encodeURIComponent(workspace)+'&chat=1';
+open.disabled=!validWorkspace;
+copy.hidden=customerView||!validWorkspace;
+notice.textContent=!validWorkspace?'This chat link is unavailable.':customerView?'Send us a message.':'Open chat or share its link with customers.';
+if(customerView){
+ document.querySelector('#widget-back').hidden=true;
+ document.querySelector('#widget-page-title').textContent='Support chat';
 }
-previewButton.addEventListener('click',()=>window.VybeWidget?.open());
-
-copyButton?.addEventListener('click',async()=>{
- if(!validWorkspace)return;
+open.addEventListener('click',()=>{if(validWorkspace)window.VybeWidget?.open()});
+copy.addEventListener('click',async()=>{
+ if(!validWorkspace||customerView)return;
  try{
-   await navigator.clipboard.writeText(embedCode.textContent);
-   widgetNotice.textContent='Install code copied.';
+   await navigator.clipboard.writeText(link);
+   notice.textContent='Chat link copied.';
  }catch{
-   const details=document.querySelector('#widget-install-details');
-   if(details)details.open=true;
-   widgetNotice.textContent='Copy the install code below.';
+   field.value=link;field.hidden=false;field.focus();field.select();
+   notice.textContent='Copy the selected link.';
  }
 });
