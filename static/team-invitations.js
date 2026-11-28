@@ -36,11 +36,29 @@ function showShareableInvitation(invitation,workspace,same){
 }
 async function invitationAction(action,el){
   const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user&&S.data.context.role==='admin';
-  if(action==='invite-create')return showModal('Invite a workspace teammate',field('email','Recipient email','','email')+field('role','Workspace role','agent','select',[['agent','Agent'],['admin','Administrator']])+field('hours','Link expires after hours',24,'number')+'<p class="hint">An administrator can change workspace configuration and team access. Verify the recipient and role before creating a link. The recipient chooses their password.</p>',async data=>{
-    if(!same())throw new Error('Workspace changed.');const invitation=await act('invite.create',{email:data.email,role:data.role,hours:Number(data.hours)});if(!same())return;
-    showShareableInvitation(invitation,S.data.context.workspace.name,same);
-    void refresh();
-  },'Create one-time link');
+  if(action==='invite-create'){
+    let submitting=false;
+    return showModal('Invite a workspace teammate',field('email','Recipient email','','email')+field('role','Workspace role','agent','select',[['agent','Agent'],['admin','Administrator']])+field('hours','Link expires after hours',24,'number')+'<p class="hint">Share the one-time link privately. The recipient chooses their password.</p>',async data=>{
+      if(submitting)return;
+      if(!same())throw new Error('Workspace changed. Reopen the invitation form.');
+      submitting=true;
+      let invitation;
+      try {
+        invitation=await act('invite.create',{email:data.email,role:data.role,hours:Number(data.hours)});
+      } catch(error) {
+        if(error.status===401)throw new Error('Your session expired. Sign in again, then reopen Team settings.');
+        if(error.status>=500||!error.status||error.message.startsWith('The server returned an unreadable response')){
+          throw new Error('VYBE could not confirm whether the link was created. Close this form and reload Team settings. If a pending invitation appears, revoke it before creating a new link.');
+        }
+        throw error;
+      } finally {
+        submitting=false;
+      }
+      if(!same())return;
+      showShareableInvitation(invitation,S.data.context.workspace.name,same);
+      void refresh().catch(error=>toast(error.message));
+    },'Create one-time link');
+  }
   if(action==='invite-revoke')return showModal('Revoke invitation','<p>This invalidates the unredeemed link. It does not remove an existing team membership.</p>',async()=>{
     if(!same())throw new Error('Workspace changed.');await act('invite.revoke',{id:el.dataset.id});if(!same())return;$('#modal').close();await refresh();
   },'Revoke link');
