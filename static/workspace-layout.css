@@ -640,3 +640,14 @@
 .contact-extra-row label {min-width:0}
 .contact-extra-row input {width:100%}
 @media(max-width:520px){.contact-extra-row {grid-template-columns:1fr}.contact-extra-row button {justify-self:start}}
+
+.rule-preview { min-inline-size: 0; }
+.rule-preview summary, .campaign-block summary { cursor: pointer; }
+.rule-preview .review-summary { grid-template-columns: 1fr; margin-block: 0.5rem; }
+ul.campaign-block { padding-inline-start: 1.2rem; margin-block: 0.5rem; }
+.campaign-block li + li { margin-block-start: 0.35rem; }
+.developer-connections { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+@media (max-width: 650px) {
+  .rule-preview summary, .campaign-block summary { min-block-size: 44px; align-content: center; }
+  .developer-connections { grid-template-columns: 1fr; }
+}

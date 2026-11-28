@@ -55,12 +55,12 @@ vm.runInContext('S.data.sandbox=false;S.data.meta.live=false;S.data.templates=[{
 let campaign=vm.runInContext('campaignTable()',context);
 assert.match(campaign,/Preview draft/);assert.match(campaign,/Excluded for lack of consent<\/dt><dd>2/);
 assert.match(campaign,/disabled aria-describedby="campaign-block-qa-campaign"/);
-assert.match(campaign,/<p[^>]+>Connect WhatsApp and enable sending first. <a href="#settings"/);
+assert.match(campaign,/<li>Connect WhatsApp and enable sending first. <a href="#settings"/);
 assert.match(vm.runInContext('templatePageBase()',context),/data-do="submit-template"[^>]+disabled/);
 vm.runInContext('S.data.meta.live=true;S.data.meta.configured=true',context);
-assert.match(vm.runInContext('campaignTable()',context),/<p[^>]+>Wait for Meta template approval. <a href="#templates"/);
+assert.match(vm.runInContext('campaignTable()',context),/<li>Wait for Meta template approval. <a href="#templates"/);
 vm.runInContext('S.data.templates[0].status="APPROVED";S.data.templates[0].meta_id="provider-real-id"',context);
 assert.doesNotMatch(vm.runInContext('campaignTable()',context),/data-do="run-campaign"[^>]+disabled/);
 vm.runInContext('S.data.campaigns[0].audience_block="No opted-in contacts match this audience."',context);
-assert.match(vm.runInContext('campaignTable()',context),/<p[^>]+>No opted-in contacts match this audience. <a href="#contacts"/);
+assert.match(vm.runInContext('campaignTable()',context),/<li>No opted-in contacts match this audience. <a href="#contacts"/);
 console.log('Campaign launch and template submission reflect live connection and provider approval prerequisites.');
