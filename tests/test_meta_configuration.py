@@ -32,3 +32,18 @@ class MetaConfigurationTests(unittest.TestCase):
         self.assertFalse(result['present']['TOKEN'])
         self.assertNotIn('TOKEN',result['invalid'])
         self.assertIn('PHONE_ID',result['invalid'])
+
+    def test_enabled_gate_cannot_make_an_unconnected_channel_live(self):
+        values = self.values()
+        values.update(TW_META_CHECK_LIVE='true', TW_META_CHECK_TOKEN='')
+        with patch.dict(os.environ, values):
+            result = status('check')
+        self.assertTrue(result['live_gate_enabled'])
+        self.assertFalse(result['configured'])
+        self.assertFalse(result['live'])
+
+        values['TW_META_CHECK_TOKEN'] = 'private-test-token'
+        with patch.dict(os.environ, values):
+            result = status('check')
+        self.assertTrue(result['configured'])
+        self.assertTrue(result['live'])
