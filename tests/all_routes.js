@@ -64,3 +64,15 @@ assert.doesNotMatch(vm.runInContext('campaignTable()',context),/data-do="run-cam
 vm.runInContext('S.data.campaigns[0].audience_block="No opted-in contacts match this audience."',context);
 assert.match(vm.runInContext('campaignTable()',context),/<li>No opted-in contacts match this audience. <a href="#contacts"/);
 console.log('Campaign launch and template submission reflect live connection and provider approval prerequisites.');
+const today=vm.runInContext(`(()=>{
+ const saved=S.data;
+ try {
+  S.data={...saved,contacts:[{id:'case-1',name:'Waiting customer',channel:'website',status:'open'}],
+   messages:[{contact:'case-1',direction:'in',status:'received',ts:100},{contact:'case-1',direction:'out',status:'unknown',ts:110}],
+   tasks:[{id:'task-1',title:'Call back',due:100,status:'open'},{id:'task-2',title:'Already handled',due:100,status:'done'}]};
+  return todayPage();
+ } finally { S.data=saved; }
+})()`,context);
+assert.equal((today.match(/data-do="open-chat" data-id="case-1"/g)||[]).length,2);
+assert.match(today,/data-do="crm-edit-task" data-id="task-1"/);
+assert.doesNotMatch(today,/Already handled/);
