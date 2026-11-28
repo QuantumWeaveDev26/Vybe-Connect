@@ -3,14 +3,14 @@ let WA_SIGNUP=null,WA_SDK=null,WA_NOTICE=null;
 const operatorMetaSettingsPage=settingsPage;
 function whatsappScope(){return S.data?S.workspace+':'+S.data.context.user.id:''}
 function paintWhatsAppSignup(){if(S.data&&S.route==='settings')render()}
-function whatsAppSignupError(message,scope){if(scope!==whatsappScope())return;clearWhatsAppSignup();WA_NOTICE={scope,message};paintWhatsAppSignup();toast(message)}
+function whatsAppSignupError(message,scope){if(scope!==whatsappScope())return;const retry=WA_SIGNUP?.opened;clearWhatsAppSignup();WA_NOTICE={scope,message};if(retry&&S.route==="settings")void prepareWhatsAppSignup(scope);paintWhatsAppSignup();toast(message)}
 function clearWhatsAppSignup(){if(WA_SIGNUP?.timer)clearTimeout(WA_SIGNUP.timer);WA_SIGNUP=null}
 settingsPage=function(){
  const c=S.data.whatsapp_connection||{},managed=['connected','expired','disconnected','connecting','needs_reconnect'].includes(c.status),admin=S.data.context.role==='admin',scope=whatsappScope();
  if(WA_SIGNUP&&WA_SIGNUP.scope!==scope)clearWhatsAppSignup();
  if(WA_NOTICE&&WA_NOTICE.scope!==scope)WA_NOTICE=null;
  if(admin&&c.signup_available&&!S.review&&!WA_SIGNUP&&!WA_NOTICE)void prepareWhatsAppSignup(scope);
- const label=WA_SIGNUP?.preparing?'Preparing WhatsApp...':['expired','needs_reconnect'].includes(c.status)?'Reconnect WhatsApp':c.status==='connected'?'Reconnect':'Connect WhatsApp';
+ const label=WA_SIGNUP?.preparing?'Preparing WhatsApp...':WA_NOTICE?'Try again':['expired','needs_reconnect'].includes(c.status)?'Reconnect WhatsApp':c.status==='connected'?'Reconnect':'Connect WhatsApp';
  const status=c.status==='connected'?'Connected':['expired','needs_reconnect'].includes(c.status)?'Reconnect required':'Not connected';
  const providerCheck=(S.data.provider_checks||[]).find(check=>check.provider==='meta'&&check.current);
  const nextStep=!S.data.meta?.configured?'Choose your business and phone number in Meta’s secure window. VYBE saves the connection.':!S.data.meta.live?'Ask the workspace administrator to enable sending.':providerCheck?.outcome==='passed'?'Account access verified. Send and receive a test message to confirm delivery.':'Run the Meta metadata check, then verify message delivery.';
@@ -74,7 +74,7 @@ document.addEventListener('click',async event=>{
   if(WA_SIGNUP?.ready&&WA_SIGNUP.scope===scope){
    const attempt=WA_SIGNUP;clearTimeout(attempt.timer);attempt.ready=false;attempt.opened=true;WA_NOTICE=null;paintWhatsAppSignup();
    attempt.timer=setTimeout(()=>{if(WA_SIGNUP===attempt){whatsAppSignupError('Signup timed out. Start a new connection to try again.',scope)}},300000);
-   try{FB.login(response=>{if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;const code=response.authResponse?.code;if(!code){whatsAppSignupError('Meta returned no authorization code. Allow browser popups and check the app’s Facebook Login for Business domain settings. Then start a new connection.',scope);return}attempt.code=code;finishWhatsAppSignup()},{config_id:attempt.config.config_id,response_type:'code',override_default_response_type:true,auth_type:'rerequest',extras:{setup:{}}})}catch{whatsAppSignupError('Meta login could not open. Allow the popup and try again.',scope)}return;
+   try{FB.login(response=>{if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;const code=response.authResponse?.code;if(!code){whatsAppSignupError('Meta sign-in did not finish. Allow popups and try again.',scope);return}attempt.code=code;finishWhatsAppSignup()},{config_id:attempt.config.config_id,response_type:'code',override_default_response_type:true,auth_type:'rerequest',extras:{setup:{}}})}catch{whatsAppSignupError('Meta login could not open. Allow the popup and try again.',scope)}return;
   }
   WA_NOTICE=null;
   void prepareWhatsAppSignup(scope);

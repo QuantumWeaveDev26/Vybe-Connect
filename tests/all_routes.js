@@ -33,7 +33,10 @@ for(const route of routes){
 }
 context.invalid={APP_SECRET:'Copy the App Secret from Meta App settings > Basic.'};
 const settings=vm.runInContext('S.data.meta.invalid=invalid;S.route="settings";page()',context);
-assert.match(settings,/Invalid format/);assert.match(settings,/Correct these settings/);
+assert.doesNotMatch(settings,/Advanced operator settings|Invalid format|Correct these settings/);
+const operator=vm.runInContext('S.data.services.platform_admin=true;page()',context);
+assert.match(operator,/Invalid format/);assert.match(operator,/Correct these settings/);
+vm.runInContext('S.data.services.platform_admin=false',context);
 console.log(`All ${routes.length} main routes rendered from an isolated Store state; invalid configuration is actionable.`);
 // Provider results remain visible and never treat stale checks as current proof.
 vm.runInContext('S.servicesTab="connections";S.data.provider_checks=[{provider:"openai",outcome:"passed",current:true},{provider:"meta",outcome:"failed_or_unconfirmed",current:true}]',context);

@@ -38,7 +38,7 @@ vm.runInNewContext(fs.readFileSync('static/widget.js','utf8'),context);
  await window.VybeWidget.send();
  assert.equal(input.value,'');
  assert.equal(log.children[0].textContent,'My draft');
- assert.equal(status.textContent,'Sent to the team');
+ assert.equal(status.textContent,'Sent to the team. Replies appear here.');
  assert.equal(requests,2);
  console.log('Widget retains failed drafts and renders confirmed messages even when browser storage is blocked.');
 })().catch(err=>{console.error(err);process.exitCode=1});

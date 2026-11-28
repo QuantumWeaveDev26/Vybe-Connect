@@ -262,7 +262,7 @@
       if (contactId) document.getElementById('vw-visitor-fields')?.remove();
       showHistory(data.messages);
       if (typeof text !== 'string' && input.value === draft) input.value = '';
-      status.textContent = 'Sent to the team';
+      status.textContent = 'Sent to the team. Replies appear here.';
     } catch (_) {
       status.textContent = 'Could not confirm your message. Check the conversation before retrying.';
     } finally {
