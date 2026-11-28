@@ -658,3 +658,18 @@ ul.campaign-block { padding-inline-start: 1.2rem; margin-block: 0.5rem; }
 .automation-preview li + li { margin-block-start: 0.75rem; }
 .automation-preview li p { margin-block: 0.25rem; white-space: pre-wrap; }
 .automation-preview li small { display: block; }
+
+.today-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); align-items: start; }
+.today-list { list-style: none; margin: 0; padding: 0; }
+.today-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding-block: .5rem; overflow-wrap: anywhere; }
+.today-list li + li { border-block-start: 1px solid var(--line, #e7e3ef); }
+.today-list small { display: block; }
+.today-list button { min-block-size: 44px; }
+
+.inbox-saved-views, .inbox-saved-views form { display: grid; gap: .5rem; }
+.inbox-saved-views select, .inbox-saved-views input { width: 100%; min-inline-size: 0; }
+.inbox-saved-views ul { list-style: none; padding: 0; }
+.inbox-saved-views li { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.inbox-saved-views summary, .inbox-delivery-history summary { min-block-size: 44px; align-content: center; cursor: pointer; }
+.contact-activity-pane .activity-item p, .inbox-handover p { overflow-wrap: anywhere; margin-block: .25rem; }
+.inbox-handover { padding-block-end: .75rem; border-block-end: 1px solid var(--line, #e7e3ef); }

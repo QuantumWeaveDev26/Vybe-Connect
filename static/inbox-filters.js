@@ -45,6 +45,46 @@ function selectInboxContacts(data,options={},mainFilter='all',query='',stamp=Dat
  });
  return list.sort((a,b)=>{const left=index.get(a.id)?.activity||0,right=index.get(b.id)?.activity||0;return(view.sort==='oldest'?left-right:right-left)||String(a.name).localeCompare(String(b.name))||a.id.localeCompare(b.id)});
 }
+function inboxSavedViewKey(){
+ return 'vybe-inbox-views:'+ensureInboxView().scope;
+}
+function inboxSavedViews(){
+ try {
+  const views=JSON.parse(workspaceStorage.getItem(inboxSavedViewKey())||'[]');
+  return Array.isArray(views)?views:[];
+ } catch {return []}
+}
+function inboxSavedViewMarkup(){
+ const saved=inboxSavedViews();
+ return `<div class="inbox-saved-views"><label>Saved views<select data-inbox-saved-view><option value="">Choose a view</option><option value="mine">My open chats</option><option value="unassigned">Unassigned chats</option><option value="waiting">Waiting for a reply</option>${saved.map((entry,index)=>`<option value="saved:${index}">${esc(entry.name)}</option>`).join('')}</select></label><details><summary>Save current filters</summary><form data-inbox-save-view><label>View name<input name="name" required maxlength="40"></label><button type="submit">Save view</button></form>${saved.length?`<ul>${saved.map((entry,index)=>`<li><span>${esc(entry.name)}</span><button type="button" data-inbox-delete-view="${index}" aria-label="Remove view ${esc(entry.name)}">Remove</button></li>`).join('')}</ul>`:''}<small>Custom views are saved in this browser for your account and workspace.</small></details></div>`;
+}
+document.addEventListener('submit',event=>{
+ const form=event.target;if(!form.matches?.('[data-inbox-save-view]'))return;
+ event.preventDefault();
+ const name=form.elements.name.value.trim();if(!name)return;
+ const view=ensureInboxView(),saved=inboxSavedViews();
+ const filters=Object.fromEntries(Object.keys(INBOX_VIEW_DEFAULTS).map(key=>[key,view[key]]));
+ const next={name,filters,status:S.filter};
+ const existing=saved.findIndex(entry=>entry.name.toLowerCase()===name.toLowerCase());
+ if(existing>=0)saved[existing]=next;else {if(saved.length>=12)return toast('Remove a saved view before adding another.');saved.push(next)}
+ workspaceStorage.setItem(inboxSavedViewKey(),JSON.stringify(saved));render();document.querySelector('[data-inbox-saved-view]')?.focus();
+});
+document.addEventListener('change',event=>{
+ if(!event.target.matches?.('[data-inbox-saved-view]'))return;
+ const value=event.target.value;
+ const presets={mine:{filters:{assignment:'mine'},status:'open'},unassigned:{filters:{assignment:'unassigned'},status:'open'},waiting:{filters:{attention:'awaiting-reply'},status:'all'}};
+ const selection=value.startsWith('saved:')?inboxSavedViews()[Number(value.slice(6))]:presets[value];
+ if(!selection)return;
+ const scope=ensureInboxView().scope;
+ INBOX_VIEW={...INBOX_VIEW_DEFAULTS,...selection.filters,scope,expanded:true};
+ S.filter=selection.status;S.search='';S.mobileChatOpen=false;
+ render();document.querySelector('[data-inbox-saved-view]')?.focus();
+});
+document.addEventListener('click',event=>{
+ const control=event.target.closest?.('[data-inbox-delete-view]');if(!control)return;
+ const saved=inboxSavedViews();saved.splice(Number(control.dataset.inboxDeleteView),1);
+ workspaceStorage.setItem(inboxSavedViewKey(),JSON.stringify(saved));render();document.querySelector('[data-inbox-saved-view]')?.focus();
+});
 function inboxAdvancedFilters(list,total){
  const view=ensureInboxView(),active=Object.keys(INBOX_VIEW_DEFAULTS).filter(k=>view[k]!==INBOX_VIEW_DEFAULTS[k]).length;
  const select=(key,label,options)=>`<label>${label}<select data-inbox-field="${key}" aria-label="${label}">${options.map(([value,text])=>`<option value="${esc(value)}" ${view[key]===value?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;

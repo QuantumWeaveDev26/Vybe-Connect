@@ -5,6 +5,23 @@ const CRM_CURRENCIES=['INR','USD','EUR','GBP','AED','SGD','AUD','CAD'];
 const crmContact=id=>(S.data.contacts||[]).find(c=>c.id===id);
 const crmOwner=id=>(S.data.members||[]).find(m=>m.id===id)?.name||'Unassigned';
 function dealMoney(deal){return new Intl.NumberFormat(undefined,{style:'currency',currency:deal.currency}).format(deal.amount_minor/100)}
+function todayPage(){
+  const {contacts=[],messages=[],tasks=[]}=S.data;
+  const lastMessage=new Map();
+  for(const message of messages){
+    if(!['in','out'].includes(message.direction)||['draft','failed','unknown','simulated'].includes(message.status))continue;
+    if(!lastMessage.has(message.contact)||message.ts>=lastMessage.get(message.contact).ts)lastMessage.set(message.contact,message);
+  }
+  const active=contacts.filter(contact=>contact.status!=='solved'&&lastMessage.has(contact.id));
+  const oldestFirst=(a,b)=>lastMessage.get(a.id).ts-lastMessage.get(b.id).ts;
+  const unassigned=active.filter(contact=>!contact.assignee).sort(oldestFirst);
+  const awaiting=active.filter(contact=>lastMessage.get(contact.id).direction==='in').sort(oldestFirst);
+  const overdue=tasks.filter(task=>task.status!=='done'&&task.due>0&&task.due<=Date.now()/1000).sort((a,b)=>a.due-b.due);
+  const contactRow=contact=>`<li><div><strong>${esc(contact.name)}</strong><small>${esc(contact.channel==='website'?'Website chat':'WhatsApp')} · ${esc(date(lastMessage.get(contact.id).ts))}</small></div>${btn('Open chat','open-chat',`data-id="${esc(contact.id)}" aria-label="Open chat with ${esc(contact.name)}"`,'small')}</li>`;
+  const taskRow=task=>`<li><div><strong>${esc(task.title)}</strong><small>${esc(crmContact(task.contact_id)?.name||'No linked contact')} · Due ${esc(date(task.due))}</small></div>${btn('Open task','crm-edit-task',`data-id="${esc(task.id)}" aria-label="Open task ${esc(task.title)}"`,'small')}</li>`;
+  const section=(title,items,row,emptyText)=>`<section class="card"><div class="cardhead"><h2>${title}</h2>${badge(items.length,'gray')}</div><div class="cardbody">${items.length?`<ul class="today-list">${items.map(row).join('')}</ul>`:`<p class="hint">${emptyText}</p>`}</div></section>`;
+  return pagehead('Today','See which conversations and follow-ups need attention.', '<a class="button" href="#inbox">Open inbox</a>')+`<div class="today-grid">${section('Unassigned conversations',unassigned,contactRow,'No unassigned conversations.')}${section('Waiting for a reply',awaiting,contactRow,'No conversations waiting for a reply.')}${section('Overdue follow-ups',overdue,taskRow,'No overdue follow-ups.')}</div>`;
+}
 function pipelinePage(){
   const deals=(S.data.deals||[]).filter(deal=>!S.pipelineOverdue||(deal.closure_due&&deal.closure_due<Date.now()/1000&&!['won','lost'].includes(deal.stage)));
   return pagehead('Sales pipeline','Track and follow up on deals.',(S.data.context.role==='admin'?btn('Pipeline settings','crm-pipeline-settings'):'')+btn(S.pipelineOverdue?'Show all deals':'Overdue deals','crm-overdue')+btn('+ Follow-up task','crm-new-task')+btn('+ New deal','crm-new-deal','','primary'))+
