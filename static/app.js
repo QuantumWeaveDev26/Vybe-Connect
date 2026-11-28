@@ -306,8 +306,10 @@ function openSandboxModal(){
 }
 
 function openCsvImporterModal(){
-  let previewData=null, previewedCsv='';
-  showModal('Dynamic CSV Contact Importer',`
+  const scope=S.workspace,user=S.data.context.user.id;
+  const current=()=>S.workspace===scope&&S.data?.context.user.id===user;
+  let previewData=null, previewedCsv='', reviewed='';
+  showModal('Import contacts',`
     <p>Check the name and phone columns before importing. Blank opt-in values preserve existing consent. New contacts need an explicit opt-in.</p>
     <div class="field"><label for="csv-file-input">Choose CSV File</label><input type="file" id="csv-file-input" accept=".csv,text/csv"></div>
     <div class="field"><label for="csv-raw">Or Paste CSV Text</label><textarea id="csv-raw" placeholder="name,phone,City,Plan&#10;Alice,+15550101,New York,Pro&#10;Bob,+15550102,London,Starter" style="height:90px"></textarea></div>
@@ -320,6 +322,7 @@ function openCsvImporterModal(){
       <div class="sectionlabel">PREVIEW (FIRST 3 ROWS)</div>
       <div id="csv-preview-table" class="tablewrap" style="max-height:160px;overflow:auto"></div>
     </div>
+    <p id="csv-import-summary" role="status"></p>
   `,async()=>{
     const raw=$('#csv-raw').value.trim();
     if(!raw)throw new Error('Please provide CSV content.');
@@ -336,11 +339,25 @@ function openCsvImporterModal(){
         }
       }
     }
-    const res=await act('contacts.import',{csv:raw,mapping,tags:tag?[tag]:[]});
+    if(!current())throw new Error('Workspace changed. Reopen contact import.');
+    const payload={csv:raw,mapping,tags:tag?[tag]:[]}, signature=JSON.stringify(payload);
+    if(reviewed!==signature){
+      const res=await act('contacts.import',{...payload,dry_run:true});
+      if(!current())return;
+      reviewed=signature;
+      $('#formerror').textContent='';
+      const summary=$('#csv-import-summary');
+      summary.textContent=`${res.created} new · ${res.updated} updates · ${res.duplicates} duplicate rows · ${res.consent_changes} consent changes · ${res.errors.length} rows with errors. ${res.errors.slice(0,3).join(' ')}`;
+      const submit=$('#dialog-form button[type="submit"]');
+      submit.textContent='Import contacts';submit.disabled=false;
+      return;
+    }
+    const res=await act('contacts.import',payload);
+    if(!current())return;
     $('#modal').close();
     await refresh();
     toast('Successfully imported '+res.imported+' contacts! ('+(res.errors?.length||0)+' errors)');
-  },'Import Contacts');
+  },'Review import');
 
   const parseCsv=async()=>{
     const raw=$('#csv-raw').value.trim();
@@ -359,6 +376,11 @@ function openCsvImporterModal(){
     }catch(error){toast(error.message)}
   };
 
+  $('#dialog-form').addEventListener('input',()=>{
+    reviewed='';
+    $('#csv-import-summary').textContent='';
+    $('#dialog-form button[type="submit"]').textContent='Review import';
+  });
   $('#btn-parse-csv')?.addEventListener('click',parseCsv);
   $('#csv-file-input')?.addEventListener('change',async e=>{
     const file=e.target.files[0];

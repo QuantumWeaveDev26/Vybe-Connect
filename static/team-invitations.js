@@ -2,7 +2,9 @@
 const INV={token:null};
 function invitationPanel(){
   if(S.data.context.role!=='admin')return '';
-  return `<section class="card"><div class="cardhead"><h2>Workspace invitations</h2>${btn('Invite teammate','invite-create','','primary small')}</div><div class="cardbody"><p class="hint">One-time links let recipients choose their own passwords. Existing accounts must enter their current password. Share links privately with the intended recipient. Invitation emails are not sent automatically.</p>${(S.data.invitations||[]).map(i=>`<div class="summaryrow"><span><strong>${esc(i.email)}</strong> · ${esc(i.role)} · ${esc(i.status)}<div class="sub">Expires ${esc(new Date(i.expires*1000).toLocaleString())}</div></span>${i.status==='pending'?btn('Revoke','invite-revoke',`data-id="${esc(i.id)}"`,'small'):''}</div>`).join('')||'<p>No invitations issued.</p>'}</div></section>`;
+  const invitations=S.data.invitations||[];
+  const totals=['pending','accepted','expired'].map(status=>invitations.filter(i=>i.status===status).length+' '+status);
+  return `<section class="card"><div class="cardhead"><h2>Workspace invitations</h2>${btn('Invite teammate','invite-create','','primary small')}</div><div class="cardbody"><p class="hint">Share one-time links privately.</p>${invitations.length?`<p class="hint">${totals.join(' · ')}</p>`:''}${invitations.map(i=>`<div class="summaryrow"><span><strong>${esc(i.email)}</strong> · ${esc(i.role)} · ${esc(i.status)}<div class="sub">Expires ${esc(new Date(i.expires*1000).toLocaleString())}</div></span>${i.status==='pending'?btn('Revoke','invite-revoke',`data-id="${esc(i.id)}"`,'small'):''}</div>`).join('')||'<p>No invitations issued.</p>'}</div></section>`;
 }
 function showShareableInvitation(invitation,workspace,same){
   const link=location.origin+'/#invite='+encodeURIComponent(invitation.token);

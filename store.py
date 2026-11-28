@@ -560,7 +560,9 @@ class Store:
                     attr_mapping=mapping.get('attributes') or {}
                     batch_tags=d.get('tags') or []
                     if not {name_col,phone_col}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
-                    imported=0; errors=[]
+                    dry_run=d.get('dry_run') is True
+                    if dry_run:db.execute('SAVEPOINT contacts_preview')
+                    imported=created=updated=duplicates=consent_changes=0; errors=[]
                     all_contacts=self._list(db,t,'contact')
                     seen_phones=set()
                     for i,row in enumerate(reader,2):
@@ -570,6 +572,7 @@ class Store:
                             name_val=row.get(name_col)
                             clean_p=phone_number(phone_val)
                             if clean_p in seen_phones:
+                                duplicates+=1
                                 raise Problem('This phone number already exists.',409)
                             seen_phones.add(clean_p)
                             existing=next((c for c in all_contacts if c['phone']==clean_p),None)
@@ -597,8 +600,15 @@ class Store:
                             saved=self._contact(db,t,contact_data)
                             if not existing: all_contacts.append(saved)
                             imported+=1
+                            if existing:updated+=1
+                            else:created+=1
+                            if saved['optin']!=bool(existing and existing.get('optin')):consent_changes+=1
                         except Problem as e: errors.append('Row '+str(i)+': '+str(e))
-                    result={'imported':imported,'errors':errors}
+                    if dry_run:
+                        db.execute('ROLLBACK TO contacts_preview')
+                        db.execute('RELEASE contacts_preview')
+                    result={'imported':0 if dry_run else imported,'created':created,'updated':updated,'duplicates':duplicates,'consent_changes':consent_changes,'errors':errors}
+                    if dry_run:return result
             elif action=='chat.update':
                 c=self._get(db,t,'contact',d.get('id'))
                 status=d.get('status',c['status']); assignee=d.get('assignee',c['assignee'])
