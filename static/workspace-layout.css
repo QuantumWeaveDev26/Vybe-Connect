@@ -651,3 +651,10 @@ ul.campaign-block { padding-inline-start: 1.2rem; margin-block: 0.5rem; }
   .rule-preview summary, .campaign-block summary { min-block-size: 44px; align-content: center; }
   .developer-connections { grid-template-columns: 1fr; }
 }
+
+.automation-preview { margin-block-end: 0.75rem; min-inline-size: 0; overflow-wrap: anywhere; }
+.automation-preview summary { cursor: pointer; font-weight: 600; min-block-size: 44px; align-content: center; }
+.automation-preview ol { padding-inline-start: 1.5rem; }
+.automation-preview li + li { margin-block-start: 0.75rem; }
+.automation-preview li p { margin-block: 0.25rem; white-space: pre-wrap; }
+.automation-preview li small { display: block; }
