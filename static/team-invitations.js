@@ -4,13 +4,13 @@ function invitationPanel(){
   if(S.data.context.role!=='admin')return '';
   const invitations=S.data.invitations||[];
   const totals=['pending','accepted','expired'].map(status=>invitations.filter(i=>i.status===status).length+' '+status);
-  return `<section class="card"><div class="cardhead"><h2>Workspace invitations</h2>${btn('Invite teammate','invite-create','','primary small')}</div><div class="cardbody"><p class="hint">Share one-time links privately.</p>${invitations.length?`<p class="hint">${totals.join(' · ')}</p>`:''}${invitations.map(i=>`<div class="summaryrow"><span><strong>${esc(i.email)}</strong> · ${esc(i.role)} · ${esc(i.status)}<div class="sub">Expires ${esc(new Date(i.expires*1000).toLocaleString())}</div></span>${i.status==='pending'?btn('Revoke','invite-revoke',`data-id="${esc(i.id)}"`,'small'):''}</div>`).join('')||'<p>No invitations issued.</p>'}</div></section>`;
+  return `<section class="card"><div class="cardhead"><h2>Workspace invitations</h2>${btn('Invite teammate','invite-create','','primary small')}</div><div class="cardbody">${invitations.length?`<p class="hint">${totals.join(' · ')}</p>`:''}${invitations.map(i=>`<div class="summaryrow"><span><strong>${esc(i.email)}</strong> · ${esc(i.role)} · ${esc(i.status)}<div class="sub">Expires ${esc(new Date(i.expires*1000).toLocaleString())}</div></span>${i.status==='pending'?btn('Revoke','invite-revoke',`data-id="${esc(i.id)}"`,'small'):''}</div>`).join('')||'<p>No invitations issued.</p>'}</div></section>`;
 }
 function showShareableInvitation(invitation,workspace,same){
   const link=location.origin+'/#invite='+encodeURIComponent(invitation.token);
-  const shareText='Join me in '+workspace+' on VYBE Connect. Open this one-time link to accept your invitation:';
+  const shareText='Join me in '+workspace+' on VYBE Connect.';
   const shareButton=typeof navigator.share==='function'?'<button id="invite-share" type="button" class="primary">Share invite</button>':'';
-  showModal('Share your invitation',`<p>Send this one-time link privately to <strong>${esc(invitation.email)}</strong>.</p><div class="buttons">${shareButton}<button id="invite-copy" type="button">Copy link</button><a class="button" href="https://web.whatsapp.com/" target="_blank" rel="noopener noreferrer">Open WhatsApp Web</a></div><p id="invite-share-status" class="hint" role="status"></p><label for="invite-link">Invitation link</label><input id="invite-link" type="text" readonly value="${esc(link)}"><p class="hint">Expires ${esc(new Date(invitation.expires*1000).toLocaleString())}. Copy it before closing.</p>`,()=>$('#modal').close(),'Close');
+  showModal('Share your invitation',`<p>Share privately with <strong>${esc(invitation.email)}</strong>.</p><div class="buttons">${shareButton}<button id="invite-copy" type="button">Copy link</button><a class="button" href="https://web.whatsapp.com/" target="_blank" rel="noopener noreferrer">Open WhatsApp Web</a></div><p id="invite-share-status" class="hint" role="status"></p><label for="invite-link">Invitation link</label><input id="invite-link" type="text" readonly value="${esc(link)}"><p class="hint">Expires ${esc(new Date(invitation.expires*1000).toLocaleString())}.</p>`,()=>$('#modal').close(),'Close');
   $('#dialog-form .modalfoot [data-do="close"]')?.remove();
   const field=$('#invite-link'), status=$('#invite-share-status');
   const current=()=>same()&&$('#invite-link')===field&&$('#modal').open;
@@ -18,11 +18,11 @@ function showShareableInvitation(invitation,workspace,same){
     if(!current())return;
     try{
       await navigator.clipboard.writeText(link);
-      if(current())status.textContent='Link copied. Paste it into your teammate’s WhatsApp chat.';
+      if(current())status.textContent='Link copied.';
     }catch{
       if(!current())return;
       field.focus();field.select();
-      status.textContent='Link selected. Copy it, then paste it into your teammate’s chat.';
+      status.textContent='Link selected. Copy it to share.';
     }
   };
   const share=$('#invite-share');
@@ -30,7 +30,7 @@ function showShareableInvitation(invitation,workspace,same){
     if(!current())return;
     try{await navigator.share({title:'VYBE Connect invitation',text:shareText,url:link})}
     catch(error){
-      if(current()&&error.name!=='AbortError')status.textContent='Sharing is unavailable. Use Copy link instead.';
+      if(current()&&error.name!=='AbortError')status.textContent='Use Copy link to share.';
     }
   };
 }
@@ -38,7 +38,7 @@ async function invitationAction(action,el){
   const tenant=S.data.context.tenant_id,user=S.data.context.user.id,same=()=>S.data?.context.tenant_id===tenant&&S.data?.context.user.id===user&&S.data.context.role==='admin';
   if(action==='invite-create'){
     let submitting=false;
-    return showModal('Invite a workspace teammate',field('email','Recipient email','','email')+field('role','Workspace role','agent','select',[['agent','Agent'],['admin','Administrator']])+field('hours','Link expires after hours',24,'number')+'<p class="hint">Share the one-time link privately. The recipient chooses their password.</p>',async data=>{
+    return showModal('Invite teammate',field('email','Recipient email','','email')+field('role','Workspace role','agent','select',[['agent','Agent'],['admin','Administrator']])+field('hours','Expires after (hours)',24,'number'),async data=>{
       if(submitting)return;
       if(!same())throw new Error('Workspace changed. Reopen the invitation form.');
       submitting=true;
@@ -46,9 +46,9 @@ async function invitationAction(action,el){
       try {
         invitation=await act('invite.create',{email:data.email,role:data.role,hours:Number(data.hours)});
       } catch(error) {
-        if(error.status===401)throw new Error('Your session expired. Sign in again, then reopen Team settings.');
+        if(error.status===401)throw new Error('Session expired. Sign in again.');
         if(error.status>=500||!error.status||error.message.startsWith('The server returned an unreadable response')){
-          throw new Error('VYBE could not confirm whether the link was created. Close this form and reload Team settings. If a pending invitation appears, revoke it before creating a new link.');
+          throw new Error('Invite unconfirmed. Reload Team settings and revoke any pending invite for this teammate before retrying.');
         }
         throw error;
       } finally {

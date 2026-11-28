@@ -30,11 +30,11 @@ async function run() {
   await submit(data);
   assert.equal(calls, 1, 'duplicate clicks must not repeat an in-flight request');
   reject(Object.assign(new Error('The server returned an unreadable response. Refresh and try again.'), {status: 200}));
-  await assert.rejects(first, /could not confirm.*pending invitation/);
+  await assert.rejects(first, /Invite unconfirmed.*pending invite/);
   assert.deepEqual(shown, []);
 
   request = Promise.reject(Object.assign(new Error('Please sign in.'), {status: 401}));
-  await assert.rejects(submit(data), /session expired.*Sign in again/);
+  await assert.rejects(submit(data), /Session expired.*Sign in again/);
 
   request = Promise.resolve({token: 'test-only'});
   await submit(data);
