@@ -46,7 +46,8 @@ class SegmentTests(unittest.TestCase):
         campaign=self.s.action(self.ctx,'campaign.save',{'name':'Segment campaign','template_id':template['id'],'segment_id':segment['id']})
         self.assertEqual(campaign['audience'],1)
         self.s.action(self.ctx,'contact.save',{'id':self.b['id'],'name':'Beta','phone':'919000000002','optin':True,'tags':['Buyer'],'attributes':{'score':100}})
-        with patch('store.meta_status',return_value={'live':True}):self.s.action(self.ctx,'campaign.launch',{'id':campaign['id']})
+        self.assertEqual(self.s.state(self.ctx)['campaigns'][0]['audience'],2)
+        with patch('store.meta_status',return_value={'live':True,'configured':True}):self.s.action(self.ctx,'campaign.launch',{'id':campaign['id']})
         self.assertEqual(len(self.s.state(self.ctx)['queue']),2)
 
     def test_deleted_segment_blocks_launch_instead_of_broadcasting_to_all(self):
@@ -54,5 +55,8 @@ class SegmentTests(unittest.TestCase):
         with self.s.db() as db:template=self.s._put(db,self.ctx['tenant_id'],'template',{'name':'offer','body':'Hello','language':'en','status':'APPROVED','meta_id':'123'})
         campaign=self.s.action(self.ctx,'campaign.save',{'name':'Scoped','template_id':template['id'],'segment_id':segment['id']})
         self.s.action(self.ctx,'segment.delete',{'id':segment['id']})
-        with patch('store.meta_status',return_value={'live':True}),self.assertRaises(Problem):self.s.action(self.ctx,'campaign.launch',{'id':campaign['id']})
+        draft=self.s.state(self.ctx)['campaigns'][0]
+        self.assertEqual(draft['audience'],0)
+        self.assertIn('audience was deleted',draft['audience_block'])
+        with patch('store.meta_status',return_value={'live':True,'configured':True}),self.assertRaises(Problem):self.s.action(self.ctx,'campaign.launch',{'id':campaign['id']})
         self.assertFalse(self.s.state(self.ctx)['queue'])

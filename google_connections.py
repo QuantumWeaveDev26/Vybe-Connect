@@ -54,7 +54,9 @@ def request(url,token='',data=None,method=None,form=False):
         with build_opener(NoRedirect).open(Request(url,raw,headers,method=method),timeout=20) as response:
             body=response.read(1024*1024+1)
             if len(body)>1024*1024:fail('Google response is too large.',502)
-            return json.loads(body) if body else {}
+            result=json.loads(body) if body else {}
+            if not isinstance(result,dict):fail('Google returned an unexpected response. Reconnect and try again.',502)
+            return result
     except HTTPError as e:
         # Never expose provider bodies, authorization codes, tokens or account data.
         fail('Google rejected the request (HTTP '+str(e.code)+'). Reconnect if access has expired.',502)
@@ -70,7 +72,7 @@ def state(store,db,tenant):
     return result
 
 
-def start(store,ctx,kind):
+def start_authorization(store,ctx,kind):
     admin(store,ctx);c=configuration()
     if kind not in SCOPES:fail('Choose Google Sheets or Calendar.')
     if not c['ready']:fail('Google connection setup is required by the platform owner.',503)
@@ -103,17 +105,22 @@ def callback(store,query,cookie):
     if not code or len(code)>4096 or query.get('error'):fail('Google authorization was not completed.')
     c=configuration()
     if not c['ready']:fail('Google platform configuration is unavailable.',503)
-    verifier=credential_vault.unseal(a['verifier'],tenant,kind)['verifier']
+    try:
+        verifier=credential_vault.unseal(a['verifier'],tenant,kind)['verifier']
+    except (credential_vault.VaultError,KeyError):
+        fail('Google authorization could not be restored. Start again.',503)
     tokens=request('https://oauth2.googleapis.com/token',data={'client_id':c['client_id'],'client_secret':c['secret'],'redirect_uri':c['redirect'],'grant_type':'authorization_code','code':code,'code_verifier':verifier},form=True)
     if not isinstance(tokens.get('access_token'),str) or not isinstance(tokens.get('refresh_token'),str) or not set(SCOPES[kind]).issubset(set(tokens.get('scope','').split())):fail('Google did not grant the required offline access. Reconnect and approve the requested permissions.')
     identity=request('https://openidconnect.googleapis.com/v1/userinfo',tokens['access_token'])
     if not identity.get('sub') or identity.get('email_verified') is not True:fail('Google could not verify the connected account.')
+    expires_in=tokens.get('expires_in',3600)
+    if type(expires_in) is not int or expires_in<=0:fail('Google returned an invalid token expiry. Reconnect and try again.',502)
     with LOCK:
         admin(store,ctx)
         with store.db() as db:
             latest=store._get(db,tenant,'googleauth',row['id'])
             if latest.get('cancelled'):fail('This Google connection was cancelled. Start again.',409)
-        vault.write_credentials(tenant,{'refresh_token':tokens['refresh_token'],'access_token':tokens['access_token'],'expires':int(time.time())+min(int(tokens.get('expires_in',3600)),3600),'email':identity.get('email',''),'account':identity['sub'],'generation':secrets.token_hex(16)},kind)
+        vault.write_credentials(tenant,{'refresh_token':tokens['refresh_token'],'access_token':tokens['access_token'],'expires':int(time.time())+min(expires_in,3600),'email':identity.get('email',''),'account':identity['sub'],'generation':secrets.token_hex(16)},kind)
     return {'connected':True}
 
 
@@ -177,7 +184,7 @@ def period(start,end):
 
 def action(store,ctx,op,data):
     admin(store,ctx);kind=data.get('kind');tenant=ctx['tenant_id']
-    if op=='google.start':return start(store,ctx,kind)
+    if op=='google.start':return start_authorization(store,ctx,kind)
     if kind not in SCOPES:fail('Choose a Google service.')
     if op=='google.disconnect':
         with LOCK:

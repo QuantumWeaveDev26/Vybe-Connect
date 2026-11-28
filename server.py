@@ -4,12 +4,14 @@ site.addsitedir(str(Path(__file__).resolve().parent/'_vendor'))
 """Loopback-only pilot server. Run with Python 3.13: python server.py."""
 from recovery_mail import configuration as recovery_configuration
 import argparse
+from html import escape
 import json
+import logging
 import os
 import time
 import threading
 import secrets
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -91,14 +93,25 @@ class Handler(BaseHTTPRequestHandler):
             if not self.host_ok(): raise Problem('Invalid host.',403)
             path=urlsplit(self.path).path
             if path==google_connections.CALLBACK:
-                cookies=SimpleCookie();cookies.load(self.headers.get('Cookie',''))
-                cookie=cookies.get('tw_google_flow');ok=False
+                cookies=SimpleCookie()
+                try:cookies.load(self.headers.get('Cookie',''))
+                except CookieError:cookies.clear()
+                cookie=cookies.get('tw_google_flow')
+                status,detail=200,'Your account is connected to your workspace.'
                 try:
                     google_connections.callback(self.server.store,parse_qs(urlsplit(self.path).query),cookie.value if cookie else '')
-                    ok=True
-                except Problem:pass
-                content='<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>'+('Google connected' if ok else 'Google connection not completed')+'</h1><p>'+('Your account is connected to your workspace.' if ok else 'Return to your workspace and reconnect. Check that Google permissions and platform setup are complete.')+'</p><a href="/#google-connections">Return to VYBE Connect</a></body></html>'
-                self.respond(200 if ok else 400,content,'text/html; charset=utf-8',cookie='tw_google_flow=; Path='+google_connections.CALLBACK+'; HttpOnly; SameSite=Lax; Secure; Max-Age=0');return
+                except (Problem,embedded_signup.ConnectionError) as error:
+                    status,detail=error.code,str(error)
+                except Exception as error:
+                    logging.error('Google OAuth callback failed: %s',type(error).__name__)
+                    status,detail=500,'VYBE could not save the Google connection. Return to Settings and try again.'
+                title='Google connected' if status==200 else 'Google connection not completed'
+                content=('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                         '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                         f'<title>{title}</title></head><body><main><h1>{title}</h1>'
+                         f'<p>{escape(detail)}</p><a href="/#google-connections">Return to VYBE Connect</a>'
+                         '</main></body></html>')
+                self.respond(status,content,'text/html; charset=utf-8',cookie='tw_google_flow=; Path='+google_connections.CALLBACK+'; HttpOnly; SameSite=Lax; Secure; Max-Age=0');return
             if path.startswith('/help/'):
                 parts=path.strip('/').split('/')
                 if len(parts) not in (2,3):raise Problem('Article not found.',404)
@@ -110,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/api/developer/tokens':self.respond(200,{'tokens':api_tokens.listing(self.server.store,self.context())});return
             if path=='/healthz':self.respond(200,{'status':'ok'});return
             if path in ('/favicon.ico', '/favicon.svg'):
-                favicon='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#19b86b"/><path d="M7 8h5l4 11 4-11h5L18 24h-4Z" fill="#ffffff"/></svg>'
+                favicon='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#5e35d6"/><path d="M7 8h5l4 11 4-11h5L18 24h-4Z" fill="#ffffff"/></svg>'
                 self.respond(200,favicon,'image/svg+xml');return
             if path=='/widget.js':
                 self.respond(200,(ROOT/'static'/'widget.js').read_text(encoding='utf-8'),'application/javascript; charset=utf-8');return
@@ -160,12 +173,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise Problem('Verification failed.',403)
             files={'/widget-preview.js':'widget-preview.js','/extensions.js':'extensions.js','/growth.js':'growth.js','/growth.css':'growth.css','/interactions.js':'interactions.js','/password-visibility.js':'password-visibility.js','/auth-entry.js':'auth-entry.js','/connectors.js':'connectors.js','/launch-layout.js':'launch-layout.js','/visuals.js':'visuals.js','/world-dots.json':'world-dots.json','/launch.js':'launch.js','/services.js':'services.js','/owned-commerce.js':'owned-commerce.js','/agent-directory.js':'agent-directory.js','/vybe-theme.css':'vybe-theme.css','/help-widget.css':'help-widget.css','/help-widget.js':'help-widget.js','/account-recovery.js':'account-recovery.js','/team-operations.js':'team-operations.js','/account.js':'account.js','/received-media.js':'received-media.js','/analytics-report.js':'analytics-report.js','/team-invitations.js':'team-invitations.js','/rule-actions.js':'rule-actions.js','/customer-assistant.js':'customer-assistant.js','/contact-segments.js':'contact-segments.js','/external-agents.js':'external-agents.js','/drip-sequences.js':'drip-sequences.js','/knowledge-documents.js':'knowledge-documents.js','/integrations.js':'integrations.js','/business.js':'business.js','/business.css':'business.css','/owner':'index.html','/':'index.html','/index.html':'index.html','/app.js':'app.js','/graph.js':'graph.js','/graph.css':'graph.css','/assistant.js':'assistant.js','/assistant.css':'assistant.css','/shell.js':'shell.js','/shell.css':'shell.css','/template-editor.js':'template-editor.js','/template-editor.css':'template-editor.css','/style.css':'style.css'}
             files.update({'/api-tokens.js':'api-tokens.js','/customer-template-portraits.webp':'customer-template-portraits.webp','/specialist-agents.webp':'specialist-agents.webp','/inbox-filters.js':'inbox-filters.js','/metric-characters-clean.png':'metric-characters-clean.png','/concept-theme.css':'concept-theme.css','/approved-concept.png':'approved-concept.png','/terms':'terms.html','/privacy':'privacy.html','/data-deletion':'data-deletion.html','/whatsapp-connect.js':'whatsapp-connect.js'})
+            files.update({'/manifest.webmanifest':'manifest.webmanifest','/service-worker.js':'service-worker.js','/pwa.js':'pwa.js','/manual-whatsapp.js':'manual-whatsapp.js','/app-icon-192.png':'app-icon-192.png','/app-icon-512.png':'app-icon-512.png'})
+            files['/reference-theme.css']='reference-theme.css'
+            files['/workspace-layout.css']='workspace-layout.css'
             files['/startup-guard.js']='startup-guard.js'
             files['/workspace-loader.js']='workspace-loader.js'
             if path not in files: raise Problem('Not found.',404)
             p=ROOT/'static'/files[path]
             if not p.exists(): raise Problem('UI is not installed.',404)
-            mime={'html':'text/html','js':'text/javascript','css':'text/css','json':'application/json','png':'image/png','webp':'image/webp'}[p.suffix[1:]]
+            mime={'html':'text/html','js':'text/javascript','css':'text/css','json':'application/json','png':'image/png','webp':'image/webp','webmanifest':'application/manifest+json'}[p.suffix[1:]]
             self.respond(200,p.read_bytes(),mime+('' if mime.startswith('image/') else '; charset=utf-8'))
         except (Problem,api_tokens.APIError) as e: self.respond(e.code,{'error':str(e)})
         except Exception: self.respond(500,{'error':'An internal error occurred.'})
@@ -193,8 +209,12 @@ class Handler(BaseHTTPRequestHandler):
                 from payment_services import webhook
                 from service_jobs import ServiceError
                 parts=path.strip('/').split('/')
-                if len(parts)!=3 or parts[1] not in ('payments','billing'):raise Problem('Invalid payment webhook route.',404)
-                try:result=webhook(self.server.store,parts[2],parts[1],raw,dict(self.headers))
+                if len(parts)==2 and parts[1]=='billing':
+                    tenant=None
+                elif len(parts)==3 and parts[1] in ('payments','billing') and parts[2]:
+                    tenant=parts[2]
+                else:raise Problem('Invalid payment webhook route.',404)
+                try:result=webhook(self.server.store,tenant,parts[1],raw,dict(self.headers))
                 except ServiceError as e:raise Problem(str(e),e.code) from None
                 self.respond(200,result);return
             if path.startswith('/agent-callback/'):
@@ -288,7 +308,14 @@ class Handler(BaseHTTPRequestHandler):
                 ctx=self.context();operation=data.get('action')
                 if isinstance(operation,str) and operation.startswith(('ai.connection.','whatsapp.','payments.','billing.','shipping.','clients.','providers.','services.','calls.','growth.form.','google.','semantic.')) and operation not in ('calls.end','calls.reject','calls.release'):
                     if not auth_attempt(self.server.service_attempts,self.server.service_attempts_lock,self.client_address[0],ctx['user']['id']+':'+operation,time.time()):raise Problem('Too many service requests. Wait a minute.',429)
-                result=self.server.store.action(ctx,operation,payload)
+                try:
+                    result=self.server.store.action(ctx,operation,payload)
+                except (Problem,api_tokens.APIError,ValueError,TypeError,KeyError):
+                    raise
+                except Exception as error:
+                    if operation!='google.start':raise
+                    logging.error('Google OAuth start failed: %s',type(error).__name__)
+                    raise Problem('VYBE could not start Google sign-in. Return to Google connections and try again.',503) from None
                 cookie=result.pop('_flow_cookie',None) if operation=='google.start' else None
                 self.respond(200,result,cookie=cookie);return
             raise Problem('Not found.',404)

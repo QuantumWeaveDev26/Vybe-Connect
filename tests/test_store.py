@@ -68,6 +68,29 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(len(result['errors']),2)
         self.assertEqual(self.s.state(self.ctx)['contacts'][0]['name'],'Asha, Rao')
 
+    def test_contact_import_review_counts_changes_without_writing(self):
+        contact=self.contact(optin=True)
+        before=self.s.state(self.ctx)
+        csv='name,phone,optin\nUpdate,'+contact['phone']+',no\nNew,919000000099,yes\nDuplicate,919000000099,yes\n'
+        review=self.act('contacts.import',csv=csv,dry_run=True)
+        self.assertEqual([review[k] for k in ('imported','created','updated','duplicates','consent_changes')],[0,1,1,1,2])
+        after=self.s.state(self.ctx)
+        self.assertEqual(after['contacts'],before['contacts'])
+        self.assertEqual(after['audit'],before['audit'])
+        result=self.act('contacts.import',csv=csv)
+        self.assertEqual(result['imported'],2)
+
+    def test_csv_without_consent_preserves_existing_and_defaults_new_to_no_consent(self):
+        original=self.contact(optin=True)
+        result=self.act('contacts.import',csv='Full Name,Phone Number\nUpdated,'+original['phone']+'\nNew,919000000099\n')
+        self.assertEqual(result['imported'],2)
+        contacts={row['name']:row for row in self.s.state(self.ctx)['contacts']}
+        self.assertTrue(contacts['Updated']['optin'])
+        self.assertFalse(contacts['New']['optin'])
+        self.act('contacts.import',csv='name,phone,optin\nUpdated,'+original['phone']+',no\n')
+        contacts={row['name']:row for row in self.s.state(self.ctx)['contacts']}
+        self.assertFalse(contacts['Updated']['optin'])
+
     def test_campaign_requires_template_and_consent(self):
         self.contact(optin=True)
         self.act('contact.save',name='No consent',phone='919000000002',optin=False)

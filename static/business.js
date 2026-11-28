@@ -7,11 +7,11 @@ const crmOwner=id=>(S.data.members||[]).find(m=>m.id===id)?.name||'Unassigned';
 function dealMoney(deal){return new Intl.NumberFormat(undefined,{style:'currency',currency:deal.currency}).format(deal.amount_minor/100)}
 function pipelinePage(){
   const deals=(S.data.deals||[]).filter(deal=>!S.pipelineOverdue||(deal.closure_due&&deal.closure_due<Date.now()/1000&&!['won','lost'].includes(deal.stage)));
-  return pagehead('Sales pipeline','Track real opportunities from first inquiry to closure.',(S.data.context.role==='admin'?btn('Pipeline settings','crm-pipeline-settings'):'')+btn(S.pipelineOverdue?'Show all deals':'Overdue deals','crm-overdue')+btn('+ Follow-up task','crm-new-task')+btn('+ New deal','crm-new-deal','','primary'))+
-    `<p class="hint">Deal values are estimates entered by your team. Won deals are not verified payments or attributed campaign revenue.</p><div class="sales-board">${salesStageOptions().map(([stage,label])=>{
+  return pagehead('Sales pipeline','Track and follow up on deals.',(S.data.context.role==='admin'?btn('Pipeline settings','crm-pipeline-settings'):'')+btn(S.pipelineOverdue?'Show all deals':'Overdue deals','crm-overdue')+btn('+ Follow-up task','crm-new-task')+btn('+ New deal','crm-new-deal','','primary'))+
+    `<details class="pipeline-about"><summary>About deal values</summary><p>Deal values are estimates entered by your team. Won deals are not verified payments or attributed campaign revenue.</p></details><div class="sales-board ${deals.length?'':'sales-board-empty'}">${salesStageOptions().map(([stage,label])=>{
       const list=deals.filter(d=>d.stage===stage),totals={};for(const d of list)totals[d.currency]=(totals[d.currency]||0)+d.amount_minor;
-      return `<section class="sales-column"><header><h2>${esc(label)} ${badge(list.length,'gray')}</h2><p class="hint">${Object.entries(totals).map(([currency,amount_minor])=>esc(dealMoney({currency,amount_minor}))).join(' · ')||'No deals'}</p></header>${list.map(d=>`<article class="deal-card"><h3>${esc(d.title)}</h3><p>${esc(crmContact(d.contact_id)?.name||'Contact unavailable')}</p><strong>${esc(dealMoney(d))}</strong>${d.closure_due?`<p class="hint">Closure due ${esc(new Date(d.closure_due*1000).toLocaleString())}${!d.closed_at&&d.closure_due<Date.now()/1000?badge('Overdue','amber'):''}</p>`:''}<p class="hint">${esc(crmOwner(d.owner))}</p><label class="hint" for="stage-${d.id}">Sales stage</label><select id="stage-${d.id}" data-deal-stage="${d.id}">${salesStageOptions().map(([v,l])=>`<option value="${v}" ${v===d.stage?'selected':''}>${esc(l)}</option>`).join('')}</select><div class="buttons">${btn('Activity','crm-deal-activity',`data-id="${d.id}"`,'small')}${btn('Edit','crm-edit-deal',`data-id="${d.id}"`,'small')}${btn('Chat','open-chat',`data-id="${d.contact_id}"`,'small')}${btn('Follow up','crm-deal-task',`data-id="${d.id}"`,'small')}</div></article>`).join('')||'<p class="hint">No opportunities in this stage.</p>'}</section>`
-    }).join('')}</div>`+taskSection();
+      return `<section class="sales-column"><header><h2>${esc(label)} ${badge(list.length,'gray')}</h2><p class="hint">${Object.entries(totals).map(([currency,amount_minor])=>esc(dealMoney({currency,amount_minor}))).join(' · ')}</p></header>${list.map(d=>`<article class="deal-card"><h3>${esc(d.title)}</h3><p>${esc(crmContact(d.contact_id)?.name||'Contact unavailable')}</p><strong>${esc(dealMoney(d))}</strong>${d.closure_due?`<p class="hint">Closure due ${esc(new Date(d.closure_due*1000).toLocaleString())}${!d.closed_at&&d.closure_due<Date.now()/1000?badge('Overdue','amber'):''}</p>`:''}<p class="hint">${esc(crmOwner(d.owner))}</p><label class="hint" for="stage-${d.id}">Sales stage</label><select id="stage-${d.id}" data-deal-stage="${d.id}">${salesStageOptions().map(([v,l])=>`<option value="${v}" ${v===d.stage?'selected':''}>${esc(l)}</option>`).join('')}</select><div class="buttons">${btn('Activity','crm-deal-activity',`data-id="${d.id}"`,'small')}${btn('Edit','crm-edit-deal',`data-id="${d.id}"`,'small')}${btn('Chat','open-chat',`data-id="${d.contact_id}"`,'small')}${btn('Follow up','crm-deal-task',`data-id="${d.id}"`,'small')}</div></article>`).join('')}</section>`
+    }).join('')}</div>${deals.length?'':`<p class="pipeline-empty">${S.pipelineOverdue?'No overdue deals.':'No deals yet. Select New deal to get started.'}</p>`}`+taskSection();
 }
 function taskSection(){
   const tasks=[...(S.data.tasks||[])].sort((a,b)=>(a.status==='done')-(b.status==='done')||(a.due||Infinity)-(b.due||Infinity));
@@ -40,23 +40,41 @@ async function businessAction(action,el){
   if(action==='crm-deal-activity')return showModal('Deal activity',pipelineActivity(id),()=>$('#modal').close(),'Close');
   if(action==='review-open'){$('#workspace-ai')?.remove();location.hash='findings';return}
   if(action==='review-run'){
-    if(S.analysisBusy)return;
-    const agent_id=$('#review-agent').value;if(!agent_id)throw new Error('Choose a saved agent first.');
-    S.analysisBusy=true;render();
-    try{await act('ai.run',{agent_id});toast('Analysis saved. Findings are waiting for review.')}catch(err){toast(err.message)}finally{S.analysisBusy=false;await refresh();render()}
+    if(S.analysisBusy||S.review||!aiCanSubmit(S.data.ai||{}))return;
+    const agent_id=$('#review-agent')?.value;if(!agent_id)throw new Error('Choose a saved agent first.');
+    const workspace=S.workspace,user=S.data.context.user.id;
+    const sameWorkspace=()=>S.workspace===workspace&&S.data?.context.user.id===user;
+    const knownRuns=new Set((S.data.airuns||[]).map(run=>run.id));
+    S.analysisBusy=true;S.analysisFeedback=null;render();
+    let result,error;
+    try{result=await act('ai.run',{agent_id},workspace)}catch(failure){error=failure.message}
+    finally{S.analysisBusy=false}
+    if(!sameWorkspace())return;
+    await refresh();
+    if(!sameWorkspace())return;
+    const failedRun=error&&[...(S.data.airuns||[])].reverse().find(run=>
+      !knownRuns.has(run.id)&&run.agent_id===agent_id&&run.started_by===user&&run.status==='failed');
+    const runId=result?.id||failedRun?.id;
+    if(runId){S.reviewRun=runId;S.findingFilter=result?'pending':'all'}
+    S.analysisFeedback=error?{workspace,user,message:error,runId}:null;
+    if(S.route==='findings'){
+      render();
+      ($('#analysis-run-result')||$('#analysis-run-feedback'))?.focus();
+    }
     return;
   }
-  if(action==='review-filter'){S.findingFilter=el.dataset.filter;return render()}
-  if(action==='review-select-run'){S.reviewRun=id||'';return render()}
   if(action==='review-finding'){
     const f=(S.data.findings||[]).find(f=>f.id===id);if(!f)return;
     const approve=el.dataset.decision==='approve';
-    return showModal(approve?'Review proposed action':'Dismiss finding',`<p><strong>${esc(f.title)}</strong></p><p>${esc(f.details)}</p><p>Contact: ${esc(crmContact(f.contact_id)?.name||'Workspace observation')}</p><pre class="finding-action">${esc(JSON.stringify(f.action,null,2))}</pre><p class="hint">${approve?'This applies only the local action shown above. A draft reply is not sent.':'No customer record will be changed.'}</p>`,async()=>{await act('finding.review',{id,decision:approve?'approve':'dismiss'});$('#modal').close();await refresh();toast(approve?'Review recorded.':'Finding dismissed.')},approve?'Approve shown action':'Dismiss finding');
+    if(el.closest('.finding-observations'))S.findingObservationsOpen=true;
+    if(!f.action)return showModal(approve?'Acknowledge observation':'Dismiss observation',`<p><strong>${esc(f.title)}</strong></p><p>${esc(f.details)}</p>`,async()=>{await act('finding.review',{id,decision:approve?'approve':'dismiss'});$('#modal').close();await refresh();toast(approve?'Observation acknowledged.':'Observation dismissed.')},approve?'Acknowledge':'Dismiss observation');
+    return showModal(approve?'Review proposed action':'Dismiss finding',`<p><strong>${esc(f.title)}</strong></p><p>${esc(f.details)}</p><p>Contact: ${esc(crmContact(f.contact_id)?.name||'Workspace observation')}</p><p class="finding-change"><strong>Proposed change</strong> ${esc(findingActionSummary(f.action))}</p><p class="hint">${approve?'This applies only the local action shown above. A draft reply is not sent.':'No customer record will be changed.'}</p>`,async()=>{await act('finding.review',{id,decision:approve?'approve':'dismiss'});$('#modal').close();await refresh();toast(approve?'Review recorded.':'Finding dismissed.')},approve?'Approve shown action':'Dismiss finding');
   }
   if(action==='handoff-takeover'||action==='handoff-resume'){
     return showModal(action==='handoff-takeover'?'Take over this conversation':'Resume conversation automation',`<p>${action==='handoff-takeover'?'Assign this chat to you and pause keyword and chatbot processing. Incoming customer messages will still arrive.':'Allow enabled keyword rules and chatbot flows to handle future incoming messages. Any previous flow session starts fresh.'}</p><p class="hint">Campaigns are managed separately.</p>`,async()=>{await act(action==='handoff-takeover'?'chat.takeover':'chat.resume',{id});$('#modal').close();await refresh()},action==='handoff-takeover'?'Take over':'Resume automation');
   }
   if(action==='crm-new-deal')return crmDealForm();
+  if(action==='crm-contact-deal')return crmDealForm({contact_id:id});
   if(action==='crm-edit-deal')return crmDealForm(S.data.deals.find(d=>d.id===id));
   if(action==='crm-new-task')return crmTaskForm();
   if(action==='crm-contact-task')return crmTaskForm({contact_id:id});
@@ -64,20 +82,79 @@ async function businessAction(action,el){
   if(action==='crm-deal-task'){const deal=S.data.deals.find(d=>d.id===id);return crmTaskForm({deal_id:id,contact_id:deal.contact_id,owner:deal.owner})}
   if(action==='crm-complete-task'){const task=S.data.tasks.find(t=>t.id===id);await act('task.complete',{id,completed:task.status!=='done'});return refresh()}
 }
+function analysisRunResult(run,status){
+ const failed=['failed','interrupted'].includes(run.status);
+ const finished=run.status==='completed';
+ const next=failed?(status.provider_pause?aiPauseGuidance(status):'Check the error above before retrying.'):'';
+ return `<section class="card analysis-run-result" id="analysis-run-result" tabindex="-1" aria-labelledby="analysis-run-heading"><div class="cardhead"><h2 id="analysis-run-heading">${esc(run.agent_name)}</h2>${badge(run.status,failed?'amber':finished?'green':'gray')}</div><div class="cardbody"><p>${esc(run.error||run.summary||'Analysis is running.')}</p>${next?`<p class="hint">${esc(next)}</p>`:''}<p class="hint">${run.sample_contacts} sampled contacts · ${date(run.created)} ${clock(run.created)}${finished&&Number.isInteger(run.finding_count)?` · ${run.finding_count} findings`:''}</p>${run.scope?`<details><summary>Analysis scope</summary><p class="hint">${esc(run.scope)}</p></details>`:''}</div></section>`;
+}
+
+function findingActionSummary(action){
+ switch(action.type){
+  case 'tag': return 'Add tag: '+action.tag;
+  case 'assign': return 'Assign to '+(S.data.members?.find(member=>member.id===action.owner)?.name||'the selected teammate')+', set to Pending, and pause automation.';
+  case 'note': return 'Add a private note: '+action.body;
+  case 'draft_reply': return 'Save an unsent reply draft: '+action.body;
+  case 'task': return 'Create a follow-up task for you: '+action.title;
+  default: return 'Review the proposed change.';
+ }
+}
+function findingReviewCard(f,admin,messages){
+ const statuses={pending:f.action?'Needs review':'To acknowledge',acknowledged:'Acknowledged',applied:'Applied',dismissed:'Dismissed'};
+ const tone=f.status==='pending'&&f.action?'amber':f.status==='applied'?'green':'gray';
+ const details=(f.evidence_ids||[]).map(id=>messages.get(id));
+ const evidence=details.length?`<details class="finding-evidence"><summary>View supporting messages (${details.length})</summary>${details.map(m=>`<blockquote>${esc(m?.body||'Message is outside the current inbox window.')}</blockquote>`).join('')}</details>`:'';
+ const actions=(f.contact_id?btn('Open conversation','open-chat',`data-id="${esc(f.contact_id)}"`,'small'):'')+
+  (admin&&f.status==='pending'?btn(f.action?'Review action':'Acknowledge','review-finding',`data-id="${esc(f.id)}" data-decision="approve"`,f.action?'primary small':'small')+
+  btn('Dismiss','review-finding',`data-id="${esc(f.id)}" data-decision="dismiss"`,'small ghost'):'');
+ return `<article class="finding-card review-finding-card"><header><div><p class="finding-meta">${esc(f.agent_name)} · ${date(f.created)} ${clock(f.created)}</p><h3>${esc(f.title)}</h3></div>${badge(statuses[f.status]||f.status,tone)}</header><p class="finding-details">${esc(f.details)}</p>${f.contact_id?`<p class="finding-meta">Contact · ${esc(crmContact(f.contact_id)?.name||'Conversation')}</p>`:''}${f.action?`<p class="finding-change"><strong>Proposed change</strong> ${esc(findingActionSummary(f.action))}</p>`:''}${evidence}${actions?`<div class="buttons finding-actions">${actions}</div>`:''}</article>`;
+}
+
 function findingsPage(){
   const runs=[...(S.data.airuns||[])].reverse(),agents=(S.data.aiagents||[]).filter(a=>!a.archived),admin=S.data.context.role==='admin',status=S.data.ai||{};
   let findings=[...(S.data.findings||[])].reverse();
   const filter=S.findingFilter||'pending';if(filter!=='all')findings=findings.filter(f=>f.status===filter);
   if(S.reviewRun&&runs.some(r=>r.id===S.reviewRun))findings=findings.filter(f=>f.run_id===S.reviewRun);
-  const configured=status.enabled&&status.configured;
+  const selectedRun=runs.find(run=>run.id===S.reviewRun);
+  const proposals=findings.filter(f=>f.action),observations=findings.filter(f=>!f.action);
+  const messages=new Map((S.data.messages||[]).map(message=>[message.id,message]));
+  const feedback=S.analysisFeedback;
+  const analysisError=feedback?.workspace===S.workspace&&feedback.user===S.data.context.user.id&&
+    (!feedback.runId||feedback.runId!==selectedRun?.id)?feedback.message:'';
+  const configured=aiCanSubmit(status);
+  const selected=S.findingAgent?.workspace===S.workspace&&agents.some(a=>a.id===S.findingAgent.id)?S.findingAgent.id:'';
+  const guidance=!configured?aiSetupGuidance(status):!agents.length?'Set up an agent in the catalog to run an analysis.':'Analysis creates findings for review. An admin approves proposed changes.';
+  const needsPlan=status.platform_managed&&!status.allowance?.active&&!status.allowance?.internal_use&&!status.provider_pause;
   return pagehead('AI findings & review','Inspect agent proposals before applying changes to customer records.',btn('Agent catalog','ai-agents-open','','small'))+
-    `<section class="card"><div class="cardhead"><h2>Run an analysis</h2>${badge(aiRuntimeLabel(),configured?'':'gray')}</div><div class="cardbody"><div class="review-run-controls"><label for="review-agent">Saved agent</label><select id="review-agent" ${S.analysisBusy?'disabled':''}><option value="">Choose an agent</option>${agents.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select>${btn(S.analysisBusy?'Analyzing…':'Analyze now','review-run',!configured||S.analysisBusy?'disabled':'','primary')}</div><p class="hint">On-demand analysis of a bounded conversation sample. Nothing is sent, assigned or tagged during analysis. An administrator must approve each proposed action. Scheduled agents also create pending findings here while the server is running.</p></div></section><div class="analysis-history">${btn('All runs','review-select-run','','small')}${runs.slice(0,15).map(r=>btn(esc(r.agent_name)+' · '+esc(r.status),'review-select-run',`data-id="${r.id}"`,'small')).join('')}</div>${runs.filter(r=>r.id===S.reviewRun).map(r=>`<section class="card"><div class="cardbody"><strong>${esc(r.agent_name)} · ${esc(r.status)}</strong><p>${esc(r.summary||r.error||'Analysis is running. If the server restarted, this run may have been interrupted.')}</p><p class="hint">${esc(r.scope)} · ${r.sample_contacts} sampled contacts · ${date(r.created)} ${clock(r.created)}</p></div></section>`).join('')}<div class="buttons">${['pending','applied','dismissed','acknowledged','all'].map(v=>btn(v[0].toUpperCase()+v.slice(1),'review-filter',`data-filter="${v}"`,filter===v?'primary small':'small')).join('')}</div>${findings.map(f=>`<article class="finding-card"><div class="cardhead"><h2>${esc(f.title)}</h2>${badge(f.status,f.status==='pending'?'amber':'gray')}</div><p>${esc(f.details)}</p><p class="hint">${esc(f.agent_name)} · ${esc(crmContact(f.contact_id)?.name||'Workspace observation')} · ${date(f.created)} ${clock(f.created)}</p>${f.action?`<pre class="finding-action">${esc(JSON.stringify(f.action,null,2))}</pre>`:'<p class="hint">Information only. No proposed mutation.</p>'}<details><summary>Supporting messages (${f.evidence_ids.length})</summary>${f.evidence_ids.map(id=>{const m=S.data.messages.find(m=>m.id===id);return `<p class="hint">${m?esc(m.body):'Message no longer in the current message window.'} <code>${esc(id)}</code></p>`}).join('')||'<p class="hint">Workspace-level observation; no contact message references.</p>'}</details><div class="buttons">${f.contact_id?btn('Open conversation','open-chat',`data-id="${f.contact_id}"`,'small'):''}${admin&&f.status==='pending'?btn(f.action?'Review action':'Acknowledge','review-finding',`data-id="${f.id}" data-decision="approve"`,'primary small')+btn('Dismiss','review-finding',`data-id="${f.id}" data-decision="dismiss"`,'small'):''}</div></article>`).join('')||empty('No findings in this view',agents.length?'Run a configured agent or choose another filter.':'Create an agent from the AI catalog to begin.')}<p class="hint">Proposals expire after 24 hours and cannot be applied if the target conversation changed. Applied actions are recorded in the workspace audit log. Existing queued campaigns are managed separately.</p>`;
+    `<section class="card"><div class="cardhead"><h2>Run an analysis</h2>${badge(aiRuntimeLabel(),configured?'':'gray')}</div><div class="cardbody"><div class="review-run-controls"><label for="review-agent">Saved agent</label><select id="review-agent" ${S.analysisBusy||!agents.length?'disabled':''}><option value="">Choose an agent</option>${agents.map(a=>`<option value="${esc(a.id)}" ${selected===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>${btn(S.analysisBusy?'Analyzing…':'Analyze now','review-run',!configured||S.analysisBusy||S.review||!selected?'disabled':'','primary')}</div><p class="hint">${esc(guidance)}${needsPlan?' Switch to your team workspace if you already have access there.':''}</p>${analysisError?`<p class="notice warn" role="alert" id="analysis-run-feedback" tabindex="-1">${esc(analysisError)}</p>`:''}${needsPlan&&admin?'<a href="#services" class="button small">Review subscription</a>':''}</div></section><div class="finding-filters"><label for="finding-run-history">Run history<select id="finding-run-history"><option value="">All runs</option>${runs.map(run=>`<option value="${esc(run.id)}" ${selectedRun?.id===run.id?'selected':''}>${esc(run.agent_name)} · ${date(run.created)} ${clock(run.created)} · ${esc(run.status)}</option>`).join('')}</select></label><label for="finding-status">Finding status<select id="finding-status">${Object.entries({pending:'Pending',applied:'Applied',dismissed:'Dismissed',acknowledged:'Acknowledged',all:'All statuses'}).map(([value,label])=>`<option value="${value}" ${filter===value?'selected':''}>${label}</option>`).join('')}</select></label></div>${selectedRun?analysisRunResult(selectedRun,status):''}${proposals.length?`<section class="finding-group"><h2>Proposed actions <span>${proposals.length}</span></h2>${proposals.some(f=>f.status==='pending')?'<p class="hint">Review within 24 hours. If the conversation changes, run a fresh analysis.</p>':''}${proposals.map(f=>findingReviewCard(f,admin,messages)).join('')}</section>`:''}${observations.length?`<details class="finding-group finding-observations" ${(S.findingObservationsOpen??(Boolean(selectedRun)||!proposals.length))?'open':''}><summary><span>Observations</span><span class="badge gray">${observations.length}</span></summary><div class="finding-observation-list">${observations.map(f=>findingReviewCard(f,admin,messages)).join('')}</div></details>`:''}${findings.length?'':empty('No findings in this view',agents.length?'Choose another run or status, or analyze a saved agent.':'Set up an agent from the catalog to begin.')}`;
 }
-document.addEventListener('change',async e=>{if(!e.target.dataset.dealStage)return;try{await act('deal.save',{id:e.target.dataset.dealStage,stage:e.target.value});await refresh()}catch(err){toast(err.message);render()}});
+document.addEventListener('change',async e=>{
+  if(e.target.id==='finding-run-history'){
+    S.reviewRun=e.target.value;
+    if(S.reviewRun)S.findingFilter='all';
+    render();
+    $('#finding-run-history')?.focus();
+    return;
+  }
+  if(e.target.id==='finding-status'){
+    S.findingFilter=e.target.value;
+    render();
+    $('#finding-status')?.focus();
+    return;
+  }
+  if(e.target.id==='review-agent'){
+    S.findingAgent={workspace:S.workspace,id:e.target.value};
+    const run=$('[data-do="review-run"]');
+    if(run)run.disabled=!e.target.value||S.analysisBusy||S.review||!aiCanSubmit(S.data.ai||{});
+    return;
+  }
+  if(!e.target.dataset.dealStage)return;try{await act('deal.save',{id:e.target.dataset.dealStage,stage:e.target.value});await refresh()}catch(err){toast(err.message);render()}});
 
 function aiConnectionCard(){
+ if(S.data.services?.internal_use)return S.data.ai?.enabled&&!S.data.ai?.provider_pause?'':'<p class="notice">AI usage is paused. Check your workspace AI status.</p>';
+
  if(S.data.services?.platform_ai_mode&&!S.data.ai?.platform_managed){const a=S.data.ai||{};return `<section class="card"><div class="cardhead"><h2>VYBE AI</h2>${badge(a.provider_pause?'Temporarily paused':a.enabled&&a.configured?'Configured':'Paused',!a.provider_pause&&a.enabled&&a.configured?'':'gray')}</div><div class="cardbody"><p>Your platform provides AI for subscribed customers.</p><details class="operator-settings"><summary>Manage platform AI</summary>${operatorAIConnectionCard()}</details></div></section>`;}
- if(S.data.ai?.platform_managed){const a=S.data.ai,limit=a.allowance||{};return `<section class="card"><div class="cardhead"><h2>VYBE AI</h2>${badge(a.provider_pause?'Temporarily paused':limit.active?'Included with your plan':'Subscription needed',a.enabled&&!a.provider_pause?'':'gray')}</div><div class="cardbody"><p>AI is provided by VYBE Connect. No API key needed.</p>${a.provider_pause?'<p class="hint">AI is temporarily paused. Contact support.</p>':''}${limit.active?`<p>${esc(limit.remaining)} of ${esc(limit.limit)} included requests remaining this billing cycle.</p>`:'<a class="button primary" href="#services">Choose your subscription</a>'}</div></section>`;}
+ if(S.data.ai?.platform_managed){const a=S.data.ai,limit=a.allowance||{};return `<section class="card"><div class="cardhead"><h2>VYBE AI</h2>${badge(a.provider_pause?'Temporarily paused':limit.active?'Included with your plan':'Subscription needed',a.enabled&&!a.provider_pause?'':'gray')}</div><div class="cardbody"><p>AI is provided by VYBE Connect. No API key needed.</p>${a.provider_pause?'<p class="hint">AI is temporarily paused. Contact support.</p>':''}${limit.active?`<p>${esc(limit.remaining)} of ${esc(limit.limit)} included requests remaining this billing cycle.</p>`:'<a class="button primary workspace-connection-action" href="#services">Choose your subscription</a>'}</div></section>`;}
  return operatorAIConnectionCard();
 }
 function operatorAIConnectionCard(){

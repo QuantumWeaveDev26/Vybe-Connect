@@ -24,7 +24,7 @@ from message_analytics import ReportError,report as traffic_report
 from ai import ai_status, ask_local
 from crm import crm_action
 from customer_assistant import CustomerError,action as customer_action,state as customer_state,enqueue as enqueue_customer_reply,process_once as customer_reply_worker
-from contact_segments import SegmentError,action as segment_action,audience as segment_audience
+from contact_segments import SegmentError,action as segment_action,audience as segment_audience,matching_audience
 from external_agents import ExternalError,action as external_action,enqueue as enqueue_event,public_agent,public_event,recent_events,process_once as dispatch_webhook,callback as external_callback
 from drip_sequences import DripError,action as sequence_action,eligible as sequence_eligible,after_submit as sequence_after_submit,run_state as sequence_run_state
 from knowledge_documents import KnowledgeError,upload as upload_document,document_action,retrieve as retrieve_documents,passage as document_passage
@@ -98,6 +98,10 @@ class Store:
         self.path.parent.mkdir(parents=True,exist_ok=True)
         self._presence={}
         with self.db() as db:
+            # Readers (including workspace snapshots) must not block worker and
+            # shared AI-budget commits. Configure once, before workers start.
+            mode=db.execute('PRAGMA journal_mode=WAL').fetchone()[0]
+            if mode.lower()!='wal':raise RuntimeError('Workspace storage requires write-ahead logging.')
             db.executescript('''
             CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT,email TEXT UNIQUE,salt TEXT,password TEXT);
             CREATE TABLE IF NOT EXISTS tenants(id TEXT PRIMARY KEY,name TEXT);
@@ -314,6 +318,18 @@ class Store:
         with self.db() as db:
             db.execute('BEGIN')
             data={('replies' if k=='reply' else k+'s'):self._list(db,tenant,k) for k in ['contact','template','campaign','rule','flow','sequence','reply','aichat','aiagent','knowledge','deal','task','airun','finding','aijob','segment']}
+            segments={segment['id']:segment['criteria'] for segment in data['segments']}
+            for campaign in data['campaigns']:
+                if campaign['status']!='draft':continue
+                segment_id=campaign.get('segment_id')
+                if segment_id and segment_id not in segments:
+                    campaign.update(audience=0,audience_excluded=None,audience_block='The saved audience was deleted. Create a draft with a current audience.')
+                    continue
+                matched=matching_audience(data['contacts'],campaign,segments.get(segment_id),require_optin=False)
+                campaign['audience']=sum(bool(contact['optin']) for contact in matched)
+                campaign['audience_excluded']=len(matched)-campaign['audience']
+                if not campaign['audience']:
+                    campaign['audience_block']='No opted-in contacts match this audience.'
             for flow in data['flows']:
                 if ctx['role']=='admin':flow['published_versions']=flow_publishing.history(db,tenant,flow['id'])
                 else:flow.pop('draft',None)
@@ -526,20 +542,27 @@ class Store:
                 text=required(d.get('csv'),'CSV',1000000)
                 reader=csv.DictReader(io.StringIO(text.lstrip('\ufeff')))
                 if not reader.fieldnames: raise Problem('CSV requires headers.')
+                headers={re.sub(r'[^a-z0-9]+','_',header.strip().lower()).strip('_'):header for header in reader.fieldnames}
+                defaults={
+                    'phone':next((headers[key] for key in ('phone','phone_number','mobile','mobile_number','whatsapp','whatsapp_number','number','tel') if key in headers),''),
+                    'name':next((headers[key] for key in ('name','full_name','contact_name','customer_name','first_name') if key in headers),''),
+                }
                 if d.get('preview'):
                     preview_rows=[]
                     for i,row in enumerate(reader):
                         if i>=5: break
                         preview_rows.append({k:str(v or '')[:100] for k,v in row.items() if k})
-                    result={'headers':reader.fieldnames,'preview':preview_rows}
+                    result={'headers':reader.fieldnames,'preview':preview_rows,'mapping':defaults}
                 else:
                     mapping=d.get('mapping') or {}
-                    phone_col=mapping.get('phone') or next((c for c in reader.fieldnames if c.strip().lower() in ['phone','mobile','whatsapp','number','tel','phone_number']),'phone')
-                    name_col=mapping.get('name') or next((c for c in reader.fieldnames if c.strip().lower() in ['name','full_name','first_name','customer_name']),'name')
+                    phone_col=mapping.get('phone') or defaults['phone']
+                    name_col=mapping.get('name') or defaults['name']
                     attr_mapping=mapping.get('attributes') or {}
                     batch_tags=d.get('tags') or []
                     if not {name_col,phone_col}.issubset(reader.fieldnames): raise Problem('CSV requires name and phone columns.')
-                    imported=0; errors=[]
+                    dry_run=d.get('dry_run') is True
+                    if dry_run:db.execute('SAVEPOINT contacts_preview')
+                    imported=created=updated=duplicates=consent_changes=0; errors=[]
                     all_contacts=self._list(db,t,'contact')
                     seen_phones=set()
                     for i,row in enumerate(reader,2):
@@ -549,6 +572,7 @@ class Store:
                             name_val=row.get(name_col)
                             clean_p=phone_number(phone_val)
                             if clean_p in seen_phones:
+                                duplicates+=1
                                 raise Problem('This phone number already exists.',409)
                             seen_phones.add(clean_p)
                             existing=next((c for c in all_contacts if c['phone']==clean_p),None)
@@ -557,7 +581,12 @@ class Store:
                             for bt in batch_tags:
                                 if bt and bt not in tags_list: tags_list.append(bt)
                             custom_attrs={k:str(row.get(v,''))[:500] for k,v in attr_mapping.items() if v in row and row.get(v)}
-                            contact_data=dict(name=name_val or (existing['name'] if existing else ''),phone=phone_val,tags=','.join(tags_list),optin=str(row.get('optin','')).lower() in ['true','1','yes'])
+                            contact_data=dict(name=name_val or (existing['name'] if existing else ''),phone=phone_val,tags=','.join(tags_list))
+                            consent=(row.get(headers.get('optin')) or '').strip().lower()
+                            if consent:
+                                if consent not in ('true','1','yes','false','0','no'):
+                                    raise Problem('Use yes or no for opt-in, or leave it blank.')
+                                contact_data['optin']=consent in ('true','1','yes')
                             if existing:
                                 contact_data['id']=existing['id']
                                 for et in existing.get('tags',[]):
@@ -571,8 +600,15 @@ class Store:
                             saved=self._contact(db,t,contact_data)
                             if not existing: all_contacts.append(saved)
                             imported+=1
+                            if existing:updated+=1
+                            else:created+=1
+                            if saved['optin']!=bool(existing and existing.get('optin')):consent_changes+=1
                         except Problem as e: errors.append('Row '+str(i)+': '+str(e))
-                    result={'imported':imported,'errors':errors}
+                    if dry_run:
+                        db.execute('ROLLBACK TO contacts_preview')
+                        db.execute('RELEASE contacts_preview')
+                    result={'imported':0 if dry_run else imported,'created':created,'updated':updated,'duplicates':duplicates,'consent_changes':consent_changes,'errors':errors}
+                    if dry_run:return result
             elif action=='chat.update':
                 c=self._get(db,t,'contact',d.get('id'))
                 status=d.get('status',c['status']); assignee=d.get('assignee',c['assignee'])
@@ -646,7 +682,9 @@ class Store:
             elif action=='campaign.launch':
                 c=self._get(db,t,'campaign',d.get('id'));template=self._get(db,t,'template',c['template_id'])
                 if template.get('status')!='APPROVED' or not template.get('meta_id'):raise Problem('A synced Meta-approved template is required.')
-                if not meta_status(t)['live']:raise Problem('Live sending must be enabled on the server before launching a campaign.')
+                channel=meta_status(t)
+                if not channel['configured']:raise Problem('Connect WhatsApp before launching a campaign.')
+                if not channel['live']:raise Problem('Live sending must be enabled on the server before launching a campaign.')
                 if c['status']!='draft':raise Problem('This campaign has already been launched.',409)
                 audience=segment_audience(self,db,t,c)
                 if not audience:raise Problem('No opted-in contacts match this audience.')
@@ -759,7 +797,7 @@ class Store:
         except Problem:pass
         with self.db() as db:context['knowledge_passages']=retrieve_documents(self,db,ctx['tenant_id'],question)
         context['knowledge_sources']=[{k:source[k] for k in ['id','title','body']} for source in state['knowledges'] if source.get('enabled')]
-        context['connection_configuration']={'meta_configured':state['meta']['configured'],'live_gate_enabled':state['meta']['live'],'provider_health':'not verified','wallet_balance':None}
+        context['connection_configuration']={'meta_configured':state['meta']['configured'],'live_gate_enabled':state['meta']['live_gate_enabled'],'sending_ready':bool(state['meta']['configured'] and state['meta']['live']),'provider_health':'not verified','wallet_balance':None}
         context['automation_configuration']=[{'name':r['name'],'keyword':r['keyword'],'enabled':r['enabled'],'executions':r.get('executions',0)} for r in (state['rules']+state['flows'])[:30]]
         context['tag_counts']={tag:sum(tag in c['tags'] for c in state['contacts']) for tag in sorted({tag for c in state['contacts'] for tag in c['tags']})[:100]}
         context['queue_counts']={status:sum(q['status']==status for q in state['queue']) for status in ['queued','sending','accepted','sent','delivered','read','failed','unknown','cancelled']}

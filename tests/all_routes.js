@@ -33,7 +33,10 @@ for(const route of routes){
 }
 context.invalid={APP_SECRET:'Copy the App Secret from Meta App settings > Basic.'};
 const settings=vm.runInContext('S.data.meta.invalid=invalid;S.route="settings";page()',context);
-assert.match(settings,/Invalid format/);assert.match(settings,/Correct these settings/);
+assert.doesNotMatch(settings,/Advanced operator settings|Invalid format|Correct these settings/);
+const operator=vm.runInContext('S.data.services.platform_admin=true;page()',context);
+assert.match(operator,/Invalid format/);assert.match(operator,/Correct these settings/);
+vm.runInContext('S.data.services.platform_admin=false',context);
 console.log(`All ${routes.length} main routes rendered from an isolated Store state; invalid configuration is actionable.`);
 // Provider results remain visible and never treat stale checks as current proof.
 vm.runInContext('S.servicesTab="connections";S.data.provider_checks=[{provider:"openai",outcome:"passed",current:true},{provider:"meta",outcome:"failed_or_unconfirmed",current:true}]',context);
@@ -48,11 +51,16 @@ let inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/C
 vm.runInContext('S.data.meta.configured=false',context);inboxEmpty=vm.runInContext('inboxPage()',context);assert.match(inboxEmpty,/Connect your WhatsApp account/);
 console.log('Inbox setup guidance reflects the actual connection configuration.');
 
-vm.runInContext('S.data.sandbox=false;S.data.meta.live=false;S.data.templates=[{id:"qa-draft",status:"local_draft"}];S.data.campaigns=[{id:"qa-campaign",name:"QA draft",template_id:"qa-draft",audience:0,status:"draft"}]',context);
-assert.match(vm.runInContext('campaignTable()',context),/disabled title="Connect WhatsApp and enable sending first/);
+vm.runInContext('S.data.sandbox=false;S.data.meta.live=false;S.data.templates=[{id:"qa-draft",status:"local_draft"}];S.data.campaigns=[{id:"qa-campaign",name:"QA draft",template_id:"qa-draft",audience:0,audience_excluded:2,status:"draft"}]',context);
+let campaign=vm.runInContext('campaignTable()',context);
+assert.match(campaign,/Preview draft/);assert.match(campaign,/Excluded for lack of consent<\/dt><dd>2/);
+assert.match(campaign,/disabled aria-describedby="campaign-block-qa-campaign"/);
+assert.match(campaign,/<li>Connect WhatsApp and enable sending first. <a href="#settings"/);
 assert.match(vm.runInContext('templatePageBase()',context),/data-do="submit-template"[^>]+disabled/);
 vm.runInContext('S.data.meta.live=true;S.data.meta.configured=true',context);
-assert.match(vm.runInContext('campaignTable()',context),/disabled title="Wait for Meta template approval/);
+assert.match(vm.runInContext('campaignTable()',context),/<li>Wait for Meta template approval. <a href="#templates"/);
 vm.runInContext('S.data.templates[0].status="APPROVED";S.data.templates[0].meta_id="provider-real-id"',context);
 assert.doesNotMatch(vm.runInContext('campaignTable()',context),/data-do="run-campaign"[^>]+disabled/);
+vm.runInContext('S.data.campaigns[0].audience_block="No opted-in contacts match this audience."',context);
+assert.match(vm.runInContext('campaignTable()',context),/<li>No opted-in contacts match this audience. <a href="#contacts"/);
 console.log('Campaign launch and template submission reflect live connection and provider approval prerequisites.');

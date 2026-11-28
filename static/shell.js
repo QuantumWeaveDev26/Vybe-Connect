@@ -17,7 +17,7 @@ const primaryDestinations=[
 function primaryNavigation(){const section=shellSection();return primaryDestinations.map(([route,label,glyph,description,action])=>{
  const selected=(route==='rules'?'automations':route)===section;
  const connector=route==='developers'?' data-connectors-trigger aria-expanded="false" aria-controls="connector-popover"':'';
- const attributes=`${connector} class="navlink${selected?' active':''}" ${selected?'aria-current="page" ':''}aria-label="${esc(label)}: ${esc(description)}" data-nav-label="${esc(label)}"`;
+ const attributes=`${connector} class="navlink${selected?' active':''}" ${selected?'aria-current="page" ':''}aria-label="${esc(label)}: ${esc(description)}" data-nav-label="${esc(label)}" title="${esc(label)}"`;
  const shortLabel={"Commerce & Integrations":"Commerce","Astra / Custom AI":"Custom AI","Sales Pipeline":"CRM & pipeline","Parity Status":"Release status"}[label]||label;
  const content=`<span class="rail-glyph" aria-hidden="true">${icon(glyph)}</span><span class="nav-text">${esc(shortLabel)}</span>`;
  return action?`<button type="button" ${attributes} data-do="${action}">${content}</button>`:`<a href="#${route}" ${attributes}>${content}</a>`;
@@ -31,7 +31,7 @@ if(section==='settings'){title='Settings';items=[['settings','WhatsApp Cloud API
 if(section==='inbox'){title='Team Inbox';items=[['inbox','Conversations'],['support-tools','Support tools']]}
 if(section==='pipeline'){title='Sales CRM';items=[['pipeline','Pipeline'],['branches','Branches & routing']]}
 if(section==='analytics'){title='Analytics';items=[['analytics','Message reports'],['attribution','Lead attribution']]}
-if(!items.length)return '';return `<aside class="context-nav" data-section="${section}"><h2>${title}</h2>${section==='campaigns'?btn('+ Create New Campaign','new-campaign','','primary'):''}${section==='automations'?'<div class="navlabel">TRIGGERS & ACTIONS LIBRARY</div>':''}${items.map(([route,label])=>`<a href="#${route}" ${S.route===route?'aria-current="page"':''} class="context-link ${S.route===route?'selected':''}">${icon(route)}<span>${label}</span></a>`).join('')}</aside>`}
+if(!items.length)return '';return `<aside class="context-nav ${items.length>3?'has-mobile-picker':''}" data-section="${section}"><h2>${title}</h2>${items.length>3?`<label class="mobile-section-picker"><span>${esc(title)}</span><select aria-label="${esc(title)} section" data-section-route>${items.map(([route,label])=>`<option value="${route}" ${S.route===route?'selected':''}>${esc(label)}</option>`).join('')}</select></label>`:''}${section==='campaigns'?btn('+ Create New Campaign','new-campaign','','primary'):''}${section==='automations'?'<div class="navlabel">TRIGGERS & ACTIONS LIBRARY</div>':''}${items.map(([route,label])=>`<a href="#${route}" ${S.route===route?'aria-current="page"':''} class="context-link ${S.route===route?'selected':''}">${icon(route)}<span>${label}</span></a>`).join('')}</aside>`}
 function workspaceSearchEntries(query){
  const q=String(query||'').trim().toLocaleLowerCase();if(!q)return [];
  const routes=Object.entries(names).filter(([route,label])=>(route+' '+label).toLocaleLowerCase().includes(q)).map(([route,label])=>({route,label,kind:'Page'}));
@@ -46,7 +46,7 @@ function renderWorkspaceSearch(query){
 }
 function headerAccountMarkup(){
  const user=S.data.context.user,unread=(S.data.mention_notifications||[]).filter(n=>!n.read).length;
- return `<div class="header-account"><button type="button" class="header-bell" data-do="team-mentions" aria-label="${unread} unread notification${unread===1?'':'s'}" title="Mention notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unread?'<i class="notification-dot"></i>':''}</button><div class="header-account-divider"></div><button type="button" id="header-profile-toggle" class="header-profile-toggle" aria-label="Open account menu" aria-expanded="false" aria-controls="header-profile-menu"><span class="header-user-avatar" aria-hidden="true">${esc(initials(user.name))}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button><div id="header-profile-menu" class="header-profile-menu" hidden><div class="header-profile-info"><strong>${esc(user.name)}</strong><small>${esc(user.email||'')}</small></div><button type="button" data-do="account-profile">Your profile</button><button type="button" data-do="ai-open">Ask VYBE Connect AI</button><button type="button" data-do="account-security">Security</button><button type="button" data-do="refresh">Refresh workspace</button><button type="button" data-do="logout">Sign out</button></div></div>`;
+ return `<div class="header-account"><button type="button" class="header-bell" data-do="team-mentions" aria-label="${unread} unread notification${unread===1?'':'s'}" title="Mention notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unread?'<i class="notification-dot"></i>':''}</button><div class="header-account-divider"></div><button type="button" id="header-profile-toggle" class="header-profile-toggle" aria-label="Open account menu" aria-expanded="false" aria-controls="header-profile-menu"><span class="header-user-avatar" aria-hidden="true">${esc(initials(user.name))}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button><div id="header-profile-menu" class="header-profile-menu" hidden><div class="header-profile-info"><strong>${esc(user.name)}</strong><small>${esc(user.email||'')}</small></div><button type="button" data-do="account-profile">${icon('person')}<span>Your profile</span></button><button type="button" data-pwa-install>${icon('install')}<span>Install VYBE Connect</span></button><button type="button" data-do="ai-open">${icon('sparkles')}<span>Ask VYBE Connect AI</span></button><button type="button" data-do="account-security">${icon('security')}<span>Security</span></button><button type="button" data-do="refresh">${icon('restore')}<span>Refresh workspace</span></button><button type="button" data-do="logout">${icon('logout')}<span>Sign out</span></button></div></div>`;
 }
 function closeHeaderProfile(restoreFocus=false){
  const menu=document.querySelector('#header-profile-menu'),toggle=document.querySelector('#header-profile-toggle');
@@ -54,7 +54,7 @@ function closeHeaderProfile(restoreFocus=false){
 }
 function installConceptHeader(){
  const bar=document.querySelector('.topbar');if(!bar||bar.querySelector('.header-brand'))return;
- bar.insertAdjacentHTML('afterbegin','<a class="header-brand" href="#campaigns" aria-label="VYBE Connect home"><span class="header-brand-v" aria-hidden="true">V</span><span>VYBE Connect</span></a><button type="button" class="header-mobile-menu ghost" data-do="nav-toggle" aria-label="Toggle navigation">☰</button>');
+ bar.insertAdjacentHTML('afterbegin','<a class="header-brand" href="#inbox" aria-label="VYBE Connect home"><span class="header-brand-v" aria-hidden="true">V</span><span>VYBE Connect</span></a><button type="button" class="header-mobile-menu ghost" data-do="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="workspace-navigation">'+icon('menu')+'</button>');
  const picker=bar.querySelector('.buttons');picker?.classList.add('header-workspace');
  picker?.insertAdjacentHTML('afterbegin','<span class="workspace-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 21V3h12v18M16 8h5v13H3M8 7h1m3 0h1M8 11h1m3 0h1M8 15h1m3 0h1M9 21v-3h3v3"/></svg></span>');
  picker?.insertAdjacentHTML('afterend',`<div class="workspace-search"><label for="workspace-search" class="sr-only">Search workspace</label>${icon('search')}<input id="workspace-search" type="search" autocomplete="off" placeholder="Search conversations, contacts, agents…" aria-controls="workspace-search-results"><div id="workspace-search-results" class="workspace-search-results" hidden></div></div><a class="header-whatsapp" href="#settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-12 7.8L3 21l1.7-5a8.5 8.5 0 1 1 15.3-4.5Z"/><path d="m8 7 2 3-1 1q1.5 3 4 3l1-1 3 2q-1 3-4 2-6-2-7-7 0-2 2-3Z" stroke-width="1.2"/></svg><span>${S.data.meta?.configured?'WhatsApp settings':'Connect WhatsApp'}</span></a>`);
@@ -62,28 +62,53 @@ function installConceptHeader(){
  const search=bar.querySelector('#workspace-search');if(search)search.oninput=()=>renderWorkspaceSearch(search.value);
  const toggle=bar.querySelector('#header-profile-toggle');if(toggle)toggle.onclick=event=>{event.stopPropagation();const menu=bar.querySelector('#header-profile-menu');menu.hidden=!menu.hidden;toggle.setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button')?.focus()};
 }
-function upgradeShell(){if(!S.data)return;installConceptHeader();closeConnectorMenu();applyNavigationPreference();const sidebar=$('.sidebar nav');if(!sidebar)return;const section=shellSection();sidebar.setAttribute("aria-label","Main navigation");sidebar.innerHTML=primaryNavigation();
-const main=$('.main'),content=$('.content');main.querySelector('.context-nav')?.remove();const menu=contextMenu();main.classList.toggle('has-context',!!menu);if(menu)content.insertAdjacentHTML('beforebegin',menu); }
+function upgradeShell(){if(!S.data)return;installConceptHeader();closeConnectorMenu();const sidebarEl=$('.sidebar');if(sidebarEl&&!sidebarEl.querySelector('.rail-collapse-pill'))sidebarEl.insertAdjacentHTML('beforeend','<button type="button" class="rail-collapse-pill" data-do="nav-toggle" aria-label="Expand navigation" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></button>');const bottom=$('.sidebar-bottom');if(bottom&&!bottom.querySelector('.rail-user-trigger')&&S.data.context?.user){const u=S.data.context.user;bottom.insertAdjacentHTML('beforeend',`<button type="button" class="rail-user-trigger" data-do="account-profile" title="${esc(u.name)} · Your profile" aria-label="Open your profile"><span class="avatar tone-violet">${esc(initials(u.name))}</span><span class="nav-text">${esc(u.name)}</span></button>`)}applyNavigationPreference();const sidebar=$('.sidebar nav');if(!sidebar)return;sidebar.setAttribute("aria-label","Main navigation");sidebar.innerHTML=primaryNavigation();
+const main=$('.main'),content=$('.content');main.querySelector('.context-nav')?.remove();const menu=contextMenu();main.classList.toggle('has-context',!!menu);if(menu)content.insertAdjacentHTML('beforebegin',menu);prepareMobileTables(); }
 
 function navigationToggleMarkup(expanded){
  return btn('<b class="nav-toggle-mark" aria-hidden="true">&#9776;</b><span>Navigation</span>','nav-toggle',`aria-label="${expanded?'Collapse':'Expand'} navigation" title="${expanded?'Collapse':'Expand'} navigation" aria-expanded="${expanded}"`,'navlink ghost');
 }
 function applyNavigationPreference(){
  const preference=workspaceStorage.getItem('vybe-nav-expanded');const narrow=typeof innerWidth!=='undefined'&&innerWidth<=1050;const expanded=narrow?mobileNavigationOpen:preference==='true';
- document.querySelector('.shell')?.classList?.toggle('nav-expanded',expanded);
+ if(!narrow)mobileNavigationOpen=false;
+ const shell=document.querySelector('.shell');shell?.classList?.toggle('nav-expanded',expanded);
+ const drawer=narrow&&expanded,sidebar=document.querySelector('.sidebar');
+ if(sidebar&&!sidebar.querySelector('.mobile-drawer-heading'))sidebar.insertAdjacentHTML?.('afterbegin','<div class="mobile-drawer-heading"><strong>Navigation</strong><button type="button" data-do="nav-toggle">Close menu</button></div>');
+ sidebar?.setAttribute('id','workspace-navigation');
+ if(drawer){sidebar?.setAttribute('role','dialog');sidebar?.setAttribute('aria-modal','true');sidebar?.setAttribute('aria-label','Workspace navigation')}else{sidebar?.removeAttribute('role');sidebar?.removeAttribute('aria-modal');sidebar?.removeAttribute('aria-label')}
+ for(const selector of ['.content','.context-nav','#help-widget']){const element=document.querySelector(selector);if(element)element.inert=drawer}
+ document.body?.classList?.toggle('navigation-drawer-open',drawer);
+ let backdrop=document.querySelector('.nav-backdrop');
+ if(drawer&&!backdrop){shell?.insertAdjacentHTML?.('beforeend','<button type="button" class="nav-backdrop" data-do="nav-toggle" aria-label="Close navigation" tabindex="-1"></button>');backdrop=document.querySelector('.nav-backdrop')}
+ if(backdrop)backdrop.hidden=!drawer;
  const bottom=document.querySelector('.sidebar-bottom');
  if(bottom&&!bottom.querySelector('[data-do="nav-toggle"]'))bottom.insertAdjacentHTML('afterbegin',navigationToggleMarkup(expanded));
- const button=document.querySelector('[data-do="nav-toggle"]');
- if(button){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse':'Expand')+' navigation');button.setAttribute('title',(expanded?'Collapse':'Expand')+' navigation')}
+ for(const button of document.querySelectorAll('[data-do="nav-toggle"]')){button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-controls','workspace-navigation');if(!button.classList?.contains('nav-backdrop')){button.setAttribute('aria-label',(expanded?'Close':'Open')+' navigation');button.setAttribute('title',(expanded?'Close':'Open')+' navigation')}}
 }
-function toggleNavigation(){if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else workspaceStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference()}
+function closeMobileNavigation(restoreFocus=false){mobileNavigationOpen=false;applyNavigationPreference();if(restoreFocus)document.querySelector('.header-mobile-menu')?.focus()}
+function toggleNavigation(){const wasOpen=mobileNavigationOpen;if(typeof innerWidth!=='undefined'&&innerWidth<=1050)mobileNavigationOpen=!mobileNavigationOpen;else workspaceStorage.setItem('vybe-nav-expanded',String(!document.querySelector('.shell')?.classList.contains('nav-expanded')));applyNavigationPreference();if(mobileNavigationOpen)document.querySelector('.sidebar')?.querySelector('a.navlink,button.navlink')?.focus();else if(wasOpen)document.querySelector('.header-mobile-menu')?.focus()}
 
 if(typeof document!=='undefined'){
 if(typeof window!=='undefined')window.addEventListener('resize',applyNavigationPreference);
-document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar .navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]'))){mobileNavigationOpen=false;applyNavigationPreference()}});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&mobileNavigationOpen){mobileNavigationOpen=false;applyNavigationPreference()}});
+document.addEventListener('click',event=>{if(!mobileNavigationOpen)return;if(event.target.closest?.('.sidebar a.navlink')||(!event.target.closest?.('.sidebar')&&!event.target.closest?.('[data-do="nav-toggle"]')))closeMobileNavigation()});
+document.addEventListener('keydown',event=>{if(!mobileNavigationOpen)return;if(event.key==='Escape'){closeMobileNavigation(true);return}if(event.key==='Tab'){const items=[...document.querySelector('.sidebar').querySelectorAll('a[href],button:not([disabled])')].filter(el=>!el.hidden&&el.getClientRects().length),first=items[0],last=items.at(-1);if(!first)return;if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}});
 
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeHeaderProfile();const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){const menu=document.querySelector('#header-profile-menu');if(menu&&!menu.hidden)closeHeaderProfile(true);const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
 document.addEventListener('click',event=>{if(!event.target.closest?.('#header-profile-toggle'))closeHeaderProfile();if(!event.target.closest?.('.workspace-search')){const box=document.querySelector('#workspace-search-results');if(box)box.hidden=true}});
 
 }
+
+function prepareMobileTables(){
+ const headings=new Set(['contact','customer','team member','teammate','name','rule','rule name','template','team','agent','product','order']);
+ for(const table of document.querySelectorAll('.content .tablewrap table')){
+  const labels=[...(table.tHead?.rows[0]?.cells||[])].map(cell=>cell.textContent.trim());
+  const rows=[...table.tBodies].flatMap(body=>[...body.rows]);
+  if(rows.length===0||rows.length===1&&rows[0].cells.length===1&&rows[0].cells[0].colSpan>1){table.classList.add('mobile-empty-table');continue}
+  if(!headings.has(labels[0]?.toLowerCase()))continue;
+  table.classList.add('mobile-card-table');
+  for(const body of table.tBodies)for(const row of body.rows)for(const [index,cell] of [...row.cells].entries())if(cell.colSpan===1)cell.setAttribute('data-label',labels[index]||'');
+ }
+}
+if(typeof document!=='undefined')document.addEventListener('change',event=>{
+ if(event.target.matches?.('[data-section-route]'))location.hash=event.target.value;
+});

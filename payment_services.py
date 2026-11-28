@@ -38,6 +38,8 @@ def action(store,ctx,operation,data):
             lambda job:razorpay(tenant,'payments','POST','payment_links',dict(payload,reference_id=job)),
             lambda result,job:payment_project(result,job,order))
     if operation=='billing.subscribe':
+        from internal_access import is_internal
+        if is_internal(tenant):raise ServiceError('Internal team workspaces do not require a subscription.',409)
         if not status(tenant,'billing')['ready']:raise ServiceError('Configure and enable platform subscription billing first.')
         from platform_ai import grant
         with store.db() as db:
@@ -166,6 +168,12 @@ def webhook(store,tenant,scope,raw,headers):
         return {'received':True,'duplicate':False}
     resource=(body.get('payload',{}).get('payment_link' if scope=='payments' else 'subscription') or {}).get('entity')
     if not isinstance(resource,dict):return {'received':True,'ignored':True}
+    if scope=='billing' and tenant is None:
+        notes=resource.get('notes')
+        tenant=notes.get('workspace_id') if isinstance(notes,dict) else None
+        if not isinstance(tenant,str) or not re.fullmatch(r'[a-f0-9]{16}',tenant):
+            # The platform merchant account may also host unrelated subscriptions.
+            return {'received':True,'ignored':True}
     with store.db() as db:
         jobs=store._list(db,tenant,'servicejob')
         job=next((j for j in jobs if j['kind']==('payments.link' if scope=='payments' else 'billing.subscription') and

@@ -90,7 +90,13 @@ class BusinessServiceTests(unittest.TestCase):
             resource={'id':'sub_fixture','plan_id':'plan_fixture','status':'active','current_end':int(time.time())+3600,'notes':{'workspace_id':self.t,'operation_id':job['id']}}
             raw=json.dumps({'account_id':'acc_fixture','created_at':int(time.time()),'payload':{'subscription':{'entity':resource}}}).encode()
             headers={'X-Razorpay-Event-Id':'evt_sub','X-Razorpay-Signature':hmac.new(b'webhook-test-secret',raw,hashlib.sha256).hexdigest()}
-            payment_services.webhook(self.s,self.t,'billing',raw,headers)
+            with self.assertRaises(payment_services.ServiceError):
+                payment_services.webhook(self.s,'0'*16,'billing',raw,headers)
+            with self.assertRaises(payment_services.ServiceError):
+                payment_services.webhook(self.s,None,'billing',raw,dict(headers,**{'X-Razorpay-Signature':'invalid'}))
+            self.assertFalse(self.s.state(self.ctx)['services']['subscription_active'])
+            self.assertFalse(payment_services.webhook(self.s,None,'billing',raw,headers)['duplicate'])
+            self.assertTrue(payment_services.webhook(self.s,None,'billing',raw,headers)['duplicate'])
             self.assertTrue(self.s.state(self.ctx)['services']['subscription_active'])
         plan['starter']['amount_minor']=123
         with patch.dict(os.environ,{'TW_BILLING_PLANS':json.dumps(plan)}),patch('payment_services.razorpay',side_effect=remote):

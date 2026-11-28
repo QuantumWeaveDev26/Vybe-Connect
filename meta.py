@@ -31,7 +31,9 @@ def status(tenant):
         'VERSION': (r'v\d+\.\d+', 'Use only the Graph API version, for example v25.0, without a URL.')
     }
     invalid = {k:message for k,(pattern,message) in formats.items() if s[k] and not re.fullmatch(pattern,s[k])}
-    return {'live': s['LIVE'].lower() == 'true', 'configured': all(s[k] for k in required) and not invalid, 'present': {k:bool(s[k]) for k in required}, 'invalid':invalid, 'prefix':'TW_META_'+tenant.upper()+'_'}
+    configured = all(s[k] for k in required) and not invalid
+    live_gate_enabled = s['LIVE'].lower() == 'true'
+    return {'live': configured and live_gate_enabled, 'live_gate_enabled': live_gate_enabled, 'configured': configured, 'present': {k:bool(s[k]) for k in required}, 'invalid':invalid, 'prefix':'TW_META_'+tenant.upper()+'_'}
 
 
 def send_text(tenant, phone, body):
@@ -88,7 +90,7 @@ def rich_text_fields(template):
     for button in buttons:
         if not isinstance(button,dict):raise ValueError('Each action button must be an object.')
         kind=button.get('type');text=button.get('text')
-        if kind not in ['QUICK_REPLY','URL','PHONE_NUMBER'] or not isinstance(text,str) or not text.strip() or len(text)>25:raise ValueError('Use a supported button type and 1–25 characters of button text.')
+        if kind not in ['QUICK_REPLY','URL','PHONE_NUMBER'] or not isinstance(text,str) or not text.strip() or len(text)>25:raise ValueError('Use a supported button type and 1â€“25 characters of button text.')
         entry={'type':kind,'text':text.strip()}
         if kind=='URL':
             value=button.get('url','');url=urlsplit(value)

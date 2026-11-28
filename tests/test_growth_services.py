@@ -25,7 +25,7 @@ class GrowthTests(unittest.TestCase):
     def recipe(self,mode='contact'):
         return self.act('recipe.save',{'name':'Incoming event','mode':mode,'mapping':{'phone':'customer.phone','name':'customer.name','source_id':'campaign'},'reply':'Hello {{name}}','enabled':True})
     def event(self,r,event='event-1',payload=None,secret=None):
-        raw=json.dumps(payload or {'customer':{'phone':'919000000002','name':'New customer'},'campaign':'campaign-42','optin':True,'last_real_inbound':int(time.time())}).encode()
+        raw=json.dumps(payload or {'customer':{'phone':'919000000002','name':'New customer'},'campaign':'campaign-42','optin':True,'last_real_inbound':1790812800}).encode()
         return growth.receive(self.store,r['id'],'Bearer '+(secret or r['secret']),event,raw)
 
     def test_recipe_authorization_deduplication_rotation_and_no_consent(self):

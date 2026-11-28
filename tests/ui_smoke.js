@@ -5,7 +5,7 @@ const node={addEventListener(){},remove(){},innerHTML:'',open:false};
 const context=vm.createContext({console,Intl,Date,JSON,Number,String,Math,Map,Set,Array,Object,Promise,URL,URLSearchParams,
   document:{querySelector(){return node},querySelectorAll(){return []},addEventListener(){}},window:{addEventListener(){}},location:{hash:''},
   localStorage:{getItem(){return ''},removeItem(){}},setInterval(){},clearInterval(){},setTimeout(){},clearTimeout(){},fetch(){return new Promise(()=>{})}});
-for(const name of ['received-media.js','analytics-report.js','team-operations.js','team-invitations.js','rule-actions.js','graph.js','knowledge-documents.js','assistant.js','visuals.js','shell.js','template-editor.js','business.js','services.js','owned-commerce.js','integrations.js','drip-sequences.js','external-agents.js','contact-segments.js','customer-assistant.js','account-recovery.js','account.js','help-widget.js','agent-directory.js','password-visibility.js','auth-entry.js','api-tokens.js','connectors.js','inbox-filters.js','growth.js','extensions.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
+for(const name of ['manual-whatsapp.js','received-media.js','analytics-report.js','team-operations.js','team-invitations.js','rule-actions.js','graph.js','knowledge-documents.js','assistant.js','visuals.js','shell.js','template-editor.js','business.js','services.js','owned-commerce.js','integrations.js','drip-sequences.js','external-agents.js','contact-segments.js','customer-assistant.js','account-recovery.js','account.js','help-widget.js','agent-directory.js','password-visibility.js','auth-entry.js','api-tokens.js','connectors.js','inbox-filters.js','growth.js','extensions.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),context,{filename:name});
 context.actualRefresh=vm.runInContext('refresh',context);
 context.fixture={context:{tenant_id:'business-one',user:{id:'owner',name:'Owner'},workspace:{name:'Acme'},role:'admin',workspaces:[]},meta:{live:false},ai:{enabled:false,configured:false},sandbox:false,
   contacts:[{id:'contact',name:'<img src=x onerror=alert(1)>',phone:'919000000001',tags:[],attributes:{},source:'manual',status:'pending',assignee:'owner',automation_hold:true}],
@@ -16,9 +16,18 @@ assert.match(html,/Real opportunity/);assert.match(html,/Qualified/);assert.matc
 html=vm.runInContext('S.route="findings";page()',context);
 assert.match(html,/No findings in this view/);assert.match(html,/AI not connected/);assert.match(html,/data-do="review-run" disabled/);
 context.fixture.findings=[{id:'finding',run_id:'run',agent_name:'Triage',title:'<script>bad()</script>',details:'Review this inquiry',status:'pending',contact_id:'contact',evidence_ids:[],action:{type:'tag',tag:'Lead'},created:1}];
-html=vm.runInContext('page()',context);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>bad/);assert.match(html,/data-decision="approve"/);
+html=vm.runInContext('page()',context);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>bad/);assert.match(html,/data-decision="approve"/);assert.match(html,/Add tag: Lead/);
+context.fixture.airuns=[{id:'run',agent_name:'Triage',status:'completed',created:1}];
+context.fixture.findings.push({id:'observation',run_id:'run',agent_name:'Triage',title:'Empty sample',details:'No recent conversations',status:'pending',evidence_ids:[],created:1});
+html=vm.runInContext('page()',context);
+assert.match(html,/<select id="finding-run-history"/);assert.match(html,/<select id="finding-status"/);
+assert.match(html,/class="finding-group finding-observations"/);assert.match(html,/Acknowledge/);
+assert.doesNotMatch(html,/Supporting messages \(0\)|review-select-run/);
 vm.runInContext('S.data.context.role="agent"',context);html=vm.runInContext('page()',context);assert.doesNotMatch(html,/data-decision="approve"/);
 html=vm.runInContext('S.route="inbox";page()',context);assert.match(html,/Human handling/);assert.match(html,/handoff-resume/);assert.match(html,/crm-contact-task/);
+html=vm.runInContext('S.mode="live";S.data.meta={live:true,configured:false};inboxPage()',context);assert.match(html,/Open in WhatsApp/);assert.doesNotMatch(html,/Send live message/);assert.equal(vm.runInContext('S.mode',context),'note');
+html=vm.runInContext('S.mobileChatOpen=true;inboxPage()',context);assert.match(html,/class="inbox mobile-chat-open"/);assert.match(html,/data-do="mobile-chat-back"/);assert.match(html,/Back to conversations/);
+html=vm.runInContext('S.mobileChatOpen=false;inboxPage()',context);assert.doesNotMatch(html,/class="inbox mobile-chat-open"/);assert.match(html,/data-do="select-chat"/);
 vm.runInContext('S.data.context.role="admin";ensureAIScope();A.tab="agents"',context);
 html=vm.runInContext('aiAgentsPage()',context);assert.match(html,/Set up Inbox Triage/);assert.match(html,/Show all 12 agents/);assert.match(html,/Your AI team/);
 vm.runInContext('const originalRenderAI=renderAI;renderAI=()=>{};A.scope=null;showAI("agents");renderAI=originalRenderAI',context);
@@ -116,7 +125,19 @@ html=vm.runInContext('dripSequencePage()',context);assert.match(html,/Run histor
 vm.runInContext('S.data.sequence_runs=[{id:"run",name:"Stopped journey",status:"active",finished:true,audience:1,created:1,counts:{skipped:1,cancelled:1}}]',context);
 html=vm.runInContext('dripSequencePage()',context);assert.match(html,/>Stopped</);assert.doesNotMatch(html,/>Submitted</);
 
-html=vm.runInContext('externalAgentPage()',context);assert.match(html,/Astra \/ Custom AI/);assert.match(html,/New agent/);assert.match(html,/custom agent/);html=vm.runInContext('developerPage()',context);assert.match(html,/unsent reply drafts/);
+html=vm.runInContext('externalAgentPage()',context);assert.match(html,/External agents/);assert.match(html,/New agent/);assert.match(html,/href="#ai-agents"/);html=vm.runInContext('developerPage()',context);assert.match(html,/unsent reply drafts/);
+
+html=vm.runInContext('S.data.aiagents=[{id:"saved",name:"Daily Digest"}];S.data.ai={platform_managed:true,allowance:{active:false}};findingsPage()',context);
+assert.match(html,/Switch to your team workspace/);
+assert.match(html,/data-do="review-run" disabled/);
+html=vm.runInContext('S.data.ai={enabled:true,configured:true,platform_managed:true,allowance:{active:true,remaining:10}};S.review=false;findingsPage()',context);
+assert.match(html,/data-do="review-run" disabled/);
+html=vm.runInContext('S.findingAgent={workspace:S.workspace,id:"saved"};findingsPage()',context);
+assert.match(html,/value="saved" selected/);
+assert.doesNotMatch(html,/data-do="review-run" disabled/);
+html=vm.runInContext('S.data.ai.provider_pause={reason:"rate_limited"};findingsPage()',context);
+assert.match(html,/data-do="review-run" disabled/);
+vm.runInContext('delete S.data.ai.provider_pause;delete S.findingAgent',context);
 
 vm.runInContext('S.data.segments=[{id:"segment",name:"Buyer audience",criteria:{mode:"all",rules:[{field:"tags",operator:"contains",value:"Buyer"}]},updated:1}]',context);html=vm.runInContext('segmentsPage()',context);assert.match(html,/Contact segments/);assert.match(html,/Preview audience/);
 
@@ -126,7 +147,7 @@ context.noResponseFixture={event:"customer_no_response",wait_seconds:60};html=vm
 html=vm.runInContext("noResponseHistoryPanel()",context);assert.match(html,/No-response evaluations/);
 
 context.poolFixture={handoff_strategy:'least_busy',handoff_pool:['removed-member']};
-html=vm.runInContext('customerRoutingFields(poolFixture)',context);assert.match(html,/Least-busy member/);assert.match(html,/no longer have workspace access/);assert.match(html,/not browser presence/);
+html=vm.runInContext('customerRoutingFields(poolFixture)',context);assert.match(html,/Least-busy member/);assert.match(html,/no longer have workspace access/);assert.match(html,/New handoffs stay unassigned/);
 html=vm.runInContext('customerRoutingSummary(poolFixture)',context);assert.match(html,/1 configured members/);
 context.routedHandoff={handoff:{active:true,reason:'Needs help',created:1,routing:{strategy:'least_busy',assigned_load:'<script>bad</script>'}}};html=vm.runInContext('customerHandoffInfo(routedHandoff)',context);assert.match(html,/Least-busy team routing/);assert.doesNotMatch(html,/<script>/);
 
@@ -231,3 +252,35 @@ assert.equal(vm.runInContext('aiCanSubmit(S.data.ai)',context),false);
 assert.equal(vm.runInContext('aiRuntimeLabel()',context),'AI temporarily paused');
 assert.doesNotMatch(vm.runInContext('aiSetupGuidance(S.data.ai)',context),/Connect|API key|subscription/);
 context.fixture.ai.provider_pause=null;assert.equal(vm.runInContext('aiCanSubmit(S.data.ai)',context),true);
+let focused=false;
+node.value='saved';
+node.focus=()=>{focused=true};
+context.fakeRun={id:'fresh-run',agent_id:'saved',agent_name:'Daily Digest',status:'completed',summary:'Synthetic agent summary',finding_count:0,sample_contacts:2,created:1};
+vm.runInContext('S.data=fixture;S.workspace="business-one";S.route="findings";S.review=false;S.data.airuns=[];render=()=>{};refresh=async()=>{S.data.airuns=[fakeRun];return true};act=async()=>fakeRun',context);
+(async()=>{
+ await vm.runInContext('businessAction("review-run",{dataset:{}})',context);
+ assert.equal(vm.runInContext('S.reviewRun',context),'fresh-run');
+ assert.equal(focused,true);
+ assert.match(vm.runInContext('findingsPage()',context),/Synthetic agent summary/);
+ vm.runInContext('S.reviewRun="";act=async()=>{throw new Error("Synthetic provider failure")}',context);
+ await vm.runInContext('businessAction("review-run",{dataset:{}})',context);
+ assert.match(vm.runInContext('findingsPage()',context),/role="alert"[^>]*>Synthetic provider failure/);
+ vm.runInContext('S.workspace="business-two"',context);
+ assert.doesNotMatch(vm.runInContext('findingsPage()',context),/Synthetic provider failure/);
+ const properties=new Map();
+ context.document.documentElement={clientHeight:800,style:{setProperty:(k,v)=>properties.set(k,v),removeProperty:k=>properties.delete(k)}};
+ context.document.activeElement={id:'compose'};
+ context.window.innerWidth=1280;
+ assert.equal(vm.runInContext('S.contactDetailsOpen=undefined;inboxDetailsVisible()',context),false);
+ context.window.innerWidth=1440;
+ assert.equal(vm.runInContext('inboxDetailsVisible()',context),true);
+ assert.equal(vm.runInContext('S.contactDetailsOpen=false;inboxDetailsVisible()',context),false);
+ context.window.innerWidth=390;
+ context.window.visualViewport={height:480,scale:1};
+ vm.runInContext('S.route="inbox";S.mobileChatOpen=true;syncInboxViewport()',context);
+ assert.equal(properties.get('--inbox-keyboard-height'),'480px');
+ context.document.activeElement={id:'other'};
+ vm.runInContext('syncInboxViewport()',context);
+ assert.equal(properties.has('--inbox-keyboard-height'),false);
+ console.log('AI result selection, scoped errors and mobile keyboard resizing passed.');
+})().catch(error=>{console.error(error);process.exitCode=1});

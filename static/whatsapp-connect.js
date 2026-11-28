@@ -3,15 +3,29 @@ let WA_SIGNUP=null,WA_SDK=null,WA_NOTICE=null;
 const operatorMetaSettingsPage=settingsPage;
 function whatsappScope(){return S.data?S.workspace+':'+S.data.context.user.id:''}
 function paintWhatsAppSignup(){if(S.data&&S.route==='settings')render()}
-function whatsAppSignupError(message,scope){if(scope!==whatsappScope())return;clearWhatsAppSignup();WA_NOTICE={scope,message};paintWhatsAppSignup();toast(message)}
+function whatsAppSignupError(message,scope){if(scope!==whatsappScope())return;const retry=WA_SIGNUP?.opened;clearWhatsAppSignup();WA_NOTICE={scope,message};if(retry&&S.route==="settings")void prepareWhatsAppSignup(scope);paintWhatsAppSignup();toast(message)}
 function clearWhatsAppSignup(){if(WA_SIGNUP?.timer)clearTimeout(WA_SIGNUP.timer);WA_SIGNUP=null}
 settingsPage=function(){
  const c=S.data.whatsapp_connection||{},managed=['connected','expired','disconnected','connecting','needs_reconnect'].includes(c.status),admin=S.data.context.role==='admin',scope=whatsappScope();
  if(WA_SIGNUP&&WA_SIGNUP.scope!==scope)clearWhatsAppSignup();
  if(WA_NOTICE&&WA_NOTICE.scope!==scope)WA_NOTICE=null;
- const label=WA_SIGNUP?.ready?'Continue with Meta':['expired','needs_reconnect'].includes(c.status)?'Reconnect WhatsApp':c.status==='connected'?'Reconnect':'Connect WhatsApp';
+ if(admin&&c.signup_available&&!S.review&&!WA_SIGNUP&&!WA_NOTICE)void prepareWhatsAppSignup(scope);
+ const label=WA_SIGNUP?.preparing?'Preparing WhatsApp...':WA_NOTICE?'Try again':['expired','needs_reconnect'].includes(c.status)?'Reconnect WhatsApp':c.status==='connected'?'Reconnect':'Connect WhatsApp';
  const status=c.status==='connected'?'Connected':['expired','needs_reconnect'].includes(c.status)?'Reconnect required':'Not connected';
- return pagehead('Workspace connections','Connect WhatsApp. Your subscription includes VYBE AI.')+`<section class="card whatsapp-connection-card"><div class="cardhead"><h2>Your WhatsApp account</h2>${badge(status,c.status==='connected'?'':'gray')}</div><div class="cardbody"><p>${c.display_name?esc(c.display_name)+' · ':''}${esc(c.display_phone||'Connect the WhatsApp number your customers already know.')}</p>${c.expires?`<p class="hint">Authorization expires ${esc(date(c.expires))}. Reconnect before then to keep access.</p>`:''}<div class="buttons"><button class="primary" data-wa-connect ${!admin||!c.signup_available||S.review||WA_SIGNUP?.busy||WA_SIGNUP?.opened?'disabled':''}>${label}</button>${managed&&c.status!=='disconnected'?`<button data-wa-sending ${!admin||c.status!=='connected'||S.review?'disabled':''}>${c.sending_enabled?'Pause sending':'Enable sending'}</button><button data-wa-disconnect ${!admin||S.review?'disabled':''}>Disconnect</button>`:''}</div><p class="hint">${!admin?'A workspace administrator can manage this connection.':!c.signup_available?'WhatsApp onboarding is awaiting Meta approval. Your connection will be available once approved.':'Sign in securely with Meta and select your business and phone number.'}</p>${c.status==='connected'?`<p class="hint">${c.sending_enabled?'Sending is enabled for business use. Meta charges may apply.':'Sending is paused. Enable it when ready for real business use.'}</p>`:''}<p role="status" id="wa-signup-status">${esc(WA_NOTICE?.message||(WA_SIGNUP?.opened?'Complete authorization in the Meta window.':WA_SIGNUP?.ready?'Ready. Click Continue with Meta to open the secure authorization window.':''))}</p></div></section>`+aiConnectionCard()+((Object.values(S.data.meta?.present||{}).some(Boolean)||Object.keys(S.data.meta?.invalid||{}).length)&&!managed?`<details><summary>Advanced operator settings</summary>${operatorMetaSettingsPage().replace(aiConnectionCard(),'')}</details>`:'');
+ const providerCheck=(S.data.provider_checks||[]).find(check=>check.provider==='meta'&&check.current);
+ const nextStep=!S.data.meta?.configured?'Choose your business and phone number in Meta’s secure window. VYBE saves the connection.':!S.data.meta.live?'Ask the workspace administrator to enable sending.':providerCheck?.outcome==='passed'?'Account access verified. Send and receive a test message to confirm delivery.':'Run the Meta metadata check, then verify message delivery.';
+ const hasWebsiteChat=(S.data.contacts||[]).some(contact=>contact.channel==='website');
+ const apiReady=!!(S.data.meta?.configured&&S.data.meta?.live);
+ const setupLink=`/widget-preview?workspace=${encodeURIComponent(S.workspace)}`;
+ const inboxLink='<a class="button primary workspace-connection-action" href="#inbox">Open Team Inbox</a>';
+ const firstStep=hasWebsiteChat
+  ?'<p>A website conversation is already in your workspace. Open Team Inbox to reply or assign it.</p>'+inboxLink
+  :admin
+   ?`<p>Open the website chat preview and send a test message. Then reply from Team Inbox.</p><a class="button primary workspace-connection-action" href="${setupLink}" target="_blank" rel="noopener">Open website chat setup</a>`
+   :'<p>Ask an admin to set up website chat or connect a WhatsApp business number.</p>'+inboxLink;
+ const onboarding=`<section class="card first-conversation"><div class="cardhead"><h2>${hasWebsiteChat||apiReady?'Open your inbox':'Start your first conversation'}</h2></div><div class="cardbody">${apiReady?'<p>WhatsApp sending is enabled. Open Team Inbox to manage conversations.</p>'+inboxLink:firstStep}</div></section>`;
+ const websiteChat=admin&&(hasWebsiteChat||apiReady)?`<section class="card"><div class="cardhead"><h2>Website chat</h2></div><div class="cardbody"><p>Receive website chats and reply from Team Inbox.</p><a class="button workspace-connection-action" href="/widget-preview?workspace=${encodeURIComponent(S.workspace)}" target="_blank" rel="noopener">Open website chat setup</a></div></section>`:'';
+ return pagehead('Workspace connections','Manage your CRM messaging channels.')+`<section id="whatsapp-api" class="card whatsapp-connection-card" aria-labelledby="whatsapp-api-heading"><div class="cardhead"><h2 id="whatsapp-api-heading">WhatsApp</h2>${badge(status,c.status==='connected'?'':'gray')}</div><div class="cardbody"><p class="setup-next"><strong>Next step</strong> ${esc(nextStep)} ${admin&&S.data.meta?.configured?`<button type="button" class="small" data-do="service-check" data-provider="meta" ${S.review?'disabled':''}>Check Meta access</button>`:''}</p><p>${c.display_name?esc(c.display_name)+' · ':''}${esc(c.display_phone||'Connect a business number to sync the inbox and send approved campaigns.')}</p>${c.expires?`<p class="hint">Authorization expires ${esc(date(c.expires))}. Reconnect before then to keep access.</p>`:''}<div class="buttons"><button class="primary" data-wa-connect ${!admin||!c.signup_available||S.review||WA_SIGNUP?.preparing||WA_SIGNUP?.busy||WA_SIGNUP?.opened?'disabled':''}>${label}</button>${managed&&c.status!=='disconnected'?`<button data-wa-sending ${!admin||c.status!=='connected'||S.review?'disabled':''}>${c.sending_enabled?'Pause sending':'Enable sending'}</button><button data-wa-disconnect ${!admin||S.review?'disabled':''}>Disconnect</button>`:''}</div><p class="hint">${!admin?'A workspace administrator can manage this connection.':!c.signup_available?'WhatsApp setup is temporarily unavailable. Contact VYBE support.':'Your business keeps ownership of its number.'}</p>${c.status==='connected'?`<p class="hint">${c.sending_enabled?'Sending is enabled for business use. Meta charges may apply.':'Sending is paused. Enable it when ready for real business use.'}</p>`:''}<p role="status" id="wa-signup-status">${esc(WA_NOTICE?.message||(WA_SIGNUP?.opened?'Complete authorization in the Meta window.':WA_SIGNUP?.preparing?'Preparing secure Meta login…':''))}</p></div></section>`+onboarding+(!apiReady?manualWhatsAppSettings():'')+websiteChat+aiConnectionCard()+((admin&&S.data.services?.platform_admin===true)&&(Object.values(S.data.meta?.present||{}).some(Boolean)||Object.keys(S.data.meta?.invalid||{}).length)&&!managed?`<details><summary>Advanced operator settings</summary>${operatorMetaSettingsPage().replace(aiConnectionCard(),'')}</details>`:'');
 }
 function whatsAppSDK(config){
  if(WA_SDK)return WA_SDK;
@@ -21,6 +35,23 @@ function whatsAppSDK(config){
   if(window.FB){loaded();return}
   const script=document.createElement('script');script.src='https://connect.facebook.net/en_US/sdk.js';script.async=true;script.crossOrigin='anonymous';script.onload=loaded;script.onerror=()=>{clearTimeout(timeout);script.remove();WA_SDK=null;reject(new Error('Meta login is blocked or unavailable.'))};document.head.append(script);
  });return WA_SDK;
+}
+async function prepareWhatsAppSignup(scope){
+ const attempt={scope,preparing:true};
+ WA_SIGNUP=attempt;
+ try{
+  const config=await act('whatsapp.begin',{});
+  if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;
+  await whatsAppSDK(config);
+  if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;
+  Object.assign(attempt,{config,ready:true,preparing:false});
+  attempt.timer=setTimeout(()=>{
+   if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;
+   clearWhatsAppSignup();
+   paintWhatsAppSignup();
+  },240000);
+  paintWhatsAppSignup();
+ }catch(error){if(WA_SIGNUP===attempt&&scope===whatsappScope())whatsAppSignupError(error.message,scope)}
 }
 async function finishWhatsAppSignup(){
  const attempt=WA_SIGNUP;if(!attempt||attempt.busy||!attempt.code||!attempt.waba_id||!attempt.phone_number_id||attempt.scope!==whatsappScope())return;
@@ -41,12 +72,14 @@ document.addEventListener('click',async event=>{
  const scope=whatsappScope();
  if(button.hasAttribute('data-wa-connect')){
   if(WA_SIGNUP?.ready&&WA_SIGNUP.scope===scope){
-   const attempt=WA_SIGNUP;attempt.ready=false;attempt.opened=true;WA_NOTICE=null;paintWhatsAppSignup();
+   const attempt=WA_SIGNUP;clearTimeout(attempt.timer);attempt.ready=false;attempt.opened=true;WA_NOTICE=null;paintWhatsAppSignup();
    attempt.timer=setTimeout(()=>{if(WA_SIGNUP===attempt){whatsAppSignupError('Signup timed out. Start a new connection to try again.',scope)}},300000);
-   try{FB.login(response=>{if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;const code=response.authResponse?.code;if(!code){whatsAppSignupError('Meta returned no authorization code. Allow browser popups and check the app’s Facebook Login for Business domain settings. Then start a new connection.',scope);return}attempt.code=code;finishWhatsAppSignup()},{config_id:attempt.config.config_id,response_type:'code',override_default_response_type:true,auth_type:'rerequest',extras:{setup:{}}})}catch{whatsAppSignupError('Meta login could not open. Allow the popup and try again.',scope)}return;
+   try{FB.login(response=>{if(WA_SIGNUP!==attempt||scope!==whatsappScope())return;const code=response.authResponse?.code;if(!code){whatsAppSignupError('Meta sign-in did not finish. Allow popups and try again.',scope);return}attempt.code=code;finishWhatsAppSignup()},{config_id:attempt.config.config_id,response_type:'code',override_default_response_type:true,auth_type:'rerequest',extras:{setup:{}}})}catch{whatsAppSignupError('Meta login could not open. Allow the popup and try again.',scope)}return;
   }
-  button.disabled=true;WA_NOTICE=null;const loading=document.querySelector('#wa-signup-status');if(loading)loading.textContent='Preparing secure Meta login…';
-  try{clearWhatsAppSignup();const config=await act('whatsapp.begin',{});if(scope!==whatsappScope())return;await whatsAppSDK(config);if(scope!==whatsappScope())return;WA_SIGNUP={scope,config,ready:true};paintWhatsAppSignup()}catch(error){if(scope===whatsappScope()){whatsAppSignupError(error.message,scope)}}return;
+  WA_NOTICE=null;
+  void prepareWhatsAppSignup(scope);
+  paintWhatsAppSignup();
+  return;
  }
  const c=S.data.whatsapp_connection||{};
  if(button.hasAttribute('data-wa-disconnect')){
@@ -57,4 +90,4 @@ document.addEventListener('click',async event=>{
  if(enabled&&!confirm('Enable real WhatsApp sending for this workspace? Business messages may incur Meta charges. No test message will be sent.'))return;
  try{await act('whatsapp.sending',{enabled});if(scope===whatsappScope())await refresh()}catch(error){toast(error.message)}
 });
-window.addEventListener('hashchange',()=>{if(WA_SIGNUP&&WA_SIGNUP.scope!==whatsappScope())clearWhatsAppSignup()});
+window.addEventListener('hashchange',()=>{if(WA_SIGNUP&&(S.route!=='settings'||WA_SIGNUP.scope!==whatsappScope()))clearWhatsAppSignup()});

@@ -34,7 +34,10 @@ def backup(source,target):
     if not source.is_dir() or target.exists() or target.is_relative_to(source) or source.is_relative_to(target):raise ValueError('Choose a new backup directory outside the data directory.')
     healthy(source/'teamwave.db');inputs=files(source)
     target.mkdir(parents=True,mode=0o700);payload=target/'payload';payload.mkdir(mode=0o700)
-    with closing(sqlite3.connect((source/'teamwave.db').as_uri()+'?mode=ro',uri=True)) as src,closing(sqlite3.connect(payload/'teamwave.db')) as dst:src.backup(dst)
+    with closing(sqlite3.connect((source/'teamwave.db').as_uri()+'?mode=ro',uri=True)) as src,closing(sqlite3.connect(payload/'teamwave.db')) as dst:
+        src.backup(dst)
+        if dst.execute('PRAGMA journal_mode=DELETE').fetchone()[0]!='delete':
+            raise ValueError('Could not create a portable SQLite backup.')
     for original in inputs:
         relative=original.relative_to(source)
         if relative.as_posix()=='teamwave.db' or relative.as_posix().startswith('teamwave.db-'):continue
@@ -64,11 +67,10 @@ def drill(source,target):
     """Restore a private backup into a new isolated directory; never replace active data."""
     source=Path(source).resolve();target=Path(target).resolve()
     result=restore(source,target)
-    healthy(target/'teamwave.db')
-    original=source/'payload'
-    expected={file.relative_to(original).as_posix():digest(file) for file in files(original)}
-    actual={file.relative_to(target).as_posix():digest(file) for file in files(target) if file.relative_to(target).as_posix() not in ('teamwave.db-wal','teamwave.db-shm')}
+    expected=json.loads((source/'manifest.json').read_text(encoding='utf-8'))['files']
+    actual={file.relative_to(target).as_posix():digest(file) for file in files(target)}
     if expected!=actual:raise ValueError('Restored file verification failed.')
+    healthy(target/'teamwave.db')
     with closing(sqlite3.connect((target/'teamwave.db').as_uri()+'?mode=ro',uri=True)) as db:
         if db.execute('PRAGMA foreign_key_check').fetchone() is not None:raise ValueError('Restored database relationships failed verification.')
         tables=db.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchone()[0]

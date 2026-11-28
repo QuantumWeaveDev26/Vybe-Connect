@@ -4,6 +4,7 @@ import time
 from business_providers import status,plans
 from service_jobs import ServiceError,public
 from team_invitations import action as invitation_action
+from internal_access import is_internal
 
 
 def platform_admin(ctx):
@@ -23,7 +24,8 @@ def state(store,db,ctx):
             'jobs':[public(j) for j in jobs[-100:] if ctx['role']=='admin' or not j['kind'].startswith('billing.')],'platform_admin':platform_admin(ctx),
             'plans':[dict({k:v for k,v in plan.items() if k!='plan_id'},key=key) for key,plan in plans().items()],
             'subscription':public(current) if current and ctx['role']=='admin' else None,'subscription_active':active,
-            'billing_enforced':platform_ai.enabled() or os.environ.get('TW_BILLING_ENFORCE','false').lower()=='true',
+            'internal_use':is_internal(tenant),'crm_access':is_internal(tenant) or active,
+            'billing_enforced':not is_internal(tenant) and (platform_ai.enabled() or os.environ.get('TW_BILLING_ENFORCE','false').lower()=='true'),
             'clients':store._list(db,tenant,'clientworkspace') if platform_admin(ctx) else []}
 
 
@@ -53,6 +55,11 @@ def action(store,ctx,operation,data):
 
 def enforce(store,ctx,operation):
     import platform_ai
+    if is_internal(ctx['tenant_id']) and not ctx.get('review_only'):
+        with store.db() as db:
+            member=db.execute('SELECT role FROM members WHERE tenant=? AND user=?',(ctx['tenant_id'],ctx['user']['id'])).fetchone()
+        if not member or member['role']!=ctx['role']:raise ServiceError('Sign in again with current workspace access.',403)
+        return
     if (os.environ.get('TW_BILLING_ENFORCE','false').lower()!='true' and not platform_ai.enabled()) or platform_admin(ctx) or ctx.get('review_only'):return
     # Keep billing, account security, exports and read access available for recovery.
     if operation.startswith(('billing.','invite.','notification.','feedback.')) or operation in ('calls.end','calls.reject','calls.release','calls.session','calls.history','services.release-failed'):return

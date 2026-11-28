@@ -1,0 +1,12 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const handlers={},classes=[];
+const cells=[{colSpan:1,setAttribute(k,v){this[k]=v}},{colSpan:1,setAttribute(k,v){this[k]=v}}];
+const table={tHead:{rows:[{cells:[{textContent:'Team member'},{textContent:'Email'}]}]},tBodies:[{rows:[{cells}]}],classList:{add(name){classes.push(name)}}};
+const report={tHead:{rows:[{cells:[{textContent:'Date'},{textContent:'Inbound'}]}]},tBodies:[{rows:[{cells:[{colSpan:1},{colSpan:1}]}]}],classList:{add(){throw Error('Quantitative reports must retain their table layout')}}};
+let emptyClass='';const empty={tHead:{rows:[{cells:[{textContent:'Rule'}]}]},tBodies:[{rows:[{cells:[{colSpan:4}]}]}],classList:{add(name){emptyClass=name}}};
+const c=vm.createContext({document:{querySelectorAll(){return [table,report,empty]},addEventListener(name,fn){(handlers[name]??=[]).push(fn)}},location:{hash:''},S:{route:'team'},esc:String,icon:()=>'',btn:()=>''});
+vm.runInContext(fs.readFileSync('static/shell.js','utf8'),c);
+vm.runInContext('prepareMobileTables()',c);assert.deepEqual(classes,['mobile-card-table']);assert.equal(cells[0]['data-label'],'Team member');assert.equal(cells[1]['data-label'],'Email');assert.equal(emptyClass,'mobile-empty-table');
+const html=vm.runInContext('contextMenu()',c);assert.match(html,/aria-label="Settings section"/);assert.match(html,/value="team" selected/);assert.match(html,/Services & billing/);
+for(const fn of handlers.change)fn({target:{value:'services',matches:()=>true}});assert.equal(c.location.hash,'services');
+console.log('Mobile section selection retains every destination; readable records preserve field labels and quantitative tables.');

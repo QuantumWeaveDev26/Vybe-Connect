@@ -65,7 +65,7 @@ def ask_local(question,context,history):
     tenant=context.get('_workspace_id');status=ai_status(tenant)
     selected=context.get('_model') or status['model']
     if status.get('platform_managed'):
-        if not status['paid_allowed']:raise ValueError('Choose an active subscription to use included VYBE AI. No API key is needed.')
+        if not status['paid_allowed']:raise ValueError('Internal team AI usage is paused by the platform operator.' if (status.get('allowance') or {}).get('internal_use') else 'Choose an active subscription to use included VYBE AI. No API key is needed.')
         if not status['enabled'] or not status['configured']:raise ValueError('VYBE AI is temporarily unavailable. Contact platform support.')
     if status['provider_id']=='openai' and not status['paid_allowed']:raise ValueError('OpenAI paid calls are disabled for this workspace. Enable real usage in Settings > AI assistant connection only after approving provider charges.')
     if not status['enabled'] or not status['configured']:raise ValueError('AI is not configured. Connect a provider in Settings. The platform operator must also enable AI processing.')
